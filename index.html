@@ -719,7 +719,10 @@ BTC_LARGE_VOCA = ${btcVocaPy}`
 # madmom, sources habituelles de problemes de compatibilite avec les versions
 # recentes de torch/CUDA sur Colab.
 # mutagen : pour ecrire les metadonnees JSON directement dans le fichier ogg final.
-!pip install -q all-in-one-infer transformers huggingface_hub mutagen`
+# rmvpe-onnx + pretty_midi : extraction de la melodie chantee (pitch -> notes).
+# faster-whisper : transcription des paroles.
+!pip install -q all-in-one-infer transformers huggingface_hub mutagen
+!pip install -q rmvpe-onnx soundfile librosa pretty_midi faster-whisper`
     ),
 
     code(
@@ -819,7 +822,95 @@ for item in fichiers_a_traiter:
 print("\\nTraitement termine.")`
     ),
 
-    md(`## 6. Fusion des stems en un fichier Ogg 8 canaux, avec métadonnées embarquées`),
+    md(`## 6. Mélodie et paroles (à partir de la voix isolée)`),
+
+    code(
+`import numpy as np
+import librosa
+from rmvpe_onnx import RMVPE
+import pretty_midi
+from faster_whisper import WhisperModel
+
+# --- Melodie : extraction de pitch (RMVPE) puis quantification en notes ---
+CONFIDENCE_THRESHOLD = 0.03  # a ajuster selon le bruit residuel de la separation
+MIN_NOTE_DURATION = 0.08     # secondes ; en dessous, ignore (probable artefact)
+SEMITONE_TOLERANCE = 0.5     # ecart max (demi-tons) pour considerer 2 frames comme la meme note
+
+def freq_to_midi(f):
+    return 69 + 12 * np.log2(f / 440.0)
+
+def extraire_melodie(chemin_voix, rmvpe_modele):
+    audio, sr = librosa.load(str(chemin_voix), sr=None, mono=True)
+    temps, frequence, confiance, _ = rmvpe_modele.predict(audio=audio, sr=sr)
+
+    freq_clean = frequence.copy()
+    freq_clean[confiance < CONFIDENCE_THRESHOLD] = np.nan
+
+    midi_notes = np.full_like(freq_clean, np.nan)
+    valid = ~np.isnan(freq_clean) & (freq_clean > 0)
+    midi_notes[valid] = freq_to_midi(freq_clean[valid])
+
+    notes = []
+    current_note, current_start, current_values = None, None, []
+
+    def flush_segment(end_time):
+        nonlocal current_note, current_start, current_values
+        if current_note is None:
+            return
+        duree = end_time - current_start
+        if duree >= MIN_NOTE_DURATION:
+            note_arrondie = int(round(np.median(current_values)))
+            notes.append({"start": round(float(current_start), 3), "end": round(float(end_time), 3), "midi": note_arrondie})
+
+    for i, t in enumerate(temps):
+        val = midi_notes[i]
+        if np.isnan(val):
+            flush_segment(t)
+            current_note, current_start, current_values = None, None, []
+            continue
+        if current_note is None:
+            current_note, current_start, current_values = val, t, [val]
+        elif abs(val - np.median(current_values)) <= SEMITONE_TOLERANCE:
+            current_values.append(val)
+        else:
+            flush_segment(t)
+            current_note, current_start, current_values = val, t, [val]
+    flush_segment(temps[-1] if len(temps) else 0)
+
+    return notes
+
+# --- Paroles : transcription (faster-whisper) ---
+def extraire_paroles(chemin_voix, whisper_modele):
+    segments, _info = whisper_modele.transcribe(str(chemin_voix), language="fr", word_timestamps=True)
+    return [
+        {"start": round(s.start, 3), "end": round(s.end, 3), "texte": s.text.strip()}
+        for s in segments
+    ]
+
+print("Chargement du modele RMVPE (melodie)...")
+rmvpe_modele = RMVPE()  # telecharge le modele au premier appel
+
+print("Chargement du modele faster-whisper (paroles)...")
+whisper_modele = WhisperModel("large-v3", device="cuda", compute_type="float16")
+
+for r in rapports:
+    voix = next((f for f in r["stem_files"] if f.stem == "vocals"), None)
+    if voix is None:
+        print(f"  ATTENTION : pas de piste voix pour {r['nom_fichier']} -- melodie/paroles ignorees")
+        r["melodie"] = []
+        r["paroles"] = []
+        continue
+
+    t0 = time.time()
+    r["melodie"] = extraire_melodie(voix, rmvpe_modele)
+    print(f"  {r['nom_fichier']} -- melodie ({len(r['melodie'])} notes) : {time.time()-t0:.1f} s")
+
+    t0 = time.time()
+    r["paroles"] = extraire_paroles(voix, whisper_modele)
+    print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments) : {time.time()-t0:.1f} s")`
+    ),
+
+    md(`## 7. Fusion des stems en un fichier Ogg 8 canaux, avec métadonnées embarquées`),
 
     code(
 `import subprocess
@@ -846,7 +937,7 @@ def fusionner_stems_ogg(stem_files, sortie_path):
     )
     return [f.stem for f in ordonnes]
 
-def ecrire_metadonnees_ogg(ogg_path, ordre_pistes, structure, accords, metadata):
+def ecrire_metadonnees_ogg(ogg_path, ordre_pistes, structure, accords, metadata, melodie, paroles):
     metadata = dict(metadata)  # copie pour ne pas modifier le rapport original
     releves = metadata.pop('releves', [])
     audio = OggVorbis(str(ogg_path))
@@ -855,6 +946,8 @@ def ecrire_metadonnees_ogg(ogg_path, ordre_pistes, structure, accords, metadata)
     audio['BANDES_ACCORDS'] = json.dumps(accords, ensure_ascii=False)
     audio['BANDES_METADATA'] = json.dumps(metadata, ensure_ascii=False)
     audio['BANDES_RELEVES'] = json.dumps(releves, ensure_ascii=False)
+    audio['BANDES_MELODIE'] = json.dumps(melodie, ensure_ascii=False)
+    audio['BANDES_PAROLES'] = json.dumps(paroles, ensure_ascii=False)
     audio.save()
 
 for r in rapports:
@@ -873,12 +966,14 @@ for r in rapports:
         structure,
         r["accords"],
         r["metadata"],
+        r["melodie"],
+        r["paroles"],
     )
     r["ogg_path"] = ogg_path
     print(f"{nom} : {ogg_path.name} ({ogg_path.stat().st_size / 1024:.0f} Ko, {len(ordre)} pistes -> {len(ordre)*2} canaux)")`
     ),
 
-    md(`## 7. Téléchargement du résultat`),
+    md(`## 8. Téléchargement du résultat`),
 
     code(
 `if len(rapports) == 1:
