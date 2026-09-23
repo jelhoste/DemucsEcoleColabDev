@@ -104,6 +104,40 @@ Timeline d'accords (notation Harte simplifiée : `"A#"` = la# majeur, `"A#:min"`
 ]
 ```
 
+### `BANDES_MELODIE`
+Mélodie chantée transcrite en notes, extraite de la piste voix isolée (extraction de
+pitch RMVPE + quantification en notes discrètes). Chaque note a un début, une fin, et
+une hauteur en numéro **MIDI** (60 = do central / C4).
+
+```json
+[
+  { "start": 12.34, "end": 12.71, "midi": 64 },
+  { "start": 12.71, "end": 13.05, "midi": 67 },
+  { "start": 13.10, "end": 13.80, "midi": 69 }
+]
+```
+
+Pour convertir un numéro MIDI en nom de note :
+```python
+note_names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+nom = note_names[midi % 12] + str(midi // 12 - 1)  # ex: 69 -> "A4"
+```
+
+Cette transcription est de nature heuristique (pas un modèle spécialisé de transcription
+mélodique) — traiter comme une aide au relevé plutôt qu'un résultat garanti exact,
+en particulier sur du vibrato prononcé ou des glissandi.
+
+### `BANDES_PAROLES`
+Paroles transcrites automatiquement (reconnaissance vocale) à partir de la piste voix
+isolée, avec horodatage par segment.
+
+```json
+[
+  { "start": 0.9,  "end": 4.2,  "texte": "Voici les premières paroles du morceau" },
+  { "start": 4.5,  "end": 8.1,  "texte": "suivies de la suite du couplet" }
+]
+```
+
 ### `BANDES_METADATA`
 Informations générales du morceau (formulaire principal).
 
@@ -195,7 +229,9 @@ librement) :
 | Tag | Contenu | Rempli par |
 |---|---|---|
 | `BANDES_PISTES` | Ordre des stems dans les canaux | Généré automatiquement (notebook) |
-| `BANDES_STRUCTURE` | BPM | Généré automatiquement (all-in-one) |
+| `BANDES_STRUCTURE` | BPM, beats, downbeats, segments | Généré automatiquement (all-in-one) |
 | `BANDES_ACCORDS` | Timeline d'accords | Généré automatiquement (BTC) |
+| `BANDES_MELODIE` | Notes MIDI de la mélodie chantée | Généré automatiquement (RMVPE, sur la voix isolée) |
+| `BANDES_PAROLES` | Paroles transcrites et horodatées | Généré automatiquement (faster-whisper, sur la voix isolée) |
 | `BANDES_METADATA` | Infos générales du morceau | App « Bandes » (formulaire élève/prof) |
 | `BANDES_RELEVES` | Relevés pédagogiques par instrument | **Portail prof** (à implémenter) |
