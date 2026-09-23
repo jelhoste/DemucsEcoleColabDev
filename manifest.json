@@ -1,0 +1,24 @@
+{
+  "name": "Bandes — préparation Colab",
+  "short_name": "Bandes",
+  "description": "Prépare vos morceaux (métadonnées + notebook) pour extraction de structure, pistes et accords via Google Colab.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1C1712",
+  "theme_color": "#1C1712",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

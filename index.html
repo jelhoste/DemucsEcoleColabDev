@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bandes — préparation Colab</title>
+<meta name="description" content="Prépare vos morceaux pour extraction de structure, pistes séparées et accords via Google Colab.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#1C1712">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1C1712;
+    --panel: #241E17;
+    --panel-raised: #2A231C;
+    --border: #3D342A;
+    --brass: #C0996A;
+    --brass-dim: #8C7350;
+    --rust: #C1502E;
+    --text: #EDE4D3;
+    --text-muted: #A79885;
+    --radius: 6px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 20px 80px;
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; }
+
+  header{ padding-top: 48px; padding-bottom: 32px; }
+  .reel{ display:inline-block; vertical-align: middle; margin-right: 14px; }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: 2.1rem;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: -0.01em;
+  }
+  header p{
+    color: var(--text-muted);
+    margin: 14px 0 0;
+    max-width: 46ch;
+    font-size: 0.98rem;
+  }
+
+  section{ margin-bottom: 40px; }
+  .section-head{
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-num{
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--brass);
+    font-size: 0.85rem;
+    border: 1px solid var(--brass-dim);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .track-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .track-card-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .filename-pill{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text);
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 10px;
+  }
+  .filename-pill.empty{ color: var(--text-muted); font-style: italic; }
+
+  .file-btn{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    border: 1px solid var(--brass-dim);
+    color: var(--brass);
+    border-radius: 4px;
+    padding: 7px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .file-btn:hover{ background: rgba(192,153,106,0.08); }
+  input[type=file]{ display:none; }
+
+  .remove-btn{
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 4px 8px;
+    margin-left: 6px;
+  }
+  .remove-btn:hover{ color: var(--rust); }
+
+  .field-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .field{ display: flex; flex-direction: column; gap: 4px; }
+  .field.full{ grid-column: 1 / -1; }
+  label{ font-size: 0.78rem; color: var(--text-muted); }
+  input[type=text], input[type=date], select, textarea{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.92rem;
+    padding: 9px 10px;
+    width: 100%;
+  }
+  input:focus, textarea:focus, button:focus, .file-btn:focus{
+    outline: 2px solid var(--brass);
+    outline-offset: 1px;
+  }
+  textarea{ resize: vertical; min-height: 40px; }
+
+  .field-suggest-wrap{ position: relative; display: flex; gap: 4px; }
+  .field-suggest-wrap input{ flex: 1; }
+  .suggest-caret{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 4px;
+    width: 32px;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+  }
+  .suggest-caret:hover{ color: var(--brass); border-color: var(--brass-dim); }
+  .suggest-menu{
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    z-index: 30;
+    max-height: 190px;
+    overflow-y: auto;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  .suggest-option{
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+  }
+  .suggest-option:last-child{ border-bottom: none; }
+  .suggest-option:hover{ background: rgba(192,153,106,0.1); color: var(--brass); }
+  .suggest-option.suggest-all{ color: var(--brass); font-family: 'IBM Plex Sans', sans-serif; font-style: italic; }
+  .suggest-empty{ padding: 10px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+
+  .releves-section{ margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+  .releves-head{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .releves-head span{ font-size: 0.82rem; color: var(--text-muted); }
+  .small-btn{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--brass-dim);
+    color: var(--brass);
+    border-radius: 4px;
+    padding: 5px 9px;
+    cursor: pointer;
+  }
+  .small-btn:hover{ background: rgba(192,153,106,0.08); }
+  .instrument-block{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .instrument-head{ display: flex; gap: 8px; margin-bottom: 8px; }
+  .instrument-head input{ flex: 1; }
+  .instrument-block > input{ margin-bottom: 10px; }
+  .marqueur-row{ display: flex; gap: 6px; margin-bottom: 6px; }
+  .marqueur-row .marqueur-temps{ width: 70px; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+  .marqueur-row .marqueur-texte{ flex: 1; }
+  .remove-instrument-btn, .remove-marqueur-btn{
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 0.95rem; flex-shrink: 0;
+  }
+  .remove-instrument-btn:hover, .remove-marqueur-btn:hover{ color: var(--rust); }
+
+  .add-track-btn{
+    width: 100%;
+    background: var(--panel);
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.92rem;
+  }
+  .add-track-btn:hover{ border-color: var(--brass-dim); color: var(--brass); }
+
+  .empty-state{
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 24px 0;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+
+  .voca-choice{ display: flex; gap: 12px; }
+  .voca-option{
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+  }
+  .voca-option.active{ border-color: var(--brass); background: var(--panel-raised); }
+  .voca-option input{ display:none; }
+  .voca-title{ font-weight: 600; font-size: 0.92rem; }
+  .voca-desc{ color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; }
+
+  .generate-btn{
+    width: 100%;
+    background: var(--brass);
+    color: #1C1712;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .generate-btn:hover{ background: #cfa878; }
+  .generate-btn:disabled{ background: var(--panel-raised); color: var(--text-muted); cursor: not-allowed; }
+
+  .hint{ font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; }
+
+  .steps-list{ list-style: none; padding: 0; margin: 0; counter-reset: steps; }
+  .steps-list li{
+    counter-increment: steps;
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .steps-list li:last-child{ border-bottom: none; }
+  .steps-list li::before{
+    content: counter(steps);
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--brass);
+    border: 1px solid var(--brass-dim);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+  }
+  .steps-list p{ margin: 0; font-size: 0.92rem; }
+  .steps-list code{
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--panel-raised);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  .status{
+    margin-top: 14px;
+    font-size: 0.88rem;
+    color: var(--brass);
+    min-height: 1.4em;
+  }
+
+  footer{ color: var(--text-muted); font-size: 0.8rem; text-align: center; padding-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>
+      <svg class="reel" width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="17" cy="17" r="13" stroke="#C0996A" stroke-width="1.6"/>
+        <line x1="17" y1="17" x2="17" y2="6" stroke="#C0996A" stroke-width="1.6"/>
+        <line x1="17" y1="17" x2="26.5" y2="22.5" stroke="#C0996A" stroke-width="1.6"/>
+        <line x1="17" y1="17" x2="7.5" y2="22.5" stroke="#C0996A" stroke-width="1.6"/>
+        <circle cx="17" cy="17" r="3.4" fill="#C0996A"/>
+        <circle cx="17" cy="17" r="1.3" fill="#1C1712"/>
+      </svg>Bandes
+    </h1>
+    <p>Préparez vos morceaux — un notebook Colab prêt à l'emploi en ressort, avec vos informations déjà dedans.</p>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <span class="step-num">1</span>
+      <h2>Vos morceaux</h2>
+    </div>
+
+    <div id="tracks-container"></div>
+    <div id="empty-state" class="empty-state">Aucun morceau ajouté pour l'instant.</div>
+
+    <button class="add-track-btn" id="add-track-btn" type="button">+ Ajouter un morceau</button>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="step-num">2</span>
+      <h2>Vocabulaire d'accords</h2>
+    </div>
+    <div class="voca-choice">
+      <label class="voca-option active" id="voca-large-label">
+        <input type="radio" name="voca" value="large" checked>
+        <div class="voca-title">Étendu</div>
+        <div class="voca-desc">Majeur, mineur, 7e, sus, dim... (recommandé)</div>
+      </label>
+      <label class="voca-option" id="voca-simple-label">
+        <input type="radio" name="voca" value="simple">
+        <div class="voca-title">Simple</div>
+        <div class="voca-desc">Majeur / mineur uniquement</div>
+      </label>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="step-num">3</span>
+      <h2>Générer votre notebook</h2>
+    </div>
+    <button class="generate-btn" id="generate-btn" type="button">Télécharger le notebook Colab</button>
+    <div class="hint">Vos fichiers audio ne sont jamais envoyés ici — seuls leurs noms et vos informations sont écrits dans le notebook. L'upload réel se fait plus tard, directement dans Colab.</div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Et ensuite ?</h2>
+    </div>
+    <ul class="steps-list">
+      <li><p>Ouvrez <code>colab.research.google.com</code>, puis <code>Fichier → Importer un notebook</code> et sélectionnez le fichier téléchargé.</p></li>
+      <li><p>Activez le GPU : <code>Exécution → Modifier le type d'exécution → T4 GPU</code>.</p></li>
+      <li><p>Lancez <code>Exécution → Tout exécuter</code>, puis sélectionnez vos fichiers audio quand le widget d'upload apparaît — <strong>gardez exactement les mêmes noms de fichiers</strong> que ceux entrés ici pour que vos informations leur soient bien associées.</p></li>
+      <li><p>À la fin du traitement, le résultat se télécharge automatiquement dans votre navigateur : le fichier <code>.ogg</code> directement pour un seul morceau, ou une archive <code>.zip</code> les regroupant s'il y en a plusieurs. Structure, accords, vos informations et vos relevés sont embarqués directement dans chaque fichier <code>.ogg</code>.</p></li>
+    </ul>
+  </section>
+
+  <footer>Fonctionne entièrement dans votre navigateur — aucune donnée n'est envoyée à un serveur.</footer>
+</div>
+
+<script>
+let tracks = [];
+let nextId = 1;
+let nextInstrumentId = 1;
+let nextMarqueurId = 1;
+
+function addInstrument(trackId){
+  const t = tracks.find(t => t.id === trackId);
+  if (!t) return;
+  t.releves.push({ id: nextInstrumentId++, instrument: '', sousTitre: '', marqueurs: [] });
+  render();
+}
+function removeInstrument(trackId, instrumentId){
+  const t = tracks.find(t => t.id === trackId);
+  if (!t) return;
+  t.releves = t.releves.filter(i => i.id !== instrumentId);
+  render();
+}
+function addMarqueur(trackId, instrumentId){
+  const t = tracks.find(t => t.id === trackId);
+  const instr = t && t.releves.find(i => i.id === instrumentId);
+  if (!instr) return;
+  instr.marqueurs.push({ id: nextMarqueurId++, temps: '', texte: '' });
+  render();
+}
+function removeMarqueur(trackId, instrumentId, marqueurId){
+  const t = tracks.find(t => t.id === trackId);
+  const instr = t && t.releves.find(i => i.id === instrumentId);
+  if (!instr) return;
+  instr.marqueurs = instr.marqueurs.filter(m => m.id !== marqueurId);
+  render();
+}
+function updateInstrumentField(trackId, instrumentId, field, value){
+  const t = tracks.find(t => t.id === trackId);
+  const instr = t && t.releves.find(i => i.id === instrumentId);
+  if (instr) instr[field] = value;
+}
+function updateMarqueurField(trackId, instrumentId, marqueurId, field, value){
+  const t = tracks.find(t => t.id === trackId);
+  const instr = t && t.releves.find(i => i.id === instrumentId);
+  const m = instr && instr.marqueurs.find(m => m.id === marqueurId);
+  if (m) m[field] = value;
+}
+
+function addTrack(){
+  tracks.push({ id: nextId++, filename: '', eleve: '', prof: '', morceau: '', artiste: '', tonalite: '', niveauCycle: '', niveauEchelle: '', commentaire: '', date: new Date().toISOString().slice(0,10), releves: [] });
+  render();
+}
+
+function removeTrack(id){
+  tracks = tracks.filter(t => t.id !== id);
+  render();
+}
+
+function updateTrack(id, field, value){
+  const t = tracks.find(t => t.id === id);
+  if (t) t[field] = value;
+}
+
+function getFilenameFragments(filename){
+  if (!filename) return [];
+  const base = filename.replace(/\.[^/.]+$/, '');
+  return base.split('_').map(p => p.trim()).filter(Boolean);
+}
+
+function renderSuggestMenu(id, field, filename){
+  const base = (filename || '').replace(/\.[^/.]+$/, '');
+  const frags = getFilenameFragments(filename);
+  if (frags.length === 0){
+    return `<div class="suggest-empty">Choisissez d'abord un fichier</div>`;
+  }
+  let html = `<button type="button" class="suggest-option suggest-all" data-id="${id}" data-field="${field}" data-value="${escapeAttr(base)}">Tout — ${escapeHtml(base)}</button>`;
+  frags.forEach(f => {
+    html += `<button type="button" class="suggest-option" data-id="${id}" data-field="${field}" data-value="${escapeAttr(f)}">${escapeHtml(f)}</button>`;
+  });
+  return html;
+}
+
+function suggestField(t, field, label){
+  return `
+    <div class="field">
+      <label>${label}</label>
+      <div class="field-suggest-wrap">
+        <input type="text" data-id="${t.id}" data-field="${field}" value="${escapeAttr(t[field])}">
+        <button type="button" class="suggest-caret" data-id="${t.id}" data-field="${field}" title="Suggestions depuis le nom de fichier">▾</button>
+        <div class="suggest-menu" data-menu-id="${t.id}" data-menu-field="${field}" hidden>
+          ${renderSuggestMenu(t.id, field, t.filename)}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderInstrumentBlock(trackId, instr){
+  const marqueursHtml = instr.marqueurs.map(m => `
+    <div class="marqueur-row">
+      <input type="text" class="marqueur-temps" placeholder="mm:ss" data-track-id="${trackId}" data-instrument-id="${instr.id}" data-marqueur-id="${m.id}" data-field="temps" value="${escapeAttr(m.temps)}">
+      <input type="text" class="marqueur-texte" placeholder="Note (ex: fill caisse claire)" data-track-id="${trackId}" data-instrument-id="${instr.id}" data-marqueur-id="${m.id}" data-field="texte" value="${escapeAttr(m.texte)}">
+      <button type="button" class="remove-marqueur-btn" data-track-id="${trackId}" data-instrument-id="${instr.id}" data-marqueur-id="${m.id}" title="Retirer ce marqueur">✕</button>
+    </div>`).join('');
+
+  return `
+    <div class="instrument-block">
+      <div class="instrument-head">
+        <input type="text" placeholder="Instrument (batterie, guitare...)" data-track-id="${trackId}" data-instrument-id="${instr.id}" data-field="instrument" value="${escapeAttr(instr.instrument)}">
+        <button type="button" class="remove-instrument-btn" data-track-id="${trackId}" data-instrument-id="${instr.id}" title="Retirer cet instrument">✕</button>
+      </div>
+      <input type="text" placeholder="Sous-titre (ex: couplet 1)" data-track-id="${trackId}" data-instrument-id="${instr.id}" data-field="sousTitre" value="${escapeAttr(instr.sousTitre)}">
+      <div class="marqueurs-list">
+        ${marqueursHtml}
+        <button type="button" class="small-btn add-marqueur-btn" data-track-id="${trackId}" data-instrument-id="${instr.id}">+ marqueur</button>
+      </div>
+    </div>`;
+}
+
+function render(){
+  const container = document.getElementById('tracks-container');
+  const emptyState = document.getElementById('empty-state');
+  container.innerHTML = '';
+  emptyState.style.display = tracks.length === 0 ? 'block' : 'none';
+
+  tracks.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'track-card';
+    card.innerHTML = `
+      <div class="track-card-head">
+        <span class="filename-pill ${t.filename ? '' : 'empty'}">${t.filename || 'aucun fichier choisi'}</span>
+        <label class="file-btn">
+          Choisir un fichier
+          <input type="file" accept="audio/*" data-id="${t.id}" class="file-input">
+        </label>
+        <button class="remove-btn" data-id="${t.id}" title="Retirer ce morceau">✕</button>
+      </div>
+      <div class="field-grid">
+        ${suggestField(t, 'eleve', 'Élève')}
+        ${suggestField(t, 'prof', 'Prof')}
+        ${suggestField(t, 'morceau', 'Morceau')}
+        ${suggestField(t, 'artiste', 'Artiste')}
+        ${suggestField(t, 'tonalite', 'Tonalité')}
+        <div class="field">
+          <label>Cycle (conservatoire)</label>
+          <input type="text" data-id="${t.id}" data-field="niveauCycle" value="${escapeAttr(t.niveauCycle)}" placeholder="ex : 2e cycle">
+        </div>
+        <div class="field">
+          <label>Échelle (1-8)</label>
+          <select data-id="${t.id}" data-field="niveauEchelle">
+            <option value="">—</option>
+            ${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${String(t.niveauEchelle)===String(n) ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" data-id="${t.id}" data-field="date" value="${escapeAttr(t.date)}">
+        </div>
+        <div class="field full">
+          <label>Commentaire</label>
+          <textarea data-id="${t.id}" data-field="commentaire">${escapeHtml(t.commentaire)}</textarea>
+        </div>
+      </div>
+      <div class="releves-section">
+        <div class="releves-head">
+          <span>Relevés</span>
+          <button type="button" class="small-btn add-instrument-btn" data-track-id="${t.id}">+ instrument</button>
+        </div>
+        ${t.releves.map(instr => renderInstrumentBlock(t.id, instr)).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  container.querySelectorAll('.file-input').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const id = Number(e.target.dataset.id);
+      const file = e.target.files[0];
+      if (file){
+        const t = tracks.find(t => t.id === id);
+        t.filename = file.name;
+        render();
+      }
+    });
+  });
+  container.querySelectorAll('input[data-field], select[data-field], textarea[data-field]').forEach(el => {
+    el.addEventListener('input', (e) => {
+      updateTrack(Number(e.target.dataset.id), e.target.dataset.field, e.target.value);
+    });
+  });
+  container.querySelectorAll('[data-instrument-id][data-field]:not([data-marqueur-id])').forEach(el => {
+    el.addEventListener('input', (e) => {
+      updateInstrumentField(Number(e.target.dataset.trackId), Number(e.target.dataset.instrumentId), e.target.dataset.field, e.target.value);
+    });
+  });
+  container.querySelectorAll('[data-marqueur-id][data-field]').forEach(el => {
+    el.addEventListener('input', (e) => {
+      updateMarqueurField(Number(e.target.dataset.trackId), Number(e.target.dataset.instrumentId), Number(e.target.dataset.marqueurId), e.target.dataset.field, e.target.value);
+    });
+  });
+  container.querySelectorAll('.remove-btn').forEach(el => {
+    el.addEventListener('click', (e) => removeTrack(Number(e.target.dataset.id)));
+  });
+}
+
+function escapeHtml(s){ return (s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+document.getElementById('add-track-btn').addEventListener('click', addTrack);
+
+document.getElementById('tracks-container').addEventListener('click', (e) => {
+  const addInstrBtn = e.target.closest('.add-instrument-btn');
+  if (addInstrBtn){ addInstrument(Number(addInstrBtn.dataset.trackId)); return; }
+
+  const remInstrBtn = e.target.closest('.remove-instrument-btn');
+  if (remInstrBtn){ removeInstrument(Number(remInstrBtn.dataset.trackId), Number(remInstrBtn.dataset.instrumentId)); return; }
+
+  const addMarqBtn = e.target.closest('.add-marqueur-btn');
+  if (addMarqBtn){ addMarqueur(Number(addMarqBtn.dataset.trackId), Number(addMarqBtn.dataset.instrumentId)); return; }
+
+  const remMarqBtn = e.target.closest('.remove-marqueur-btn');
+  if (remMarqBtn){ removeMarqueur(Number(remMarqBtn.dataset.trackId), Number(remMarqBtn.dataset.instrumentId), Number(remMarqBtn.dataset.marqueurId)); return; }
+
+  const caret = e.target.closest('.suggest-caret');
+  if (caret){
+    const wrap = caret.closest('.field-suggest-wrap');
+    const menu = wrap.querySelector('.suggest-menu');
+    const wasHidden = menu.hasAttribute('hidden');
+    document.querySelectorAll('.suggest-menu').forEach(m => m.setAttribute('hidden', ''));
+    if (wasHidden) menu.removeAttribute('hidden');
+    return;
+  }
+  const option = e.target.closest('.suggest-option');
+  if (option){
+    updateTrack(Number(option.dataset.id), option.dataset.field, option.dataset.value);
+    render();
+    return;
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.field-suggest-wrap')){
+    document.querySelectorAll('.suggest-menu').forEach(m => m.setAttribute('hidden', ''));
+  }
+});
+
+document.querySelectorAll('input[name=voca]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.getElementById('voca-large-label').classList.toggle('active', radio.value === 'large' && radio.checked);
+    document.getElementById('voca-simple-label').classList.toggle('active', radio.value === 'simple' && radio.checked);
+  });
+});
+
+// --- Construction du notebook ---
+
+function toSource(text){
+  const lines = text.split('\n');
+  return lines.map((line, i) => i < lines.length - 1 ? line + '\n' : line);
+}
+
+function md(text){ return { cell_type: 'markdown', metadata: {}, source: toSource(text) }; }
+function code(text){ return { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: toSource(text) }; }
+
+function buildNotebook(tracksList, btcLargeVoca){
+  const metadataParFichier = {};
+  tracksList.forEach(t => {
+    if (!t.filename) return;
+    metadataParFichier[t.filename] = {
+      nom_fichier: t.filename,
+      eleve: t.eleve,
+      prof: t.prof,
+      morceau: t.morceau,
+      artiste: t.artiste,
+      tonalite: t.tonalite,
+      niveau: { cycle: t.niveauCycle, echelle: t.niveauEchelle },
+      commentaire: t.commentaire,
+      date: t.date,
+      releves: t.releves.map(instr => ({
+        instrument: instr.instrument,
+        sous_titre: instr.sousTitre,
+        marqueurs: instr.marqueurs.map(m => ({ temps: m.temps, texte: m.texte })),
+      })),
+    };
+  });
+  const metadataJson = JSON.stringify(metadataParFichier, null, 4);
+  const btcVocaPy = btcLargeVoca ? 'True' : 'False';
+
+  const cells = [
+    md(
+`# Bandes — Structure, séparation (Demucs) et accords, pour Colab
+
+Généré automatiquement par l'app **Bandes**. Vos informations (élève, prof, morceau...)
+sont déjà pré-remplies dans la cellule de configuration ci-dessous.
+
+**À faire :** \`Exécution -> Modifier le type d'exécution -> GPU T4\`, puis
+\`Exécution -> Tout exécuter\`. Uploadez vos fichiers audio quand demandé,
+en gardant exactement les mêmes noms que ceux entrés dans l'app.`
+    ),
+
+    md(`## 1. Configuration (générée par l'app — ne pas modifier)`),
+
+    code(
+`# =========================================================
+# Genere automatiquement par l'app "Bandes". Ne pas modifier.
+# =========================================================
+
+# Metadonnees par nom de fichier (renseignees dans l'app avant generation)
+METADATA_PAR_FICHIER = ${metadataJson}
+
+# Vocabulaire d'accords : True = etendu (170 classes), False = simple (majeur/mineur)
+BTC_LARGE_VOCA = ${btcVocaPy}`
+    ),
+
+    md(`## 2. Installation des dépendances`),
+
+    code(
+`%%capture
+# all-in-one-infer (fork maintenu d'allin1) : elimine les dependances natten et
+# madmom, sources habituelles de problemes de compatibilite avec les versions
+# recentes de torch/CUDA sur Colab.
+# mutagen : pour ecrire les metadonnees JSON directement dans le fichier ogg final.
+!pip install -q all-in-one-infer transformers huggingface_hub mutagen`
+    ),
+
+    code(
+`import time
+import json
+import zipfile
+from pathlib import Path
+
+import allin1_infer as allin1
+from transformers import AutoModel
+
+WORKDIR = Path("/content/travail")
+WORKDIR.mkdir(exist_ok=True)
+AUDIO_DIR = WORKDIR / "audio_source"
+AUDIO_DIR.mkdir(exist_ok=True)
+RESULT_DIR = WORKDIR / "resultats"
+RESULT_DIR.mkdir(exist_ok=True)`
+    ),
+
+    md(`## 3. Upload de vos fichiers audio`),
+
+    code(
+`from google.colab import files
+
+print("Selectionnez un ou plusieurs fichiers audio :")
+uploaded = files.upload()
+
+fichiers_a_traiter = []
+for nom_fichier, contenu in uploaded.items():
+    chemin_local = AUDIO_DIR / nom_fichier
+    chemin_local.write_bytes(contenu)
+    meta = METADATA_PAR_FICHIER.get(nom_fichier)
+    if meta is None:
+        print(f"  (i) Aucune metadonnee trouvee pour '{nom_fichier}' -- verifiez le nom exact du fichier dans l'app.")
+        meta = {"nom_fichier": nom_fichier}
+    fichiers_a_traiter.append({"chemin_local": chemin_local, "metadata": meta})
+
+print(f"{len(fichiers_a_traiter)} fichier(s) pret(s).")`
+    ),
+
+    md(`## 4. Chargement du modèle de reconnaissance d'accords (BTC)`),
+
+    code(
+`print("Chargement du modele BTC...")
+btc_model = AutoModel.from_pretrained(
+    "puar-playground/btc-chord",
+    trust_remote_code=True,
+    large_voca=BTC_LARGE_VOCA,
+)
+print("Modele BTC charge.")`
+    ),
+
+    md(`## 5. Traitement : structure + séparation (Demucs) + accords`),
+
+    code(
+`rapports = []
+
+for item in fichiers_a_traiter:
+    chemin = item["chemin_local"]
+    meta = item["metadata"]
+    nom = chemin.stem
+    print(f"\\n=== {chemin.name} ===")
+
+    t_debut = time.time()
+
+    t0 = time.time()
+    resultat = allin1.analyze(str(chemin), out_dir=str(RESULT_DIR / "struct"), keep_byproducts=True)
+    duree_allin1 = time.time() - t0
+    print(f"  structure + separation : {duree_allin1:.1f} s")
+
+    stems_dir = Path("./demix/htdemucs") / nom
+    stem_files = sorted(stems_dir.glob("*.wav")) if stems_dir.exists() else []
+    if not stem_files:
+        print(f"  ATTENTION : aucun stem trouve dans {stems_dir}")
+
+    t0 = time.time()
+    accords = btc_model.predict(str(chemin))
+    duree_btc = time.time() - t0
+    print(f"  accords (BTC)           : {duree_btc:.1f} s")
+
+    rapports.append({
+        "nom_fichier": chemin.name,
+        "metadata": meta,
+        "duree_totale_s": round(time.time() - t_debut, 1),
+        "bpm": getattr(resultat, "bpm", None),
+        "beats": [float(b) for b in getattr(resultat, "beats", [])],
+        "beat_positions": [int(p) for p in getattr(resultat, "beat_positions", [])],
+        "downbeats": [float(d) for d in getattr(resultat, "downbeats", [])],
+        "segments": [
+            {"start": float(s.start), "end": float(s.end), "label": s.label}
+            for s in getattr(resultat, "segments", [])
+        ],
+        "accords": accords,
+        "stem_files": stem_files,
+    })
+
+print("\\nTraitement termine.")`
+    ),
+
+    md(`## 6. Fusion des stems en un fichier Ogg 8 canaux, avec métadonnées embarquées`),
+
+    code(
+`import subprocess
+from mutagen.oggvorbis import OggVorbis
+
+# Ordre canonique des pistes dans le fichier fusionne (4 x stereo = 8 canaux)
+ORDRE_STEMS = ['vocals', 'drums', 'bass', 'other']
+
+def fusionner_stems_ogg(stem_files, sortie_path):
+    par_nom = {f.stem: f for f in stem_files}
+    ordonnes = [par_nom[n] for n in ORDRE_STEMS if n in par_nom]
+    ordonnes += [f for f in stem_files if f.stem not in ORDRE_STEMS]
+
+    inputs = []
+    for f in ordonnes:
+        inputs += ['-i', str(f)]
+    n = len(ordonnes)
+    filtre = ''.join(f'[{i}:a]' for i in range(n)) + f'amerge=inputs={n}[a]'
+
+    subprocess.run(
+        ['ffmpeg', '-y', *inputs, '-filter_complex', filtre, '-map', '[a]',
+         '-c:a', 'libvorbis', '-q:a', '6', str(sortie_path)],
+        check=True, capture_output=True,
+    )
+    return [f.stem for f in ordonnes]
+
+def ecrire_metadonnees_ogg(ogg_path, ordre_pistes, structure, accords, metadata):
+    metadata = dict(metadata)  # copie pour ne pas modifier le rapport original
+    releves = metadata.pop('releves', [])
+    audio = OggVorbis(str(ogg_path))
+    audio['BANDES_PISTES'] = json.dumps(ordre_pistes, ensure_ascii=False)
+    audio['BANDES_STRUCTURE'] = json.dumps(structure, ensure_ascii=False)
+    audio['BANDES_ACCORDS'] = json.dumps(accords, ensure_ascii=False)
+    audio['BANDES_METADATA'] = json.dumps(metadata, ensure_ascii=False)
+    audio['BANDES_RELEVES'] = json.dumps(releves, ensure_ascii=False)
+    audio.save()
+
+for r in rapports:
+    nom = Path(r["nom_fichier"]).stem
+    ogg_path = RESULT_DIR / f"{nom}_stems.ogg"
+    ordre = fusionner_stems_ogg(r["stem_files"], ogg_path)
+    structure = {
+        "bpm": r["bpm"],
+        "beats": r["beats"],
+        "beat_positions": r["beat_positions"],
+        "downbeats": r["downbeats"],
+        "segments": r["segments"],
+    }
+    ecrire_metadonnees_ogg(
+        ogg_path, ordre,
+        structure,
+        r["accords"],
+        r["metadata"],
+    )
+    r["ogg_path"] = ogg_path
+    print(f"{nom} : {ogg_path.name} ({ogg_path.stat().st_size / 1024:.0f} Ko, {len(ordre)} pistes -> {len(ordre)*2} canaux)")`
+    ),
+
+    md(`## 7. Téléchargement du résultat`),
+
+    code(
+`if len(rapports) == 1:
+    # Un seul morceau : pas besoin de zip, on telecharge directement le .ogg
+    chemin_final = rapports[0]["ogg_path"]
+    print(f"Fichier pret : {chemin_final.name} ({chemin_final.stat().st_size / 1024:.0f} Ko)")
+    files.download(str(chemin_final))
+else:
+    # Plusieurs morceaux : on zippe pour un seul telechargement groupe
+    zip_path = WORKDIR / f"resultats_{int(time.time())}.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for r in rapports:
+            nom = Path(r["nom_fichier"]).stem
+            zf.write(r["ogg_path"], f"{nom}_stems.ogg")
+    print(f"Zip cree : {zip_path.name} ({zip_path.stat().st_size / 1024:.0f} Ko)")
+    files.download(str(zip_path))`
+    ),
+  ];
+
+  return {
+    cells,
+    metadata: {
+      kernelspec: { display_name: 'Python 3', name: 'python3' },
+      language_info: { name: 'python' },
+      accelerator: 'GPU',
+      colab: { provenance: [], gpuType: 'T4' },
+    },
+    nbformat: 4,
+    nbformat_minor: 5,
+  };
+}
+
+document.getElementById('generate-btn').addEventListener('click', () => {
+  const status = document.getElementById('status');
+  const withFilename = tracks.filter(t => t.filename);
+
+  if (tracks.length === 0){
+    status.textContent = "Ajoutez au moins un morceau avant de générer le notebook.";
+    return;
+  }
+  if (withFilename.length === 0){
+    status.textContent = "Choisissez le fichier audio de chaque morceau (bouton \"Choisir un fichier\").";
+    return;
+  }
+
+  const btcLargeVoca = document.querySelector('input[name=voca]:checked').value === 'large';
+  const notebook = buildNotebook(tracks, btcLargeVoca);
+  const blob = new Blob([JSON.stringify(notebook, null, 1)], { type: 'application/x-ipynb+json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `bandes_${dateStr}.ipynb`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  status.textContent = `Notebook téléchargé (${withFilename.length} morceau${withFilename.length > 1 ? 'x' : ''}). Ouvrez-le dans Google Colab pour continuer.`;
+});
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+addTrack();
+</script>
+</body>
+</html>
