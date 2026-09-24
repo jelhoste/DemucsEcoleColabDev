@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bandes — Éditeur de métadonnées</title>
+<meta name="description" content="Édite la structure, les accords, la mélodie et les paroles embarquées dans un fichier .ogg généré par Bandes.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#1C1712">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1C1712;
+    --panel: #241E17;
+    --panel-raised: #2A231C;
+    --border: #3D342A;
+    --brass: #C0996A;
+    --brass-dim: #8C7350;
+    --rust: #C1502E;
+    --accord: #8FA98C;
+    --accord-dim: #5F7A5C;
+    --text: #EDE4D3;
+    --text-muted: #A79885;
+    --radius: 6px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 20px 80px;
+  }
+  .wrap{ max-width: 900px; margin: 0 auto; }
+
+  .top-nav{ display: flex; gap: 4px; padding-top: 20px; }
+  .nav-tab{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px 4px 0 0;
+    border-bottom: none;
+  }
+  .nav-tab.active{ color: var(--brass); border-color: var(--brass-dim); background: var(--panel); }
+
+  header{ padding-top: 24px; padding-bottom: 24px; }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: 1.8rem;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  header p{ color: var(--text-muted); margin: 12px 0 0; max-width: 60ch; font-size: 0.95rem; }
+
+  section{ margin-bottom: 32px; }
+  .section-head{
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h2{ font-family: 'Fraunces', serif; font-weight: 500; font-size: 1.1rem; margin: 0; }
+  .swatch{ width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 8px; }
+
+  .dropzone{
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: block;
+  }
+  .dropzone:hover{ border-color: var(--brass-dim); color: var(--brass); }
+  .dropzone input{ display: none; }
+
+  .file-info{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .file-info strong{ color: var(--text); }
+
+  .transport{ display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .transport button{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    width: 38px; height: 38px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .transport button:hover{ border-color: var(--brass-dim); color: var(--brass); }
+  .transport .time-display{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .timeline-wrap{ position: relative; }
+  canvas#waveform{
+    display: block;
+    width: 100%;
+    height: 140px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .lane{
+    position: relative;
+    height: 34px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    overflow: visible;
+    touch-action: none;
+  }
+  .lane:last-of-type{ border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+  .lane-label{
+    position: absolute;
+    left: -1px; top: 0;
+    transform: translateX(-100%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    padding: 9px 8px 0 0;
+    white-space: nowrap;
+  }
+
+  .seg-block{
+    position: absolute;
+    top: 3px; bottom: 3px;
+    background: color-mix(in srgb, var(--lane-color) 30%, var(--panel));
+    border: 1px solid var(--lane-color);
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    min-width: 6px;
+  }
+  .seg-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text);
+    padding: 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    flex: 1;
+  }
+  .seg-handle{
+    width: 9px;
+    align-self: stretch;
+    background: var(--lane-color);
+    cursor: ew-resize;
+    flex-shrink: 0;
+  }
+  .seg-handle:hover{ filter: brightness(1.3); }
+
+  .tick-mark{
+    position: absolute;
+    bottom: 3px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--lane-color);
+  }
+  .parole-block{
+    position: absolute;
+    top: 5px; bottom: 5px;
+    background: color-mix(in srgb, var(--lane-color) 25%, var(--panel));
+    border: 1px solid var(--lane-color);
+    border-radius: 3px;
+    min-width: 4px;
+  }
+
+  .playhead{
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: #fff;
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  details{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+  }
+  summary{
+    cursor: pointer;
+    padding: 12px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::marker{ color: var(--brass-dim); }
+  .details-body{ padding: 4px 14px 14px; }
+
+  .row-list{ display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; padding-right: 4px; }
+  .edit-row{ display: flex; gap: 6px; align-items: center; }
+  .edit-row input[type=text]{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    padding: 6px 8px;
+  }
+  .edit-row .time-field{ width: 72px; flex-shrink: 0; }
+  .edit-row .value-field{ flex: 1; min-width: 0; }
+  .edit-row .del-btn{
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 0.95rem; flex-shrink: 0; padding: 4px 6px;
+  }
+  .edit-row .del-btn:hover{ color: var(--rust); }
+  .read-row{
+    display: flex; gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    padding: 3px 0;
+  }
+  .read-row .t{ color: var(--brass-dim); flex-shrink: 0; width: 130px; }
+
+  .add-row-btn{
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .add-row-btn:hover{ border-color: var(--brass-dim); color: var(--brass); }
+
+  .export-actions{ display: flex; gap: 10px; flex-wrap: wrap; }
+  .export-btn{
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: var(--brass);
+    color: #1C1712;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    cursor: pointer;
+  }
+  .export-btn:hover{ background: #cfa878; }
+  .export-btn.secondary{ background: transparent; border: 1px solid var(--brass-dim); color: var(--brass); }
+  .hint{ font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; }
+
+  .status{ font-size: 0.88rem; color: var(--brass); min-height: 1.4em; margin-top: 10px; }
+  .status.error{ color: var(--rust); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="top-nav">
+    <a href="./index.html" class="nav-tab">Préparer</a>
+    <a href="./editeur.html" class="nav-tab active">Éditer les métadonnées</a>
+  </nav>
+
+  <header>
+    <h1>Éditeur de métadonnées</h1>
+    <p>Charge un fichier <code>.ogg</code> produit par Bandes pour visualiser et corriger sa structure et ses accords sur la forme d'onde. La mélodie et les paroles sont affichées en lecture seule pour l'instant (éditeurs dédiés à venir).</p>
+  </header>
+
+  <section id="section-load">
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="file-input" accept=".ogg,audio/ogg">
+      <span id="dropzone-text">Cliquez pour choisir un fichier .ogg, ou glissez-le ici</span>
+    </label>
+    <div class="status" id="load-status"></div>
+  </section>
+
+  <div id="editor-root" style="display:none;">
+
+    <section>
+      <div class="file-info" id="file-info"></div>
+
+      <div class="transport">
+        <button id="btn-play" title="Lecture / Pause">▶</button>
+        <span class="time-display" id="time-display">0:00.00 / 0:00.00</span>
+      </div>
+
+      <div class="timeline-wrap">
+        <canvas id="waveform"></canvas>
+        <div class="lane" id="lane-structure" style="--lane-color: var(--brass);"><span class="lane-label">Structure</span></div>
+        <div class="lane" id="lane-accords" style="--lane-color: var(--accord);"><span class="lane-label">Accords</span></div>
+        <div class="lane" id="lane-melodie" style="--lane-color: #7FA8C9;"><span class="lane-label">Mélodie</span></div>
+        <div class="lane" id="lane-paroles" style="--lane-color: #B98FC9;"><span class="lane-label">Paroles</span></div>
+      </div>
+      <div class="hint">Traits verticaux fins : temps forts (downbeats) détectés — repère pour caler tes modifications rythmiquement.</div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="swatch" style="background:var(--brass)"></span>Structure</h2></div>
+      <details open>
+        <summary>Sections du morceau (<span id="count-structure">0</span>)</summary>
+        <div class="details-body">
+          <div class="row-list" id="list-structure"></div>
+          <button class="add-row-btn" id="add-structure">+ Ajouter une section</button>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="swatch" style="background:var(--accord)"></span>Accords</h2></div>
+      <details>
+        <summary>Timeline d'accords (<span id="count-accords">0</span>)</summary>
+        <div class="details-body">
+          <div class="row-list" id="list-accords"></div>
+          <button class="add-row-btn" id="add-accord">+ Ajouter un accord</button>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="swatch" style="background:#7FA8C9"></span>Mélodie</h2></div>
+      <details>
+        <summary>Notes détectées (<span id="count-melodie">0</span>) — lecture seule, éditeur piano roll à venir</summary>
+        <div class="details-body">
+          <div class="row-list" id="list-melodie"></div>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="swatch" style="background:#B98FC9"></span>Paroles</h2></div>
+      <details>
+        <summary>Segments transcrits (<span id="count-paroles">0</span>) — lecture seule, éditeur dédié à venir</summary>
+        <div class="details-body">
+          <div class="row-list" id="list-paroles"></div>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Exporter les modifications</h2></div>
+      <div class="export-actions">
+        <button class="export-btn" id="export-json">Télécharger le JSON modifié</button>
+        <button class="export-btn secondary" id="export-script">Télécharger le script de réinjection (.py)</button>
+      </div>
+      <div class="hint">Un navigateur ne peut pas réécrire directement le fichier <code>.ogg</code> d'origine. Télécharge les deux fichiers, complète les deux chemins en haut du script, puis exécute-le (Python + <code>pip install mutagen</code>) pour appliquer les modifications au fichier.</div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Lecture des Vorbis Comments d'un fichier Ogg (sans dependance)
+// ============================================================
+
+function parseOggPages(bytes){
+  const pages = [];
+  let offset = 0;
+  while (offset + 27 <= bytes.length){
+    if (bytes[offset]!==0x4f || bytes[offset+1]!==0x67 || bytes[offset+2]!==0x67 || bytes[offset+3]!==0x53){
+      break; // pas "OggS"
+    }
+    const segCount = bytes[offset+26];
+    const segTable = bytes.slice(offset+27, offset+27+segCount);
+    let payloadLen = 0;
+    for (let i=0;i<segCount;i++) payloadLen += segTable[i];
+    const payloadStart = offset+27+segCount;
+    pages.push({ segTable, payload: bytes.slice(payloadStart, payloadStart+payloadLen) });
+    offset = payloadStart + payloadLen;
+  }
+  return pages;
+}
+
+function reassemblePackets(pages, maxPackets){
+  const packets = [];
+  let current = [];
+  for (const page of pages){
+    let pos = 0;
+    for (let i=0; i<page.segTable.length; i++){
+      const segLen = page.segTable[i];
+      current.push(page.payload.subarray(pos, pos+segLen));
+      pos += segLen;
+      if (segLen < 255){
+        const total = current.reduce((a,c)=>a+c.length,0);
+        const buf = new Uint8Array(total);
+        let o = 0;
+        for (const c of current){ buf.set(c,o); o+=c.length; }
+        packets.push(buf);
+        current = [];
+        if (packets.length >= maxPackets) return packets;
+      }
+    }
+  }
+  return packets;
+}
+
+function parseVorbisComments(packet){
+  const dv = new DataView(packet.buffer, packet.byteOffset, packet.byteLength);
+  let pos = 7; // saute 0x03 + "vorbis"
+  const vendorLen = dv.getUint32(pos, true); pos += 4 + vendorLen;
+  const commentCount = dv.getUint32(pos, true); pos += 4;
+  const comments = {};
+  for (let i=0; i<commentCount; i++){
+    const len = dv.getUint32(pos, true); pos += 4;
+    const strBytes = packet.subarray(pos, pos+len); pos += len;
+    const str = new TextDecoder('utf-8').decode(strBytes);
+    const eq = str.indexOf('=');
+    comments[str.slice(0,eq).toUpperCase()] = str.slice(eq+1);
+  }
+  return comments;
+}
+
+function lireTagsOgg(bytes){
+  const pages = parseOggPages(bytes);
+  const packets = reassemblePackets(pages, 2);
+  if (packets.length < 2) throw new Error("Impossible de lire les métadonnées (fichier trop court ou non conforme)");
+  return parseVorbisComments(packets[1]);
+}
+
+// ============================================================
+// État de l'éditeur
+// ============================================================
+
+let audioCtx = null;
+let audioBuffer = null;
+let duration = 0;
+let currentSource = null;
+let playStartCtxTime = 0;
+let playOffset = 0;
+let isPlaying = false;
+let nextId = 1;
+
+let nomFichierOrigine = '';
+let tagsOriginaux = {};
+let structureBase = { bpm: null, beats: [], downbeats: [], beat_positions: [] };
+let structureSegments = [];
+let accordSegments = [];
+let melodieNotes = [];
+let parolesSegments = [];
+
+const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function midiToName(m){ return noteNames[((m%12)+12)%12] + (Math.floor(m/12)-1); }
+
+function formatTemps(s){
+  if (s == null || isNaN(s)) return '0:00.0';
+  const m = Math.floor(s/60);
+  const sec = (s%60).toFixed(2);
+  return `${m}:${sec.padStart(5,'0')}`;
+}
+function parseTemps(str){
+  str = (str||'').trim();
+  if (str.includes(':')){
+    const parts = str.split(':');
+    return (parseInt(parts[0],10)||0)*60 + (parseFloat(parts[1])||0);
+  }
+  return parseFloat(str) || 0;
+}
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ============================================================
+// Chargement du fichier
+// ============================================================
+
+const fileInput = document.getElementById('file-input');
+const dropzone = document.getElementById('dropzone');
+const loadStatus = document.getElementById('load-status');
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files[0]) chargerFichier(e.target.files[0]);
+});
+dropzone.addEventListener('dragover', (e) => e.preventDefault());
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) chargerFichier(e.dataTransfer.files[0]);
+});
+
+async function chargerFichier(file){
+  loadStatus.className = 'status';
+  loadStatus.textContent = 'Lecture du fichier...';
+  nomFichierOrigine = file.name;
+
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const bytesPourTags = new Uint8Array(arrayBuffer.slice(0));
+    tagsOriginaux = lireTagsOgg(bytesPourTags);
+
+    structureBase = JSON.parse(tagsOriginaux['BANDES_STRUCTURE'] || '{}');
+    const accordsBruts = JSON.parse(tagsOriginaux['BANDES_ACCORDS'] || '[]');
+    melodieNotes = JSON.parse(tagsOriginaux['BANDES_MELODIE'] || '[]');
+    parolesSegments = JSON.parse(tagsOriginaux['BANDES_PAROLES'] || '[]');
+
+    structureSegments = (structureBase.segments || []).map(s => ({ id: nextId++, start: s.start, end: s.end, value: s.label }));
+    accordSegments = accordsBruts.map(a => ({ id: nextId++, start: a.start, end: a.end, value: a.chord }));
+
+    loadStatus.textContent = 'Décodage audio...';
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const arrayBufferPourAudio = arrayBuffer.slice(0);
+    audioBuffer = await audioCtx.decodeAudioData(arrayBufferPourAudio);
+    duration = audioBuffer.duration;
+
+    document.getElementById('file-info').innerHTML = `
+      <span><strong>${escapeHtml(nomFichierOrigine)}</strong></span>
+      <span>${audioBuffer.numberOfChannels} canaux</span>
+      <span>${formatTemps(duration)}</span>
+      <span>${(tagsOriginaux['BANDES_PISTES'] ? JSON.parse(tagsOriginaux['BANDES_PISTES']).join(' / ') : '')}</span>
+    `;
+
+    document.getElementById('editor-root').style.display = 'block';
+    loadStatus.textContent = '';
+    dessinerWaveform();
+    rendreTout();
+    requestAnimationFrame(bouclePlayhead);
+  } catch(err){
+    loadStatus.className = 'status error';
+    loadStatus.textContent = "Erreur : " + err.message;
+    console.error(err);
+  }
+}
+
+// ============================================================
+// Waveform + regle temporelle + downbeats
+// ============================================================
+
+function dessinerWaveform(){
+  const canvas = document.getElementById('waveform');
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  ctx.clearRect(0,0,W,H);
+
+  const nCh = audioBuffer.numberOfChannels;
+  const nSamples = audioBuffer.length;
+  const samplesPerPixel = Math.max(1, Math.floor(nSamples / W));
+
+  ctx.fillStyle = 'rgba(192,153,106,0.55)';
+  const mid = H/2;
+  for (let x=0; x<W; x++){
+    const start = x*samplesPerPixel;
+    const end = Math.min(nSamples, start+samplesPerPixel);
+    let min=0, max=0;
+    const step = Math.max(1, Math.floor((end-start)/40));
+    for (let ch=0; ch<nCh; ch++){
+      const data = audioBuffer.getChannelData(ch);
+      for (let i=start; i<end; i+=step){
+        const v = data[i];
+        if (v<min) min=v;
+        if (v>max) max=v;
+      }
+    }
+    const y1 = mid + min*mid*0.95;
+    const y2 = mid + max*mid*0.95;
+    ctx.fillRect(x, Math.min(y1,y2), 1, Math.max(1,Math.abs(y2-y1)));
+  }
+
+  if (structureBase.downbeats){
+    ctx.strokeStyle = 'rgba(192,153,106,0.35)';
+    ctx.lineWidth = 1;
+    structureBase.downbeats.forEach(t => {
+      const x = (t/duration)*W;
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+    });
+  }
+  if (structureBase.beats){
+    ctx.strokeStyle = 'rgba(192,153,106,0.18)';
+    structureBase.beats.forEach(t => {
+      const x = (t/duration)*W;
+      ctx.beginPath(); ctx.moveTo(x,H-6); ctx.lineTo(x,H); ctx.stroke();
+    });
+  }
+
+  dessinerPlayhead();
+}
+
+function initCanvasClickSeek(){
+  const canvas = document.getElementById('waveform');
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!duration) return;
+    const rect = canvas.getBoundingClientRect();
+    const t = ((e.clientX-rect.left)/rect.width)*duration;
+    seekTo(t);
+  });
+}
+initCanvasClickSeek();
+
+// ============================================================
+// Lecture audio (Web Audio API)
+// ============================================================
+
+function jouer(depuis){
+  if (currentSource) currentSource.stop();
+  currentSource = audioCtx.createBufferSource();
+  currentSource.buffer = audioBuffer;
+  currentSource.connect(audioCtx.destination);
+  currentSource.start(0, depuis);
+  playStartCtxTime = audioCtx.currentTime - depuis;
+  isPlaying = true;
+  document.getElementById('btn-play').textContent = '⏸';
+  currentSource.onended = () => {
+    if (isPlaying && getTempsActuel() >= duration - 0.05){
+      isPlaying = false;
+      playOffset = 0;
+      document.getElementById('btn-play').textContent = '▶';
+    }
+  };
+}
+function pauser(){
+  playOffset = getTempsActuel();
+  if (currentSource){ currentSource.onended=null; currentSource.stop(); currentSource=null; }
+  isPlaying = false;
+  document.getElementById('btn-play').textContent = '▶';
+}
+function getTempsActuel(){
+  return isPlaying ? Math.min(duration, audioCtx.currentTime - playStartCtxTime) : playOffset;
+}
+function seekTo(t){
+  t = Math.max(0, Math.min(duration, t));
+  const enLecture = isPlaying;
+  if (enLecture) { if (currentSource){ currentSource.onended=null; currentSource.stop(); } }
+  playOffset = t;
+  if (enLecture) jouer(t); else dessinerPlayhead();
+}
+
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (isPlaying) pauser(); else jouer(playOffset);
+});
+
+function bouclePlayhead(){
+  if (audioBuffer){
+    dessinerPlayhead();
+    document.getElementById('time-display').textContent = `${formatTemps(getTempsActuel())} / ${formatTemps(duration)}`;
+  }
+  requestAnimationFrame(bouclePlayhead);
+}
+
+function dessinerPlayhead(){
+  document.querySelectorAll('.playhead').forEach(el => el.remove());
+  if (!duration) return;
+  const t = getTempsActuel();
+  const canvas = document.getElementById('waveform');
+  const rect = canvas.getBoundingClientRect();
+  const x = (t/duration)*rect.width;
+  const container = canvas.parentElement;
+  const ph = document.createElement('div');
+  ph.className = 'playhead';
+  ph.style.left = x+'px';
+  ph.style.height = rect.height+'px';
+  ph.style.top = '0px';
+  container.style.position = 'relative';
+  container.appendChild(ph);
+}
+
+// ============================================================
+// Lanes editables generiques (structure + accords)
+// ============================================================
+
+function trierSegments(segments){ segments.sort((a,b) => a.start-b.start); }
+
+function creerLaneEditable(laneEl, getSegments, onChange){
+  function render(){
+    laneEl.querySelectorAll('.seg-block').forEach(el => el.remove());
+    const segments = getSegments();
+    const width = laneEl.clientWidth;
+    segments.forEach(seg => {
+      const left = (seg.start/duration)*width;
+      const w = Math.max(6, ((seg.end-seg.start)/duration)*width);
+      const block = document.createElement('div');
+      block.className = 'seg-block';
+      block.style.left = left+'px';
+      block.style.width = w+'px';
+      block.dataset.id = seg.id;
+      block.title = seg.value;
+      block.innerHTML = `<div class="seg-handle" data-edge="start"></div><span class="seg-label">${escapeHtml(seg.value)}</span><div class="seg-handle" data-edge="end"></div>`;
+      laneEl.appendChild(block);
+    });
+  }
+
+  let dragging = null;
+  laneEl.addEventListener('pointerdown', (e) => {
+    const handle = e.target.closest('.seg-handle');
+    if (!handle || !duration) return;
+    const block = handle.closest('.seg-block');
+    const segments = getSegments();
+    const seg = segments.find(s => s.id === Number(block.dataset.id));
+    dragging = { seg, edge: handle.dataset.edge };
+    handle.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  laneEl.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const segments = getSegments();
+    const rect = laneEl.getBoundingClientRect();
+    let t = ((e.clientX-rect.left)/rect.width)*duration;
+    t = Math.max(0, Math.min(duration, t));
+    const idx = segments.indexOf(dragging.seg);
+    const MIN_GAP = 0.05;
+    if (dragging.edge === 'start'){
+      const minB = idx>0 ? segments[idx-1].end : 0;
+      dragging.seg.start = Math.max(minB, Math.min(t, dragging.seg.end - MIN_GAP));
+    } else {
+      const maxB = idx<segments.length-1 ? segments[idx+1].start : duration;
+      dragging.seg.end = Math.min(maxB, Math.max(t, dragging.seg.start + MIN_GAP));
+    }
+    render();
+    onChange(false);
+  });
+  laneEl.addEventListener('pointerup', () => { if (dragging){ dragging=null; onChange(true); } });
+  laneEl.addEventListener('pointercancel', () => { dragging = null; });
+
+  return { render };
+}
+
+const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (final) => {
+  if (final) trierSegments(structureSegments);
+  rendreListeStructure();
+});
+const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (final) => {
+  if (final) trierSegments(accordSegments);
+  rendreListeAccords();
+});
+
+// ============================================================
+// Lanes lecture seule (melodie + paroles)
+// ============================================================
+
+function rendreLaneMelodie(){
+  const lane = document.getElementById('lane-melodie');
+  lane.querySelectorAll('.tick-mark').forEach(el => el.remove());
+  if (!duration || melodieNotes.length===0) return;
+  const width = lane.clientWidth;
+  const midis = melodieNotes.map(n => n.midi);
+  const minM = Math.min(...midis), maxM = Math.max(...midis);
+  const span = Math.max(1, maxM-minM);
+  melodieNotes.forEach(n => {
+    const x = (n.start/duration)*width;
+    const h = 22;
+    const yRatio = 1 - ((n.midi-minM)/span);
+    const el = document.createElement('div');
+    el.className = 'tick-mark';
+    el.style.left = x+'px';
+    el.style.height = (4+yRatio*h)+'px';
+    el.title = midiToName(n.midi);
+    lane.appendChild(el);
+  });
+}
+
+function rendreLaneParoles(){
+  const lane = document.getElementById('lane-paroles');
+  lane.querySelectorAll('.parole-block').forEach(el => el.remove());
+  if (!duration) return;
+  const width = lane.clientWidth;
+  parolesSegments.forEach(p => {
+    const left = (p.start/duration)*width;
+    const w = Math.max(4, ((p.end-p.start)/duration)*width);
+    const el = document.createElement('div');
+    el.className = 'parole-block';
+    el.style.left = left+'px';
+    el.style.width = w+'px';
+    el.title = p.texte;
+    lane.appendChild(el);
+  });
+}
+
+// ============================================================
+// Listes detaillees
+// ============================================================
+
+function rendreListeStructure(){
+  const list = document.getElementById('list-structure');
+  document.getElementById('count-structure').textContent = structureSegments.length;
+  list.innerHTML = '';
+  structureSegments.forEach(seg => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
+      <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
+      <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="del-btn" data-id="${seg.id}" title="Supprimer">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  laneStructure.render();
+}
+
+function rendreListeAccords(){
+  const list = document.getElementById('list-accords');
+  document.getElementById('count-accords').textContent = accordSegments.length;
+  list.innerHTML = '';
+  accordSegments.forEach(seg => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
+      <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
+      <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="del-btn" data-id="${seg.id}" title="Supprimer">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  laneAccords.render();
+}
+
+function rendreListeMelodie(){
+  const list = document.getElementById('list-melodie');
+  document.getElementById('count-melodie').textContent = melodieNotes.length;
+  list.innerHTML = melodieNotes.map(n =>
+    `<div class="read-row"><span class="t">${formatTemps(n.start)} → ${formatTemps(n.end)}</span><span>${midiToName(n.midi)}</span></div>`
+  ).join('');
+  rendreLaneMelodie();
+}
+
+function rendreListeParoles(){
+  const list = document.getElementById('list-paroles');
+  document.getElementById('count-paroles').textContent = parolesSegments.length;
+  list.innerHTML = parolesSegments.map(p =>
+    `<div class="read-row"><span class="t">${formatTemps(p.start)} → ${formatTemps(p.end)}</span><span>${escapeHtml(p.texte)}</span></div>`
+  ).join('');
+  rendreLaneParoles();
+}
+
+function rendreTout(){
+  rendreListeStructure();
+  rendreListeAccords();
+  rendreListeMelodie();
+  rendreListeParoles();
+}
+
+document.getElementById('list-structure').addEventListener('change', (e) => {
+  const input = e.target.closest('input'); if (!input) return;
+  const seg = structureSegments.find(s => s.id === Number(input.dataset.id));
+  if (!seg) return;
+  if (input.dataset.field === 'start') seg.start = Math.max(0, Math.min(seg.end-0.01, parseTemps(input.value)));
+  else if (input.dataset.field === 'end') seg.end = Math.min(duration, Math.max(seg.start+0.01, parseTemps(input.value)));
+  else seg.value = input.value;
+  trierSegments(structureSegments);
+  rendreListeStructure();
+});
+document.getElementById('list-structure').addEventListener('click', (e) => {
+  const btn = e.target.closest('.del-btn'); if (!btn) return;
+  structureSegments = structureSegments.filter(s => s.id !== Number(btn.dataset.id));
+  rendreListeStructure();
+});
+
+document.getElementById('list-accords').addEventListener('change', (e) => {
+  const input = e.target.closest('input'); if (!input) return;
+  const seg = accordSegments.find(s => s.id === Number(input.dataset.id));
+  if (!seg) return;
+  if (input.dataset.field === 'start') seg.start = Math.max(0, Math.min(seg.end-0.01, parseTemps(input.value)));
+  else if (input.dataset.field === 'end') seg.end = Math.min(duration, Math.max(seg.start+0.01, parseTemps(input.value)));
+  else seg.value = input.value;
+  trierSegments(accordSegments);
+  rendreListeAccords();
+});
+document.getElementById('list-accords').addEventListener('click', (e) => {
+  const btn = e.target.closest('.del-btn'); if (!btn) return;
+  accordSegments = accordSegments.filter(s => s.id !== Number(btn.dataset.id));
+  rendreListeAccords();
+});
+
+document.getElementById('add-structure').addEventListener('click', () => {
+  if (!duration) return;
+  const debut = structureSegments.length ? structureSegments[structureSegments.length-1].end : 0;
+  structureSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: 'nouvelle_section' });
+  trierSegments(structureSegments);
+  rendreListeStructure();
+});
+document.getElementById('add-accord').addEventListener('click', () => {
+  if (!duration) return;
+  const debut = accordSegments.length ? accordSegments[accordSegments.length-1].end : 0;
+  accordSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: 'N' });
+  trierSegments(accordSegments);
+  rendreListeAccords();
+});
+
+window.addEventListener('resize', () => { if (audioBuffer){ dessinerWaveform(); rendreTout(); } });
+
+// ============================================================
+// Export
+// ============================================================
+
+function construireDonneesExport(){
+  return {
+    pistes: JSON.parse(tagsOriginaux['BANDES_PISTES'] || '[]'),
+    structure: {
+      bpm: structureBase.bpm,
+      beats: structureBase.beats || [],
+      downbeats: structureBase.downbeats || [],
+      beat_positions: structureBase.beat_positions || [],
+      segments: structureSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, label: s.value })),
+    },
+    accords: accordSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, chord: s.value })),
+    melodie: melodieNotes,
+    paroles: parolesSegments,
+    metadata: JSON.parse(tagsOriginaux['BANDES_METADATA'] || '{}'),
+    releves: JSON.parse(tagsOriginaux['BANDES_RELEVES'] || '[]'),
+  };
+}
+
+function telechargerTexte(contenu, nomFichier, type){
+  const blob = new Blob([contenu], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomFichier;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-json').addEventListener('click', () => {
+  const donnees = construireDonneesExport();
+  const base = nomFichierOrigine.replace(/\.[^/.]+$/, '');
+  telechargerTexte(JSON.stringify(donnees, null, 2), `${base}_metadonnees.json`, 'application/json');
+});
+
+document.getElementById('export-script').addEventListener('click', () => {
+  const base = nomFichierOrigine.replace(/\.[^/.]+$/, '');
+  const script = `import json
+from mutagen.oggvorbis import OggVorbis
+
+# Complete ces deux chemins avant d'executer (pip install mutagen si besoin)
+FICHIER_OGG = "${nomFichierOrigine}"
+FICHIER_JSON = "${base}_metadonnees.json"
+
+with open(FICHIER_JSON, encoding="utf-8") as f:
+    donnees = json.load(f)
+
+audio = OggVorbis(FICHIER_OGG)
+audio["BANDES_PISTES"] = json.dumps(donnees["pistes"], ensure_ascii=False)
+audio["BANDES_STRUCTURE"] = json.dumps(donnees["structure"], ensure_ascii=False)
+audio["BANDES_ACCORDS"] = json.dumps(donnees["accords"], ensure_ascii=False)
+audio["BANDES_MELODIE"] = json.dumps(donnees["melodie"], ensure_ascii=False)
+audio["BANDES_PAROLES"] = json.dumps(donnees["paroles"], ensure_ascii=False)
+audio["BANDES_METADATA"] = json.dumps(donnees["metadata"], ensure_ascii=False)
+audio["BANDES_RELEVES"] = json.dumps(donnees["releves"], ensure_ascii=False)
+audio.save()
+print("Metadonnees mises a jour dans", FICHIER_OGG)
+`;
+  telechargerTexte(script, `${base}_reinjection.py`, 'text/x-python');
+});
+</script>
+</body>
+</html>
