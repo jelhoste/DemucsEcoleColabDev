@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bandes — Éditeur de métadonnées</title>
-<meta name="description" content="Édite la structure, les accords, la mélodie et les paroles embarquées dans un fichier .ogg généré par Bandes.">
+<meta name="description" content="Édite la structure, les accords, la mélodie et les paroles d'un morceau traité par Bandes.">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -22,7 +22,6 @@
     --brass-dim: #8C7350;
     --rust: #C1502E;
     --accord: #8FA98C;
-    --accord-dim: #5F7A5C;
     --text: #EDE4D3;
     --text-muted: #A79885;
     --radius: 6px;
@@ -75,15 +74,18 @@
   h2{ font-family: 'Fraunces', serif; font-weight: 500; font-size: 1.1rem; margin: 0; }
   .swatch{ width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 8px; }
 
+  .load-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .dropzone{
     border: 1px dashed var(--border);
     border-radius: var(--radius);
-    padding: 40px 20px;
+    padding: 28px 16px;
     text-align: center;
     color: var(--text-muted);
     cursor: pointer;
     display: block;
+    font-size: 0.88rem;
   }
+  .dropzone.loaded{ border-color: var(--brass-dim); color: var(--brass); border-style: solid; }
   .dropzone:hover{ border-color: var(--brass-dim); color: var(--brass); }
   .dropzone input{ display: none; }
 
@@ -98,7 +100,7 @@
   }
   .file-info strong{ color: var(--text); }
 
-  .transport{ display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .transport{ display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
   .transport button{
     background: var(--panel-raised);
     border: 1px solid var(--border);
@@ -114,39 +116,55 @@
     font-size: 0.85rem;
     color: var(--text-muted);
   }
+  .zoom-group{ display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .zoom-group button{ width: 30px; height: 30px; font-size: 0.85rem; }
+  .zoom-group .zoom-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    width: 46px;
+    text-align: center;
+  }
 
-  .timeline-wrap{ position: relative; }
+  .timeline-scroll{
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+  .timeline-wrap{ position: relative; min-width: 100%; }
+
   canvas#waveform{
     display: block;
     width: 100%;
     height: 140px;
     background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius) var(--radius) 0 0;
     cursor: pointer;
-    touch-action: none;
+    touch-action: pan-y;
   }
 
   .lane{
     position: relative;
+    width: 100%;
     height: 34px;
     background: var(--panel);
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
     border-top: 1px solid var(--border);
-    overflow: visible;
-    touch-action: none;
+    touch-action: pan-y;
   }
-  .lane:last-of-type{ border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
   .lane-label{
-    position: absolute;
-    left: -1px; top: 0;
-    transform: translateX(-100%);
+    position: sticky;
+    left: 4px;
+    display: inline-block;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     color: var(--text-muted);
-    padding: 9px 8px 0 0;
-    white-space: nowrap;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin: 3px 0 0 3px;
+    z-index: 5;
+    pointer-events: none;
   }
 
   .seg-block{
@@ -177,6 +195,7 @@
     background: var(--lane-color);
     cursor: ew-resize;
     flex-shrink: 0;
+    touch-action: none;
   }
   .seg-handle:hover{ filter: brightness(1.3); }
 
@@ -186,14 +205,6 @@
     width: 2px;
     border-radius: 1px;
     background: var(--lane-color);
-  }
-  .parole-block{
-    position: absolute;
-    top: 5px; bottom: 5px;
-    background: color-mix(in srgb, var(--lane-color) 25%, var(--panel));
-    border: 1px solid var(--lane-color);
-    border-radius: 3px;
-    min-width: 4px;
   }
 
   .playhead{
@@ -237,19 +248,12 @@
   }
   .edit-row .time-field{ width: 72px; flex-shrink: 0; }
   .edit-row .value-field{ flex: 1; min-width: 0; }
+  .edit-row .midi-field{ width: 56px; flex-shrink: 0; }
   .edit-row .del-btn{
     background: none; border: none; color: var(--text-muted);
     cursor: pointer; font-size: 0.95rem; flex-shrink: 0; padding: 4px 6px;
   }
   .edit-row .del-btn:hover{ color: var(--rust); }
-  .read-row{
-    display: flex; gap: 10px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    padding: 3px 0;
-  }
-  .read-row .t{ color: var(--brass-dim); flex-shrink: 0; width: 130px; }
 
   .add-row-btn{
     margin-top: 8px;
@@ -278,7 +282,6 @@
     cursor: pointer;
   }
   .export-btn:hover{ background: #cfa878; }
-  .export-btn.secondary{ background: transparent; border: 1px solid var(--brass-dim); color: var(--brass); }
   .hint{ font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; }
 
   .status{ font-size: 0.88rem; color: var(--brass); min-height: 1.4em; margin-top: 10px; }
@@ -295,14 +298,20 @@
 
   <header>
     <h1>Éditeur de métadonnées</h1>
-    <p>Charge un fichier <code>.ogg</code> produit par Bandes pour visualiser et corriger sa structure et ses accords sur la forme d'onde. La mélodie et les paroles sont affichées en lecture seule pour l'instant (éditeurs dédiés à venir).</p>
+    <p>Charge le fichier audio (<code>.flac</code>) et le fichier de métadonnées (<code>.json</code>) d'un même morceau, produits par Bandes, pour corriger la structure, les accords, la mélodie et les paroles sur la forme d'onde.</p>
   </header>
 
   <section id="section-load">
-    <label class="dropzone" id="dropzone">
-      <input type="file" id="file-input" accept=".ogg,audio/ogg">
-      <span id="dropzone-text">Cliquez pour choisir un fichier .ogg, ou glissez-le ici</span>
-    </label>
+    <div class="load-grid">
+      <label class="dropzone" id="dropzone-audio">
+        <input type="file" id="file-input-audio" accept=".flac,.wav,.ogg,audio/*">
+        <span id="dropzone-audio-text">1. Fichier audio (.flac)</span>
+      </label>
+      <label class="dropzone" id="dropzone-json">
+        <input type="file" id="file-input-json" accept=".json,application/json">
+        <span id="dropzone-json-text">2. Fichier métadonnées (.json)</span>
+      </label>
+    </div>
     <div class="status" id="load-status"></div>
   </section>
 
@@ -314,16 +323,24 @@
       <div class="transport">
         <button id="btn-play" title="Lecture / Pause">▶</button>
         <span class="time-display" id="time-display">0:00.00 / 0:00.00</span>
+        <div class="zoom-group">
+          <button id="zoom-out" title="Zoom arrière">−</button>
+          <span class="zoom-label" id="zoom-label">100%</span>
+          <button id="zoom-in" title="Zoom avant">+</button>
+          <button id="zoom-fit" title="Ajuster à la largeur">⤢</button>
+        </div>
       </div>
 
-      <div class="timeline-wrap">
-        <canvas id="waveform"></canvas>
-        <div class="lane" id="lane-structure" style="--lane-color: var(--brass);"><span class="lane-label">Structure</span></div>
-        <div class="lane" id="lane-accords" style="--lane-color: var(--accord);"><span class="lane-label">Accords</span></div>
-        <div class="lane" id="lane-melodie" style="--lane-color: #7FA8C9;"><span class="lane-label">Mélodie</span></div>
-        <div class="lane" id="lane-paroles" style="--lane-color: #B98FC9;"><span class="lane-label">Paroles</span></div>
+      <div class="timeline-scroll" id="timeline-scroll">
+        <div class="timeline-wrap" id="timeline-wrap">
+          <canvas id="waveform"></canvas>
+          <div class="lane" id="lane-structure" style="--lane-color: var(--brass);"><span class="lane-label">Structure</span></div>
+          <div class="lane" id="lane-accords" style="--lane-color: var(--accord);"><span class="lane-label">Accords</span></div>
+          <div class="lane" id="lane-melodie" style="--lane-color: #7FA8C9;"><span class="lane-label">Mélodie</span></div>
+          <div class="lane" id="lane-paroles" style="--lane-color: #B98FC9;"><span class="lane-label">Paroles</span></div>
+        </div>
       </div>
-      <div class="hint">Traits verticaux fins : temps forts (downbeats) détectés — repère pour caler tes modifications rythmiquement.</div>
+      <div class="hint">Trait marqué : premier temps de la mesure (downbeat). Trait fin : autres temps. Molette + Ctrl (ou pincement tactile) pour zoomer.</div>
     </section>
 
     <section>
@@ -351,9 +368,10 @@
     <section>
       <div class="section-head"><h2><span class="swatch" style="background:#7FA8C9"></span>Mélodie</h2></div>
       <details>
-        <summary>Notes détectées (<span id="count-melodie">0</span>) — lecture seule, éditeur piano roll à venir</summary>
+        <summary>Notes détectées (<span id="count-melodie">0</span>) — édition en liste ; glisser dans la bande arrive dans une prochaine version</summary>
         <div class="details-body">
           <div class="row-list" id="list-melodie"></div>
+          <button class="add-row-btn" id="add-melodie">+ Ajouter une note</button>
         </div>
       </details>
     </section>
@@ -361,20 +379,20 @@
     <section>
       <div class="section-head"><h2><span class="swatch" style="background:#B98FC9"></span>Paroles</h2></div>
       <details>
-        <summary>Segments transcrits (<span id="count-paroles">0</span>) — lecture seule, éditeur dédié à venir</summary>
+        <summary>Segments transcrits (<span id="count-paroles">0</span>)</summary>
         <div class="details-body">
           <div class="row-list" id="list-paroles"></div>
+          <button class="add-row-btn" id="add-parole">+ Ajouter un segment</button>
         </div>
       </details>
     </section>
 
     <section>
-      <div class="section-head"><h2>Exporter les modifications</h2></div>
+      <div class="section-head"><h2>Exporter</h2></div>
       <div class="export-actions">
         <button class="export-btn" id="export-json">Télécharger le JSON modifié</button>
-        <button class="export-btn secondary" id="export-script">Télécharger le script de réinjection (.py)</button>
       </div>
-      <div class="hint">Un navigateur ne peut pas réécrire directement le fichier <code>.ogg</code> d'origine. Télécharge les deux fichiers, complète les deux chemins en haut du script, puis exécute-le (Python + <code>pip install mutagen</code>) pour appliquer les modifications au fichier.</div>
+      <div class="hint">Remplace le fichier <code>.json</code> d'origine par celui-ci pour appliquer les modifications — aucun autre traitement nécessaire, le fichier audio n'est jamais modifié.</div>
     </section>
 
   </div>
@@ -382,75 +400,7 @@
 
 <script>
 // ============================================================
-// Lecture des Vorbis Comments d'un fichier Ogg (sans dependance)
-// ============================================================
-
-function parseOggPages(bytes){
-  const pages = [];
-  let offset = 0;
-  while (offset + 27 <= bytes.length){
-    if (bytes[offset]!==0x4f || bytes[offset+1]!==0x67 || bytes[offset+2]!==0x67 || bytes[offset+3]!==0x53){
-      break; // pas "OggS"
-    }
-    const segCount = bytes[offset+26];
-    const segTable = bytes.slice(offset+27, offset+27+segCount);
-    let payloadLen = 0;
-    for (let i=0;i<segCount;i++) payloadLen += segTable[i];
-    const payloadStart = offset+27+segCount;
-    pages.push({ segTable, payload: bytes.slice(payloadStart, payloadStart+payloadLen) });
-    offset = payloadStart + payloadLen;
-  }
-  return pages;
-}
-
-function reassemblePackets(pages, maxPackets){
-  const packets = [];
-  let current = [];
-  for (const page of pages){
-    let pos = 0;
-    for (let i=0; i<page.segTable.length; i++){
-      const segLen = page.segTable[i];
-      current.push(page.payload.subarray(pos, pos+segLen));
-      pos += segLen;
-      if (segLen < 255){
-        const total = current.reduce((a,c)=>a+c.length,0);
-        const buf = new Uint8Array(total);
-        let o = 0;
-        for (const c of current){ buf.set(c,o); o+=c.length; }
-        packets.push(buf);
-        current = [];
-        if (packets.length >= maxPackets) return packets;
-      }
-    }
-  }
-  return packets;
-}
-
-function parseVorbisComments(packet){
-  const dv = new DataView(packet.buffer, packet.byteOffset, packet.byteLength);
-  let pos = 7; // saute 0x03 + "vorbis"
-  const vendorLen = dv.getUint32(pos, true); pos += 4 + vendorLen;
-  const commentCount = dv.getUint32(pos, true); pos += 4;
-  const comments = {};
-  for (let i=0; i<commentCount; i++){
-    const len = dv.getUint32(pos, true); pos += 4;
-    const strBytes = packet.subarray(pos, pos+len); pos += len;
-    const str = new TextDecoder('utf-8').decode(strBytes);
-    const eq = str.indexOf('=');
-    comments[str.slice(0,eq).toUpperCase()] = str.slice(eq+1);
-  }
-  return comments;
-}
-
-function lireTagsOgg(bytes){
-  const pages = parseOggPages(bytes);
-  const packets = reassemblePackets(pages, 2);
-  if (packets.length < 2) throw new Error("Impossible de lire les métadonnées (fichier trop court ou non conforme)");
-  return parseVorbisComments(packets[1]);
-}
-
-// ============================================================
-// État de l'éditeur
+// État
 // ============================================================
 
 let audioCtx = null;
@@ -461,14 +411,16 @@ let playStartCtxTime = 0;
 let playOffset = 0;
 let isPlaying = false;
 let nextId = 1;
+let pixelsPerSecond = 100;
 
-let nomFichierOrigine = '';
-let tagsOriginaux = {};
-let structureBase = { bpm: null, beats: [], downbeats: [], beat_positions: [] };
+let nomFichierJson = '';
+let donnees = null; // { pistes, structure:{bpm,beats,downbeats,beat_positions}, accords, melodie, paroles, metadata, releves }
 let structureSegments = [];
 let accordSegments = [];
-let melodieNotes = [];
-let parolesSegments = [];
+let melodieNotes = [];   // {id, start, end, midi}
+let parolesSegments = []; // {id, start, end, value=texte}
+
+let audioCharge = false, jsonCharge = false;
 
 const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 function midiToName(m){ return noteNames[((m%12)+12)%12] + (Math.floor(m/12)-1); }
@@ -490,67 +442,125 @@ function parseTemps(str){
 function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 // ============================================================
-// Chargement du fichier
+// Chargement des 2 fichiers
 // ============================================================
 
-const fileInput = document.getElementById('file-input');
-const dropzone = document.getElementById('dropzone');
+function armerDropzone(inputId, dropzoneId, onFile){
+  const input = document.getElementById(inputId);
+  const zone = document.getElementById(dropzoneId);
+  input.addEventListener('change', (e) => { if (e.target.files[0]) onFile(e.target.files[0]); });
+  zone.addEventListener('dragover', (e) => e.preventDefault());
+  zone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); });
+}
+
 const loadStatus = document.getElementById('load-status');
 
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files[0]) chargerFichier(e.target.files[0]);
-});
-dropzone.addEventListener('dragover', (e) => e.preventDefault());
-dropzone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  if (e.dataTransfer.files[0]) chargerFichier(e.dataTransfer.files[0]);
-});
-
-async function chargerFichier(file){
-  loadStatus.className = 'status';
-  loadStatus.textContent = 'Lecture du fichier...';
-  nomFichierOrigine = file.name;
-
+armerDropzone('file-input-audio', 'dropzone-audio', async (file) => {
   try{
-    const arrayBuffer = await file.arrayBuffer();
-    const bytesPourTags = new Uint8Array(arrayBuffer.slice(0));
-    tagsOriginaux = lireTagsOgg(bytesPourTags);
-
-    structureBase = JSON.parse(tagsOriginaux['BANDES_STRUCTURE'] || '{}');
-    const accordsBruts = JSON.parse(tagsOriginaux['BANDES_ACCORDS'] || '[]');
-    melodieNotes = JSON.parse(tagsOriginaux['BANDES_MELODIE'] || '[]');
-    parolesSegments = JSON.parse(tagsOriginaux['BANDES_PAROLES'] || '[]');
-
-    structureSegments = (structureBase.segments || []).map(s => ({ id: nextId++, start: s.start, end: s.end, value: s.label }));
-    accordSegments = accordsBruts.map(a => ({ id: nextId++, start: a.start, end: a.end, value: a.chord }));
-
+    loadStatus.className = 'status';
     loadStatus.textContent = 'Décodage audio...';
+    const arrayBuffer = await file.arrayBuffer();
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const arrayBufferPourAudio = arrayBuffer.slice(0);
-    audioBuffer = await audioCtx.decodeAudioData(arrayBufferPourAudio);
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     duration = audioBuffer.duration;
-
-    document.getElementById('file-info').innerHTML = `
-      <span><strong>${escapeHtml(nomFichierOrigine)}</strong></span>
-      <span>${audioBuffer.numberOfChannels} canaux</span>
-      <span>${formatTemps(duration)}</span>
-      <span>${(tagsOriginaux['BANDES_PISTES'] ? JSON.parse(tagsOriginaux['BANDES_PISTES']).join(' / ') : '')}</span>
-    `;
-
-    document.getElementById('editor-root').style.display = 'block';
+    audioCharge = true;
+    document.getElementById('dropzone-audio').classList.add('loaded');
+    document.getElementById('dropzone-audio-text').textContent = `✓ ${file.name}`;
     loadStatus.textContent = '';
-    dessinerWaveform();
-    rendreTout();
-    requestAnimationFrame(bouclePlayhead);
+    essayerActiverEditeur();
   } catch(err){
     loadStatus.className = 'status error';
-    loadStatus.textContent = "Erreur : " + err.message;
+    loadStatus.textContent = "Erreur audio : " + err.message;
     console.error(err);
   }
+});
+
+armerDropzone('file-input-json', 'dropzone-json', async (file) => {
+  try{
+    nomFichierJson = file.name;
+    const texte = await file.text();
+    donnees = JSON.parse(texte);
+    const structureBase = donnees.structure || {};
+    structureSegments = (structureBase.segments || []).map(s => ({ id: nextId++, start: s.start, end: s.end, value: s.label }));
+    accordSegments = (donnees.accords || []).map(a => ({ id: nextId++, start: a.start, end: a.end, value: a.chord }));
+    melodieNotes = (donnees.melodie || []).map(n => ({ id: nextId++, start: n.start, end: n.end, midi: n.midi }));
+    parolesSegments = (donnees.paroles || []).map(p => ({ id: nextId++, start: p.start, end: p.end, value: p.texte }));
+    jsonCharge = true;
+    document.getElementById('dropzone-json').classList.add('loaded');
+    document.getElementById('dropzone-json-text').textContent = `✓ ${file.name}`;
+    essayerActiverEditeur();
+  } catch(err){
+    loadStatus.className = 'status error';
+    loadStatus.textContent = "Erreur JSON : " + err.message;
+    console.error(err);
+  }
+});
+
+function essayerActiverEditeur(){
+  if (!audioCharge || !jsonCharge) return;
+  document.getElementById('file-info').innerHTML = `
+    <span>${audioBuffer.numberOfChannels} canaux</span>
+    <span>${formatTemps(duration)}</span>
+    <span>${(donnees.pistes||[]).join(' / ')}</span>
+  `;
+  document.getElementById('editor-root').style.display = 'block';
+  pixelsPerSecond = calculerZoomAjuste();
+  appliquerLargeurTimeline();
+  dessinerWaveform();
+  rendreTout();
+  requestAnimationFrame(bouclePlayhead);
 }
 
 // ============================================================
-// Waveform + regle temporelle + downbeats
+// Zoom
+// ============================================================
+
+function calculerZoomAjuste(){
+  const w = document.getElementById('timeline-scroll').clientWidth;
+  return duration > 0 ? Math.max(10, w/duration) : 100;
+}
+function appliquerLargeurTimeline(){
+  const w = Math.max(document.getElementById('timeline-scroll').clientWidth, duration*pixelsPerSecond);
+  document.getElementById('timeline-wrap').style.width = w+'px';
+  document.getElementById('zoom-label').textContent = Math.round((pixelsPerSecond/calculerZoomAjuste())*100)+'%';
+}
+function setZoom(nouveauPxParSec){
+  pixelsPerSecond = Math.max(10, Math.min(4000, nouveauPxParSec));
+  appliquerLargeurTimeline();
+  dessinerWaveform();
+  rendreTout();
+}
+
+document.getElementById('zoom-in').addEventListener('click', () => setZoom(pixelsPerSecond*1.4));
+document.getElementById('zoom-out').addEventListener('click', () => setZoom(pixelsPerSecond/1.4));
+document.getElementById('zoom-fit').addEventListener('click', () => setZoom(calculerZoomAjuste()));
+
+const timelineScroll = document.getElementById('timeline-scroll');
+timelineScroll.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey || !duration) return;
+  e.preventDefault();
+  setZoom(pixelsPerSecond*Math.exp(-e.deltaY*0.01));
+}, { passive: false });
+
+let pinchStartDist = null, pinchStartPxPerSec = null;
+timelineScroll.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2){
+    pinchStartDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    pinchStartPxPerSec = pixelsPerSecond;
+  }
+}, { passive: true });
+timelineScroll.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && pinchStartDist && duration){
+    const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    setZoom(pinchStartPxPerSec*(dist/pinchStartDist));
+  }
+}, { passive: true });
+timelineScroll.addEventListener('touchend', (e) => { if (e.touches.length<2) pinchStartDist = null; });
+
+window.addEventListener('resize', () => { if (audioBuffer){ appliquerLargeurTimeline(); dessinerWaveform(); rendreTout(); } });
+
+// ============================================================
+// Waveform + regle temporelle + grille rythmique
 // ============================================================
 
 function dessinerWaveform(){
@@ -562,7 +572,6 @@ function dessinerWaveform(){
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   const W = rect.width, H = rect.height;
-
   ctx.clearRect(0,0,W,H);
 
   const nCh = audioBuffer.numberOfChannels;
@@ -589,38 +598,37 @@ function dessinerWaveform(){
     ctx.fillRect(x, Math.min(y1,y2), 1, Math.max(1,Math.abs(y2-y1)));
   }
 
-  if (structureBase.downbeats){
-    ctx.strokeStyle = 'rgba(192,153,106,0.35)';
-    ctx.lineWidth = 1;
-    structureBase.downbeats.forEach(t => {
-      const x = (t/duration)*W;
-      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
-    });
-  }
+  const structureBase = donnees.structure || {};
   if (structureBase.beats){
-    ctx.strokeStyle = 'rgba(192,153,106,0.18)';
+    ctx.strokeStyle = 'rgba(192,153,106,0.14)';
+    ctx.lineWidth = 1;
     structureBase.beats.forEach(t => {
       const x = (t/duration)*W;
-      ctx.beginPath(); ctx.moveTo(x,H-6); ctx.lineTo(x,H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x,H-8); ctx.lineTo(x,H); ctx.stroke();
+    });
+  }
+  if (structureBase.downbeats){
+    structureBase.downbeats.forEach(t => {
+      const x = (t/duration)*W;
+      ctx.strokeStyle = 'rgba(192,153,106,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+      ctx.fillStyle = 'rgba(192,153,106,0.9)';
+      ctx.fillRect(x-1.5, 0, 3, 7);
     });
   }
 
   dessinerPlayhead();
 }
 
-function initCanvasClickSeek(){
-  const canvas = document.getElementById('waveform');
-  canvas.addEventListener('pointerdown', (e) => {
-    if (!duration) return;
-    const rect = canvas.getBoundingClientRect();
-    const t = ((e.clientX-rect.left)/rect.width)*duration;
-    seekTo(t);
-  });
-}
-initCanvasClickSeek();
+document.getElementById('waveform').addEventListener('pointerdown', (e) => {
+  if (!duration) return;
+  const rect = e.target.getBoundingClientRect();
+  seekTo(((e.clientX-rect.left)/rect.width)*duration);
+});
 
 // ============================================================
-// Lecture audio (Web Audio API)
+// Lecture audio
 // ============================================================
 
 function jouer(depuis){
@@ -646,20 +654,15 @@ function pauser(){
   isPlaying = false;
   document.getElementById('btn-play').textContent = '▶';
 }
-function getTempsActuel(){
-  return isPlaying ? Math.min(duration, audioCtx.currentTime - playStartCtxTime) : playOffset;
-}
+function getTempsActuel(){ return isPlaying ? Math.min(duration, audioCtx.currentTime - playStartCtxTime) : playOffset; }
 function seekTo(t){
   t = Math.max(0, Math.min(duration, t));
   const enLecture = isPlaying;
-  if (enLecture) { if (currentSource){ currentSource.onended=null; currentSource.stop(); } }
+  if (enLecture && currentSource){ currentSource.onended=null; currentSource.stop(); }
   playOffset = t;
   if (enLecture) jouer(t); else dessinerPlayhead();
 }
-
-document.getElementById('btn-play').addEventListener('click', () => {
-  if (isPlaying) pauser(); else jouer(playOffset);
-});
+document.getElementById('btn-play').addEventListener('click', () => { if (isPlaying) pauser(); else jouer(playOffset); });
 
 function bouclePlayhead(){
   if (audioBuffer){
@@ -668,26 +671,23 @@ function bouclePlayhead(){
   }
   requestAnimationFrame(bouclePlayhead);
 }
-
 function dessinerPlayhead(){
   document.querySelectorAll('.playhead').forEach(el => el.remove());
   if (!duration) return;
-  const t = getTempsActuel();
   const canvas = document.getElementById('waveform');
   const rect = canvas.getBoundingClientRect();
-  const x = (t/duration)*rect.width;
+  const x = (getTempsActuel()/duration)*rect.width;
   const container = canvas.parentElement;
   const ph = document.createElement('div');
   ph.className = 'playhead';
   ph.style.left = x+'px';
-  ph.style.height = rect.height+'px';
-  ph.style.top = '0px';
+  ph.style.height = (rect.height + 4*34)+'px';
   container.style.position = 'relative';
   container.appendChild(ph);
 }
 
 // ============================================================
-// Lanes editables generiques (structure + accords)
+// Lane editable generique (structure, accords, paroles)
 // ============================================================
 
 function trierSegments(segments){ segments.sort((a,b) => a.start-b.start); }
@@ -746,17 +746,12 @@ function creerLaneEditable(laneEl, getSegments, onChange){
   return { render };
 }
 
-const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (final) => {
-  if (final) trierSegments(structureSegments);
-  rendreListeStructure();
-});
-const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (final) => {
-  if (final) trierSegments(accordSegments);
-  rendreListeAccords();
-});
+const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (f) => { if (f) trierSegments(structureSegments); rendreListeStructure(); });
+const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (f) => { if (f) trierSegments(accordSegments); rendreListeAccords(); });
+const laneParoles = creerLaneEditable(document.getElementById('lane-paroles'), () => parolesSegments, (f) => { if (f) trierSegments(parolesSegments); rendreListeParoles(); });
 
 // ============================================================
-// Lanes lecture seule (melodie + paroles)
+// Lane melodie (lecture seule pour l'instant, cf. hint dans l'UI)
 // ============================================================
 
 function rendreLaneMelodie(){
@@ -780,79 +775,75 @@ function rendreLaneMelodie(){
   });
 }
 
-function rendreLaneParoles(){
-  const lane = document.getElementById('lane-paroles');
-  lane.querySelectorAll('.parole-block').forEach(el => el.remove());
-  if (!duration) return;
-  const width = lane.clientWidth;
-  parolesSegments.forEach(p => {
-    const left = (p.start/duration)*width;
-    const w = Math.max(4, ((p.end-p.start)/duration)*width);
-    const el = document.createElement('div');
-    el.className = 'parole-block';
-    el.style.left = left+'px';
-    el.style.width = w+'px';
-    el.title = p.texte;
-    lane.appendChild(el);
-  });
-}
-
 // ============================================================
 // Listes detaillees
 // ============================================================
+
+function ligneEditRow(seg, champs){
+  const row = document.createElement('div');
+  row.className = 'edit-row';
+  row.innerHTML = champs;
+  return row;
+}
 
 function rendreListeStructure(){
   const list = document.getElementById('list-structure');
   document.getElementById('count-structure').textContent = structureSegments.length;
   list.innerHTML = '';
   structureSegments.forEach(seg => {
-    const row = document.createElement('div');
-    row.className = 'edit-row';
-    row.innerHTML = `
+    list.appendChild(ligneEditRow(seg, `
       <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
       <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
       <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
-      <button class="del-btn" data-id="${seg.id}" title="Supprimer">✕</button>
-    `;
-    list.appendChild(row);
+      <button class="del-btn" data-id="${seg.id}">✕</button>
+    `));
   });
   laneStructure.render();
 }
-
 function rendreListeAccords(){
   const list = document.getElementById('list-accords');
   document.getElementById('count-accords').textContent = accordSegments.length;
   list.innerHTML = '';
   accordSegments.forEach(seg => {
-    const row = document.createElement('div');
-    row.className = 'edit-row';
-    row.innerHTML = `
+    list.appendChild(ligneEditRow(seg, `
       <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
       <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
       <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
-      <button class="del-btn" data-id="${seg.id}" title="Supprimer">✕</button>
-    `;
-    list.appendChild(row);
+      <button class="del-btn" data-id="${seg.id}">✕</button>
+    `));
   });
   laneAccords.render();
 }
-
-function rendreListeMelodie(){
-  const list = document.getElementById('list-melodie');
-  document.getElementById('count-melodie').textContent = melodieNotes.length;
-  list.innerHTML = melodieNotes.map(n =>
-    `<div class="read-row"><span class="t">${formatTemps(n.start)} → ${formatTemps(n.end)}</span><span>${midiToName(n.midi)}</span></div>`
-  ).join('');
-  rendreLaneMelodie();
-}
-
 function rendreListeParoles(){
   const list = document.getElementById('list-paroles');
   document.getElementById('count-paroles').textContent = parolesSegments.length;
-  list.innerHTML = parolesSegments.map(p =>
-    `<div class="read-row"><span class="t">${formatTemps(p.start)} → ${formatTemps(p.end)}</span><span>${escapeHtml(p.texte)}</span></div>`
-  ).join('');
-  rendreLaneParoles();
+  list.innerHTML = '';
+  parolesSegments.forEach(seg => {
+    list.appendChild(ligneEditRow(seg, `
+      <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
+      <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
+      <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="del-btn" data-id="${seg.id}">✕</button>
+    `));
+  });
+  laneParoles.render();
+}
+function rendreListeMelodie(){
+  const list = document.getElementById('list-melodie');
+  document.getElementById('count-melodie').textContent = melodieNotes.length;
+  list.innerHTML = '';
+  melodieNotes.forEach(n => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <input type="text" class="time-field" data-id="${n.id}" data-field="start" value="${formatTemps(n.start)}">
+      <input type="text" class="time-field" data-id="${n.id}" data-field="end" value="${formatTemps(n.end)}">
+      <input type="text" class="midi-field" data-id="${n.id}" data-field="midi" value="${midiToName(n.midi)}">
+      <button class="del-btn" data-id="${n.id}">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  rendreLaneMelodie();
 }
 
 function rendreTout(){
@@ -862,76 +853,69 @@ function rendreTout(){
   rendreListeParoles();
 }
 
-document.getElementById('list-structure').addEventListener('change', (e) => {
-  const input = e.target.closest('input'); if (!input) return;
-  const seg = structureSegments.find(s => s.id === Number(input.dataset.id));
-  if (!seg) return;
-  if (input.dataset.field === 'start') seg.start = Math.max(0, Math.min(seg.end-0.01, parseTemps(input.value)));
-  else if (input.dataset.field === 'end') seg.end = Math.min(duration, Math.max(seg.start+0.01, parseTemps(input.value)));
-  else seg.value = input.value;
-  trierSegments(structureSegments);
-  rendreListeStructure();
-});
-document.getElementById('list-structure').addEventListener('click', (e) => {
-  const btn = e.target.closest('.del-btn'); if (!btn) return;
-  structureSegments = structureSegments.filter(s => s.id !== Number(btn.dataset.id));
-  rendreListeStructure();
-});
+function nomVersMidi(str, fallback){
+  str = (str||'').trim();
+  const m = str.match(/^([A-Ga-g])(#?)(-?\d+)$/);
+  if (!m) return fallback;
+  const base = {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1].toUpperCase()];
+  const sharp = m[2] === '#' ? 1 : 0;
+  const octave = parseInt(m[3],10);
+  return base + sharp + (octave+1)*12;
+}
 
-document.getElementById('list-accords').addEventListener('change', (e) => {
-  const input = e.target.closest('input'); if (!input) return;
-  const seg = accordSegments.find(s => s.id === Number(input.dataset.id));
-  if (!seg) return;
-  if (input.dataset.field === 'start') seg.start = Math.max(0, Math.min(seg.end-0.01, parseTemps(input.value)));
-  else if (input.dataset.field === 'end') seg.end = Math.min(duration, Math.max(seg.start+0.01, parseTemps(input.value)));
-  else seg.value = input.value;
-  trierSegments(accordSegments);
-  rendreListeAccords();
-});
-document.getElementById('list-accords').addEventListener('click', (e) => {
-  const btn = e.target.closest('.del-btn'); if (!btn) return;
-  accordSegments = accordSegments.filter(s => s.id !== Number(btn.dataset.id));
-  rendreListeAccords();
-});
+function attacherListeEditable(listId, segments, apresChange){
+  const list = document.getElementById(listId);
+  list.addEventListener('change', (e) => {
+    const input = e.target.closest('input'); if (!input) return;
+    const seg = segments.find(s => s.id === Number(input.dataset.id));
+    if (!seg) return;
+    if (input.dataset.field === 'start') seg.start = Math.max(0, Math.min(seg.end-0.01, parseTemps(input.value)));
+    else if (input.dataset.field === 'end') seg.end = Math.min(duration, Math.max(seg.start+0.01, parseTemps(input.value)));
+    else if (input.dataset.field === 'midi') seg.midi = nomVersMidi(input.value, seg.midi);
+    else seg.value = input.value;
+    trierSegments(segments);
+    apresChange();
+  });
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('.del-btn'); if (!btn) return;
+    const idx = segments.findIndex(s => s.id === Number(btn.dataset.id));
+    if (idx>-1) segments.splice(idx,1);
+    apresChange();
+  });
+}
+attacherListeEditable('list-structure', structureSegments, rendreListeStructure);
+attacherListeEditable('list-accords', accordSegments, rendreListeAccords);
+attacherListeEditable('list-paroles', parolesSegments, rendreListeParoles);
+attacherListeEditable('list-melodie', melodieNotes, rendreListeMelodie);
 
 document.getElementById('add-structure').addEventListener('click', () => {
   if (!duration) return;
   const debut = structureSegments.length ? structureSegments[structureSegments.length-1].end : 0;
   structureSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: 'nouvelle_section' });
-  trierSegments(structureSegments);
-  rendreListeStructure();
+  trierSegments(structureSegments); rendreListeStructure();
 });
 document.getElementById('add-accord').addEventListener('click', () => {
   if (!duration) return;
   const debut = accordSegments.length ? accordSegments[accordSegments.length-1].end : 0;
   accordSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: 'N' });
-  trierSegments(accordSegments);
-  rendreListeAccords();
+  trierSegments(accordSegments); rendreListeAccords();
 });
-
-window.addEventListener('resize', () => { if (audioBuffer){ dessinerWaveform(); rendreTout(); } });
+document.getElementById('add-parole').addEventListener('click', () => {
+  if (!duration) return;
+  const debut = parolesSegments.length ? parolesSegments[parolesSegments.length-1].end : 0;
+  parolesSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: '' });
+  trierSegments(parolesSegments); rendreListeParoles();
+});
+document.getElementById('add-melodie').addEventListener('click', () => {
+  if (!duration) return;
+  const debut = melodieNotes.length ? melodieNotes[melodieNotes.length-1].end : 0;
+  melodieNotes.push({ id: nextId++, start: Math.min(debut, duration-0.3), end: Math.min(debut+0.3, duration), midi: 60 });
+  trierSegments(melodieNotes); rendreListeMelodie();
+});
 
 // ============================================================
 // Export
 // ============================================================
-
-function construireDonneesExport(){
-  return {
-    pistes: JSON.parse(tagsOriginaux['BANDES_PISTES'] || '[]'),
-    structure: {
-      bpm: structureBase.bpm,
-      beats: structureBase.beats || [],
-      downbeats: structureBase.downbeats || [],
-      beat_positions: structureBase.beat_positions || [],
-      segments: structureSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, label: s.value })),
-    },
-    accords: accordSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, chord: s.value })),
-    melodie: melodieNotes,
-    paroles: parolesSegments,
-    metadata: JSON.parse(tagsOriginaux['BANDES_METADATA'] || '{}'),
-    releves: JSON.parse(tagsOriginaux['BANDES_RELEVES'] || '[]'),
-  };
-}
 
 function telechargerTexte(contenu, nomFichier, type){
   const blob = new Blob([contenu], { type });
@@ -943,35 +927,23 @@ function telechargerTexte(contenu, nomFichier, type){
 }
 
 document.getElementById('export-json').addEventListener('click', () => {
-  const donnees = construireDonneesExport();
-  const base = nomFichierOrigine.replace(/\.[^/.]+$/, '');
-  telechargerTexte(JSON.stringify(donnees, null, 2), `${base}_metadonnees.json`, 'application/json');
-});
-
-document.getElementById('export-script').addEventListener('click', () => {
-  const base = nomFichierOrigine.replace(/\.[^/.]+$/, '');
-  const script = `import json
-from mutagen.oggvorbis import OggVorbis
-
-# Complete ces deux chemins avant d'executer (pip install mutagen si besoin)
-FICHIER_OGG = "${nomFichierOrigine}"
-FICHIER_JSON = "${base}_metadonnees.json"
-
-with open(FICHIER_JSON, encoding="utf-8") as f:
-    donnees = json.load(f)
-
-audio = OggVorbis(FICHIER_OGG)
-audio["BANDES_PISTES"] = json.dumps(donnees["pistes"], ensure_ascii=False)
-audio["BANDES_STRUCTURE"] = json.dumps(donnees["structure"], ensure_ascii=False)
-audio["BANDES_ACCORDS"] = json.dumps(donnees["accords"], ensure_ascii=False)
-audio["BANDES_MELODIE"] = json.dumps(donnees["melodie"], ensure_ascii=False)
-audio["BANDES_PAROLES"] = json.dumps(donnees["paroles"], ensure_ascii=False)
-audio["BANDES_METADATA"] = json.dumps(donnees["metadata"], ensure_ascii=False)
-audio["BANDES_RELEVES"] = json.dumps(donnees["releves"], ensure_ascii=False)
-audio.save()
-print("Metadonnees mises a jour dans", FICHIER_OGG)
-`;
-  telechargerTexte(script, `${base}_reinjection.py`, 'text/x-python');
+  const structureBase = donnees.structure || {};
+  const sortie = {
+    pistes: donnees.pistes || [],
+    structure: {
+      bpm: structureBase.bpm,
+      beats: structureBase.beats || [],
+      downbeats: structureBase.downbeats || [],
+      beat_positions: structureBase.beat_positions || [],
+      segments: structureSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, label: s.value })),
+    },
+    accords: accordSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, chord: s.value })),
+    melodie: melodieNotes.map(n => ({ start: Math.round(n.start*1000)/1000, end: Math.round(n.end*1000)/1000, midi: n.midi })),
+    paroles: parolesSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, texte: s.value })),
+    metadata: donnees.metadata || {},
+    releves: donnees.releves || [],
+  };
+  telechargerTexte(JSON.stringify(sortie, null, 2), nomFichierJson || 'metadonnees.json', 'application/json');
 });
 </script>
 </body>
