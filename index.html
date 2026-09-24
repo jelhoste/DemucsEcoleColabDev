@@ -37,6 +37,19 @@
   }
   .wrap{ max-width: 640px; margin: 0 auto; }
 
+  .top-nav{ display: flex; gap: 4px; padding-top: 20px; }
+  .nav-tab{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px 4px 0 0;
+    border-bottom: none;
+  }
+  .nav-tab.active{ color: var(--brass); border-color: var(--brass-dim); background: var(--panel); }
+
   header{ padding-top: 48px; padding-bottom: 32px; }
   .reel{ display:inline-block; vertical-align: middle; margin-right: 14px; }
   h1{
@@ -261,6 +274,22 @@
   }
 
   .voca-choice{ display: flex; gap: 12px; }
+
+  .option-toggle{ margin-bottom: 16px; }
+  .toggle-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+  }
+  .toggle-row input[type=checkbox]{
+    width: 18px; height: 18px;
+    accent-color: var(--brass);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
   .voca-option{
     flex: 1;
     background: var(--panel);
@@ -319,6 +348,17 @@
     border-radius: 3px;
     font-size: 0.85em;
   }
+  .steps-list a{
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--panel-raised);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: var(--brass);
+    text-decoration: none;
+    border: 1px solid var(--brass-dim);
+  }
+  .steps-list a:hover{ background: rgba(192,153,106,0.12); }
 
   .status{
     margin-top: 14px;
@@ -332,6 +372,11 @@
 </head>
 <body>
 <div class="wrap">
+
+  <nav class="top-nav">
+    <a href="./index.html" class="nav-tab active">Préparer</a>
+    <a href="./editeur.html" class="nav-tab">Éditer les métadonnées</a>
+  </nav>
 
   <header>
     <h1>
@@ -362,19 +407,41 @@
   <section>
     <div class="section-head">
       <span class="step-num">2</span>
-      <h2>Vocabulaire d'accords</h2>
+      <h2>Options de traitement</h2>
     </div>
-    <div class="voca-choice">
-      <label class="voca-option active" id="voca-large-label">
-        <input type="radio" name="voca" value="large" checked>
-        <div class="voca-title">Étendu</div>
-        <div class="voca-desc">Majeur, mineur, 7e, sus, dim... (recommandé)</div>
+
+    <div class="option-toggle">
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-accords" checked>
+        <span>Reconnaissance d'accords</span>
       </label>
-      <label class="voca-option" id="voca-simple-label">
-        <input type="radio" name="voca" value="simple">
-        <div class="voca-title">Simple</div>
-        <div class="voca-desc">Majeur / mineur uniquement</div>
+      <div class="voca-choice" id="voca-choice-wrap">
+        <label class="voca-option active" id="voca-large-label">
+          <input type="radio" name="voca" value="large" checked>
+          <div class="voca-title">Étendu</div>
+          <div class="voca-desc">Majeur, mineur, 7e, sus, dim... (recommandé)</div>
+        </label>
+        <label class="voca-option" id="voca-simple-label">
+          <input type="radio" name="voca" value="simple">
+          <div class="voca-title">Simple</div>
+          <div class="voca-desc">Majeur / mineur uniquement</div>
+        </label>
+      </div>
+    </div>
+
+    <div class="option-toggle">
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-melodie" checked>
+        <span>Extraction de la mélodie (à partir de la voix isolée)</span>
       </label>
+    </div>
+
+    <div class="option-toggle">
+      <label class="toggle-row">
+        <input type="checkbox" id="toggle-paroles" checked>
+        <span>Transcription des paroles (à partir de la voix isolée)</span>
+      </label>
+      <div class="hint" style="margin-top:6px;">Télécharge un modèle de reconnaissance vocale (~3 Go) au premier lancement dans Colab — désactivez si vous n'en avez pas besoin.</div>
     </div>
   </section>
 
@@ -393,7 +460,7 @@
       <h2>Et ensuite ?</h2>
     </div>
     <ul class="steps-list">
-      <li><p>Ouvrez <code>colab.research.google.com</code>, puis <code>Fichier → Importer un notebook</code> et sélectionnez le fichier téléchargé.</p></li>
+      <li><p>Ouvrez <a href="https://colab.research.google.com" target="_blank" rel="noopener">colab.research.google.com</a>, puis <code>Fichier → Importer un notebook</code> et sélectionnez le fichier téléchargé.</p></li>
       <li><p>Activez le GPU : <code>Exécution → Modifier le type d'exécution → T4 GPU</code>.</p></li>
       <li><p>Lancez <code>Exécution → Tout exécuter</code>, puis sélectionnez vos fichiers audio quand le widget d'upload apparaît — <strong>gardez exactement les mêmes noms de fichiers</strong> que ceux entrés ici pour que vos informations leur soient bien associées.</p></li>
       <li><p>À la fin du traitement, le résultat se télécharge automatiquement dans votre navigateur : le fichier <code>.ogg</code> directement pour un seul morceau, ou une archive <code>.zip</code> les regroupant s'il y en a plusieurs. Structure, accords, vos informations et vos relevés sont embarqués directement dans chaque fichier <code>.ogg</code>.</p></li>
@@ -651,6 +718,14 @@ document.querySelectorAll('input[name=voca]').forEach(radio => {
   });
 });
 
+const toggleAccords = document.getElementById('toggle-accords');
+const vocaChoiceWrap = document.getElementById('voca-choice-wrap');
+function syncVocaVisibility(){
+  vocaChoiceWrap.style.display = toggleAccords.checked ? 'flex' : 'none';
+}
+toggleAccords.addEventListener('change', syncVocaVisibility);
+syncVocaVisibility();
+
 // --- Construction du notebook ---
 
 function toSource(text){
@@ -661,7 +736,7 @@ function toSource(text){
 function md(text){ return { cell_type: 'markdown', metadata: {}, source: toSource(text) }; }
 function code(text){ return { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: toSource(text) }; }
 
-function buildNotebook(tracksList, btcLargeVoca){
+function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, parolesActif){
   const metadataParFichier = {};
   tracksList.forEach(t => {
     if (!t.filename) return;
@@ -684,6 +759,9 @@ function buildNotebook(tracksList, btcLargeVoca){
   });
   const metadataJson = JSON.stringify(metadataParFichier, null, 4);
   const btcVocaPy = btcLargeVoca ? 'True' : 'False';
+  const accordsPy = accordsActif ? 'True' : 'False';
+  const melodiePy = melodieActif ? 'True' : 'False';
+  const parolesPy = parolesActif ? 'True' : 'False';
 
   const cells = [
     md(
@@ -708,21 +786,46 @@ en gardant exactement les mêmes noms que ceux entrés dans l'app.`
 METADATA_PAR_FICHIER = ${metadataJson}
 
 # Vocabulaire d'accords : True = etendu (170 classes), False = simple (majeur/mineur)
-BTC_LARGE_VOCA = ${btcVocaPy}`
+BTC_LARGE_VOCA = ${btcVocaPy}
+
+# Modules optionnels a activer pour ce traitement
+ACCORDS_ACTIF = ${accordsPy}
+MELODIE_ACTIF = ${melodiePy}
+PAROLES_ACTIF = ${parolesPy}`
     ),
 
     md(`## 2. Installation des dépendances`),
 
     code(
-`%%capture
+`import subprocess, sys
+
+def pip_install(*paquets):
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', *paquets], check=True)
+
+print("Installation des dependances de base...")
 # all-in-one-infer (fork maintenu d'allin1) : elimine les dependances natten et
 # madmom, sources habituelles de problemes de compatibilite avec les versions
 # recentes de torch/CUDA sur Colab.
 # mutagen : pour ecrire les metadonnees JSON directement dans le fichier ogg final.
-# rmvpe-onnx + pretty_midi : extraction de la melodie chantee (pitch -> notes).
-# faster-whisper : transcription des paroles.
-!pip install -q all-in-one-infer transformers huggingface_hub mutagen
-!pip install -q rmvpe-onnx soundfile librosa pretty_midi faster-whisper`
+pip_install('all-in-one-infer', 'mutagen')
+
+if ACCORDS_ACTIF:
+    print("Installation des dependances accords (BTC)...")
+    pip_install('transformers', 'huggingface_hub')
+
+if MELODIE_ACTIF:
+    print("Installation des dependances audio (melodie)...")
+    pip_install('soundfile', 'librosa')
+
+if MELODIE_ACTIF:
+    print("Installation de rmvpe-onnx (melodie)...")
+    pip_install('rmvpe-onnx')
+
+if PAROLES_ACTIF:
+    print("Installation de faster-whisper (paroles)...")
+    pip_install('faster-whisper')
+
+print("Installation terminee.")`
     ),
 
     code(
@@ -732,7 +835,6 @@ import zipfile
 from pathlib import Path
 
 import allin1_infer as allin1
-from transformers import AutoModel
 
 WORKDIR = Path("/content/travail")
 WORKDIR.mkdir(exist_ok=True)
@@ -766,13 +868,18 @@ print(f"{len(fichiers_a_traiter)} fichier(s) pret(s).")`
     md(`## 4. Chargement du modèle de reconnaissance d'accords (BTC)`),
 
     code(
-`print("Chargement du modele BTC...")
-btc_model = AutoModel.from_pretrained(
-    "puar-playground/btc-chord",
-    trust_remote_code=True,
-    large_voca=BTC_LARGE_VOCA,
-)
-print("Modele BTC charge.")`
+`if ACCORDS_ACTIF:
+    from transformers import AutoModel
+    print("Chargement du modele BTC...")
+    btc_model = AutoModel.from_pretrained(
+        "puar-playground/btc-chord",
+        trust_remote_code=True,
+        large_voca=BTC_LARGE_VOCA,
+    )
+    print("Modele BTC charge.")
+else:
+    btc_model = None
+    print("Reconnaissance d'accords desactivee.")`
     ),
 
     md(`## 5. Traitement : structure + séparation (Demucs) + accords`),
@@ -798,10 +905,13 @@ for item in fichiers_a_traiter:
     if not stem_files:
         print(f"  ATTENTION : aucun stem trouve dans {stems_dir}")
 
-    t0 = time.time()
-    accords = btc_model.predict(str(chemin))
-    duree_btc = time.time() - t0
-    print(f"  accords (BTC)           : {duree_btc:.1f} s")
+    if ACCORDS_ACTIF:
+        t0 = time.time()
+        accords = btc_model.predict(str(chemin))
+        duree_btc = time.time() - t0
+        print(f"  accords (BTC)           : {duree_btc:.1f} s")
+    else:
+        accords = []
 
     rapports.append({
         "nom_fichier": chemin.name,
@@ -826,10 +936,9 @@ print("\\nTraitement termine.")`
 
     code(
 `import numpy as np
-import librosa
-from rmvpe_onnx import RMVPE
-import pretty_midi
-from faster_whisper import WhisperModel
+
+if MELODIE_ACTIF:
+    import librosa
 
 # --- Melodie : extraction de pitch (RMVPE) puis quantification en notes ---
 CONFIDENCE_THRESHOLD = 0.03  # a ajuster selon le bruit residuel de la separation
@@ -879,35 +988,62 @@ def extraire_melodie(chemin_voix, rmvpe_modele):
 
     return notes
 
-# --- Paroles : transcription (faster-whisper) ---
+# --- Paroles : transcription (faster-whisper), avec filtrage des hallucinations ---
+NO_SPEECH_THRESHOLD = 0.6   # au-dela, le modele juge le segment "probablement pas de parole"
+AVG_LOGPROB_THRESHOLD = -1.0  # en-dessous, transcription jugee peu fiable par le modele
+
 def extraire_paroles(chemin_voix, whisper_modele):
-    segments, _info = whisper_modele.transcribe(str(chemin_voix), language="fr", word_timestamps=True)
-    return [
-        {"start": round(s.start, 3), "end": round(s.end, 3), "texte": s.text.strip()}
-        for s in segments
-    ]
+    segments, _info = whisper_modele.transcribe(
+        str(chemin_voix),
+        language="fr",
+        word_timestamps=True,
+        vad_filter=True,              # ignore les passages sans voix detectee (silence/musique seule)
+        condition_on_previous_text=False,  # evite qu'une hallucination se propage au segment suivant
+    )
+    resultats = []
+    for s in segments:
+        if s.no_speech_prob > NO_SPEECH_THRESHOLD or s.avg_logprob < AVG_LOGPROB_THRESHOLD:
+            continue  # probable hallucination (ex: "Sous-titrage MFP." sur passage sans parole)
+        texte = s.text.strip()
+        if not texte:
+            continue
+        resultats.append({"start": round(s.start, 3), "end": round(s.end, 3), "texte": texte})
+    return resultats
 
-print("Chargement du modele RMVPE (melodie)...")
-rmvpe_modele = RMVPE()  # telecharge le modele au premier appel
+if MELODIE_ACTIF:
+    from rmvpe_onnx import RMVPE
+    print("Chargement du modele RMVPE (melodie)...")
+    rmvpe_modele = RMVPE()  # telecharge le modele au premier appel
+else:
+    rmvpe_modele = None
+    print("Extraction de la melodie desactivee.")
 
-print("Chargement du modele faster-whisper (paroles)...")
-whisper_modele = WhisperModel("large-v3", device="cuda", compute_type="float16")
+if PAROLES_ACTIF:
+    from faster_whisper import WhisperModel
+    print("Chargement du modele faster-whisper (paroles)...")
+    whisper_modele = WhisperModel("large-v3", device="cuda", compute_type="float16")
+else:
+    whisper_modele = None
+    print("Transcription des paroles desactivee.")
 
 for r in rapports:
-    voix = next((f for f in r["stem_files"] if f.stem == "vocals"), None)
-    if voix is None:
+    voix = next((f for f in r["stem_files"] if f.stem == "vocals"), None) if (MELODIE_ACTIF or PAROLES_ACTIF) else None
+    if (MELODIE_ACTIF or PAROLES_ACTIF) and voix is None:
         print(f"  ATTENTION : pas de piste voix pour {r['nom_fichier']} -- melodie/paroles ignorees")
+
+    if MELODIE_ACTIF and voix is not None:
+        t0 = time.time()
+        r["melodie"] = extraire_melodie(voix, rmvpe_modele)
+        print(f"  {r['nom_fichier']} -- melodie ({len(r['melodie'])} notes) : {time.time()-t0:.1f} s")
+    else:
         r["melodie"] = []
-        r["paroles"] = []
-        continue
 
-    t0 = time.time()
-    r["melodie"] = extraire_melodie(voix, rmvpe_modele)
-    print(f"  {r['nom_fichier']} -- melodie ({len(r['melodie'])} notes) : {time.time()-t0:.1f} s")
-
-    t0 = time.time()
-    r["paroles"] = extraire_paroles(voix, whisper_modele)
-    print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments) : {time.time()-t0:.1f} s")`
+    if PAROLES_ACTIF and voix is not None:
+        t0 = time.time()
+        r["paroles"] = extraire_paroles(voix, whisper_modele)
+        print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments) : {time.time()-t0:.1f} s")
+    else:
+        r["paroles"] = []`
     ),
 
     md(`## 7. Fusion des stems en un fichier Ogg 8 canaux, avec métadonnées embarquées`),
@@ -1020,7 +1156,10 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   }
 
   const btcLargeVoca = document.querySelector('input[name=voca]:checked').value === 'large';
-  const notebook = buildNotebook(tracks, btcLargeVoca);
+  const accordsActif = document.getElementById('toggle-accords').checked;
+  const melodieActif = document.getElementById('toggle-melodie').checked;
+  const parolesActif = document.getElementById('toggle-paroles').checked;
+  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif);
   const blob = new Blob([JSON.stringify(notebook, null, 1)], { type: 'application/x-ipynb+json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
