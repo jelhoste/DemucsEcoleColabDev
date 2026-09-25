@@ -188,6 +188,19 @@
     text-overflow: ellipsis;
     pointer-events: none;
     flex: 1;
+    cursor: text;
+  }
+  .seg-edit-input{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text);
+    background: var(--panel-raised);
+    border: 1px solid var(--brass);
+    border-radius: 2px;
+    padding: 0 6px;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
   }
   .seg-handle{
     width: 9px;
@@ -286,6 +299,54 @@
 
   .status{ font-size: 0.88rem; color: var(--brass); min-height: 1.4em; margin-top: 10px; }
   .status.error{ color: var(--rust); }
+
+  .modal-overlay{
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay[hidden]{ display: none; }
+  .modal-box{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-head{
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-head h2{ font-family: 'Fraunces', serif; font-size: 1.1rem; margin: 0; }
+  .modal-close{ background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; }
+  .modal-close:hover{ color: var(--rust); }
+  .modal-body{
+    padding: 18px 20px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .modal-body .field{ display: flex; flex-direction: column; gap: 4px; }
+  .modal-body .field-full{ grid-column: 1 / -1; }
+  .modal-body label{ font-size: 0.78rem; color: var(--text-muted); }
+  .modal-body input[type=text], .modal-body select, .modal-body textarea{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+  }
+  .modal-body textarea{ resize: vertical; }
+  .modal-foot{ padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
 </style>
 </head>
 <body>
@@ -313,6 +374,7 @@
 
     <section>
       <div class="file-info" id="file-info"></div>
+      <button class="add-row-btn" id="btn-open-metadata" style="margin-bottom:14px;">✎ Modifier les métadonnées du morceau</button>
 
       <div class="transport">
         <button id="btn-play" title="Lecture / Pause">▶</button>
@@ -389,6 +451,44 @@
       <div class="hint">Régénère un zip identique à celui chargé (même audio, inchangé) avec le fichier <code>.json</code> mis à jour à la place de l'ancien.</div>
     </section>
 
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Métadonnées du morceau</h2>
+      <button class="modal-close" id="modal-close" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Élève</label><input type="text" id="meta-eleve"></div>
+      <div class="field"><label>Prof</label><input type="text" id="meta-prof"></div>
+      <div class="field"><label>Morceau</label><input type="text" id="meta-morceau"></div>
+      <div class="field"><label>Artiste</label><input type="text" id="meta-artiste"></div>
+      <div class="field"><label>Tonalité</label><input type="text" id="meta-tonalite"></div>
+      <div class="field"><label>Cycle (conservatoire)</label><input type="text" id="meta-cycle"></div>
+      <div class="field">
+        <label>Échelle (1-8)</label>
+        <select id="meta-echelle">
+          <option value="">—</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Langue des paroles</label>
+        <select id="meta-langue">
+          <option value="">Détection automatique</option>
+          <option value="fr">Français</option>
+          <option value="en">Anglais</option>
+        </select>
+      </div>
+      <div class="field"><label>Date</label><input type="text" id="meta-date" placeholder="AAAA-MM-JJ"></div>
+      <div class="field field-full"><label>Commentaire</label><textarea id="meta-commentaire" rows="3"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="export-btn" id="modal-save">Enregistrer</button>
+    </div>
   </div>
 </div>
 
@@ -860,6 +960,35 @@ function creerLaneEditable(laneEl, getSegments, onChange){
   laneEl.addEventListener('pointerup', () => { if (dragging){ dragging=null; onChange(true); } });
   laneEl.addEventListener('pointercancel', () => { dragging = null; });
 
+  laneEl.addEventListener('click', (e) => {
+    if (e.target.closest('.seg-handle')) return;
+    const block = e.target.closest('.seg-block');
+    if (!block || block.querySelector('input')) return;
+    const segments = getSegments();
+    const seg = segments.find(s => s.id === Number(block.dataset.id));
+    if (!seg) return;
+
+    const labelEl = block.querySelector('.seg-label');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'seg-edit-input';
+    input.value = seg.value;
+    labelEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const valider = () => {
+      seg.value = input.value;
+      onChange(true);
+    };
+    input.addEventListener('blur', valider);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+      if (ev.key === 'Escape'){ input.value = seg.value; input.blur(); }
+    });
+    input.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+  });
+
   return { render };
 }
 
@@ -1041,6 +1170,52 @@ function telechargerBlob(blob, nomFichier){
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
+
+// ============================================================
+// Modale de metadonnees du morceau
+// ============================================================
+
+const modalOverlay = document.getElementById('modal-overlay');
+
+function ouvrirModalMetadata(){
+  const m = donnees.metadata || {};
+  const niveau = m.niveau || {};
+  document.getElementById('meta-eleve').value = m.eleve || '';
+  document.getElementById('meta-prof').value = m.prof || '';
+  document.getElementById('meta-morceau').value = m.morceau || '';
+  document.getElementById('meta-artiste').value = m.artiste || '';
+  document.getElementById('meta-tonalite').value = m.tonalite || '';
+  document.getElementById('meta-cycle').value = niveau.cycle || '';
+  document.getElementById('meta-echelle').value = niveau.echelle || '';
+  document.getElementById('meta-langue').value = m.langue_paroles || '';
+  document.getElementById('meta-date').value = m.date || '';
+  document.getElementById('meta-commentaire').value = m.commentaire || '';
+  modalOverlay.hidden = false;
+}
+function fermerModalMetadata(){ modalOverlay.hidden = true; }
+
+document.getElementById('btn-open-metadata').addEventListener('click', ouvrirModalMetadata);
+document.getElementById('modal-close').addEventListener('click', fermerModalMetadata);
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) fermerModalMetadata(); });
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  donnees.metadata = {
+    ...donnees.metadata,
+    eleve: document.getElementById('meta-eleve').value,
+    prof: document.getElementById('meta-prof').value,
+    morceau: document.getElementById('meta-morceau').value,
+    artiste: document.getElementById('meta-artiste').value,
+    tonalite: document.getElementById('meta-tonalite').value,
+    niveau: {
+      cycle: document.getElementById('meta-cycle').value,
+      echelle: document.getElementById('meta-echelle').value,
+    },
+    langue_paroles: document.getElementById('meta-langue').value,
+    date: document.getElementById('meta-date').value,
+    commentaire: document.getElementById('meta-commentaire').value,
+  };
+  fermerModalMetadata();
+});
 
 document.getElementById('export-json').addEventListener('click', () => {
   const structureBase = donnees.structure || {};
