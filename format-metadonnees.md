@@ -67,6 +67,7 @@ fichier à l'éditeur (qui sait le lire et en réécrire un à jour).
     "artiste": "Debussy",
     "tonalite": "Ré bémol majeur",
     "niveau": { "cycle": "2e cycle", "echelle": "5" },
+    "langue_paroles": "fr",
     "commentaire": "Travailler le legato mesures 12-16",
     "date": "2026-09-14"
   },
@@ -102,6 +103,8 @@ amont) — à valider humainement plutôt qu'à considérer comme fiable à 100%
 ### `metadata`
 Informations générales du morceau. Tous les champs sont des chaînes de texte,
 présentes même vides (`""`), y compris `niveau.cycle` et `niveau.echelle`.
+`langue_paroles` (`"fr"`, `"en"` ou `""` pour détection automatique) indique la
+langue transmise au modèle de transcription — vide si laissée en détection auto.
 
 ### `releves`
 Section pédagogique par instrument, **destinée à être remplie par le portail élève**

@@ -515,7 +515,7 @@ function updateMarqueurField(trackId, instrumentId, marqueurId, field, value){
 }
 
 function addTrack(){
-  tracks.push({ id: nextId++, filename: '', eleve: '', prof: '', morceau: '', artiste: '', tonalite: '', niveauCycle: '', niveauEchelle: '', commentaire: '', date: new Date().toISOString().slice(0,10), releves: [] });
+  tracks.push({ id: nextId++, filename: '', eleve: '', prof: '', morceau: '', artiste: '', tonalite: '', niveauCycle: '', niveauEchelle: '', langue: '', commentaire: '', date: new Date().toISOString().slice(0,10), releves: [] });
   render();
 }
 
@@ -617,6 +617,14 @@ function render(){
           <select data-id="${t.id}" data-field="niveauEchelle">
             <option value="">—</option>
             ${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${String(t.niveauEchelle)===String(n) ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Langue des paroles</label>
+          <select data-id="${t.id}" data-field="langue">
+            <option value="" ${t.langue==='' ? 'selected' : ''}>Détection automatique</option>
+            <option value="fr" ${t.langue==='fr' ? 'selected' : ''}>Français</option>
+            <option value="en" ${t.langue==='en' ? 'selected' : ''}>Anglais</option>
           </select>
         </div>
         <div class="field">
@@ -748,6 +756,7 @@ function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, par
       artiste: t.artiste,
       tonalite: t.tonalite,
       niveau: { cycle: t.niveauCycle, echelle: t.niveauEchelle },
+      langue_paroles: t.langue,
       commentaire: t.commentaire,
       date: t.date,
       releves: t.releves.map(instr => ({
@@ -991,10 +1000,10 @@ def extraire_melodie(chemin_voix, rmvpe_modele):
 NO_SPEECH_THRESHOLD = 0.6   # au-dela, le modele juge le segment "probablement pas de parole"
 AVG_LOGPROB_THRESHOLD = -1.0  # en-dessous, transcription jugee peu fiable par le modele
 
-def extraire_paroles(chemin_voix, whisper_modele):
+def extraire_paroles(chemin_voix, whisper_modele, langue):
     segments, _info = whisper_modele.transcribe(
         str(chemin_voix),
-        language="fr",
+        language=langue or None,  # None = detection automatique par le modele
         word_timestamps=True,
         vad_filter=True,              # ignore les passages sans voix detectee (silence/musique seule)
         condition_on_previous_text=False,  # evite qu'une hallucination se propage au segment suivant
@@ -1039,8 +1048,9 @@ for r in rapports:
 
     if PAROLES_ACTIF and voix is not None:
         t0 = time.time()
-        r["paroles"] = extraire_paroles(voix, whisper_modele)
-        print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments) : {time.time()-t0:.1f} s")
+        langue = r["metadata"].get("langue_paroles", "")
+        r["paroles"] = extraire_paroles(voix, whisper_modele, langue)
+        print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments, langue={langue or 'auto'}) : {time.time()-t0:.1f} s")
     else:
         r["paroles"] = []`
     ),
