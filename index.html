@@ -102,6 +102,7 @@
     padding: 18px;
     margin-bottom: 14px;
   }
+  .track-card.drag-over{ border-color: var(--brass); background: rgba(192,153,106,0.06); }
   .track-card-head{
     display: flex;
     justify-content: space-between;
@@ -593,9 +594,10 @@ function render(){
   tracks.forEach(t => {
     const card = document.createElement('div');
     card.className = 'track-card';
+    card.dataset.trackId = t.id;
     card.innerHTML = `
       <div class="track-card-head">
-        <span class="filename-pill ${t.filename ? '' : 'empty'}">${t.filename || 'aucun fichier choisi'}</span>
+        <span class="filename-pill ${t.filename ? '' : 'empty'}">${t.filename || 'aucun fichier — cliquez ou glissez-le ici'}</span>
         <label class="file-btn">
           Choisir un fichier
           <input type="file" accept="audio/*" data-id="${t.id}" class="file-input">
@@ -682,6 +684,25 @@ function escapeHtml(s){ return (s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g, '&quot;'); }
 
 document.getElementById('add-track-btn').addEventListener('click', addTrack);
+
+document.getElementById('tracks-container').addEventListener('dragover', (e) => {
+  const card = e.target.closest('.track-card');
+  if (card && e.dataTransfer.types.includes('Files')){ e.preventDefault(); card.classList.add('drag-over'); }
+});
+document.getElementById('tracks-container').addEventListener('dragleave', (e) => {
+  const card = e.target.closest('.track-card');
+  if (card) card.classList.remove('drag-over');
+});
+document.getElementById('tracks-container').addEventListener('drop', (e) => {
+  const card = e.target.closest('.track-card');
+  if (!card) return;
+  card.classList.remove('drag-over');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!file) return;
+  e.preventDefault();
+  const t = tracks.find(t => t.id === Number(card.dataset.trackId));
+  if (t){ t.filename = file.name; render(); }
+});
 
 document.getElementById('tracks-container').addEventListener('click', (e) => {
   const addInstrBtn = e.target.closest('.add-instrument-btn');
@@ -997,25 +1018,48 @@ def extraire_melodie(chemin_voix, rmvpe_modele):
     return notes
 
 # --- Paroles : transcription (faster-whisper), avec filtrage des hallucinations ---
-NO_SPEECH_THRESHOLD = 0.6   # au-dela, le modele juge le segment "probablement pas de parole"
-AVG_LOGPROB_THRESHOLD = -1.0  # en-dessous, transcription jugee peu fiable par le modele
+# Seuils de notre propre filtrage a posteriori (voir plus bas)
+NO_SPEECH_THRESHOLD = 0.75    # au-dela, le segment est juge "probablement pas de parole"
+AVG_LOGPROB_THRESHOLD = -1.3  # en-dessous, transcription jugee peu fiable
 
 def extraire_paroles(chemin_voix, whisper_modele, langue):
     segments, _info = whisper_modele.transcribe(
         str(chemin_voix),
         language=langue or None,  # None = detection automatique par le modele
         word_timestamps=True,
-        vad_filter=True,              # ignore les passages sans voix detectee (silence/musique seule)
+        vad_filter=True,
+        # VAD peu agressif : autorise des silences plus longs (pont instrumental) sans
+        # arreter la detection de parole pour le reste du morceau.
+        vad_parameters=dict(threshold=0.35, min_silence_duration_ms=1200, speech_pad_ms=200),
+        # IMPORTANT : ces 3 seuils sont geres nativement par Whisper et, par defaut,
+        # font ABANDONNER silencieusement un passage juge peu fiable (au lieu de le
+        # retourner avec une note de confiance basse). C'est une cause connue et
+        # documentee de transcriptions qui s'arretent en cours de route sur de l'audio
+        # difficile (voix isolee post-separation, plus bruitee dans certains passages).
+        # On les desactive ici et on applique NOTRE PROPRE filtrage juste apres, sur
+        # les valeurs retournees (no_speech_prob / avg_logprob), qui elimine les
+        # hallucinations sans risquer de faire disparaitre un passage entier.
+        no_speech_threshold=None,
+        log_prob_threshold=None,
+        compression_ratio_threshold=None,
         condition_on_previous_text=False,  # evite qu'une hallucination se propage au segment suivant
     )
     resultats = []
+    segments_bruts = 0
+    segments_rejetes = 0
     for s in segments:
+        segments_bruts += 1
         if s.no_speech_prob > NO_SPEECH_THRESHOLD or s.avg_logprob < AVG_LOGPROB_THRESHOLD:
+            segments_rejetes += 1
             continue  # probable hallucination (ex: "Sous-titrage MFP." sur passage sans parole)
         texte = s.text.strip()
         if not texte:
             continue
         resultats.append({"start": round(s.start, 3), "end": round(s.end, 3), "texte": texte})
+    # Diagnostic : si "segments bruts" est deja faible par rapport a la duree du
+    # morceau, le VAD lui-meme a juge le reste "non-parle" (autre piste a creuser si
+    # le probleme persiste malgre ce changement).
+    print(f"    [diagnostic paroles] segments bruts whisper: {segments_bruts}, rejetes par nos seuils: {segments_rejetes}, retenus: {len(resultats)}")
     return resultats
 
 if MELODIE_ACTIF:
