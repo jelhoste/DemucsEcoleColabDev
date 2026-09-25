@@ -302,16 +302,10 @@
   </header>
 
   <section id="section-load">
-    <div class="load-grid">
-      <label class="dropzone" id="dropzone-audio">
-        <input type="file" id="file-input-audio" accept=".flac,.wav,.ogg,audio/*">
-        <span id="dropzone-audio-text">1. Fichier audio (.flac)</span>
-      </label>
-      <label class="dropzone" id="dropzone-json">
-        <input type="file" id="file-input-json" accept=".json,application/json">
-        <span id="dropzone-json-text">2. Fichier métadonnées (.json)</span>
-      </label>
-    </div>
+    <label class="dropzone" id="dropzone-zip">
+      <input type="file" id="file-input-zip" accept=".zip,application/zip">
+      <span id="dropzone-zip-text">Cliquez pour choisir le fichier .zip du morceau (ou glissez-le ici)</span>
+    </label>
     <div class="status" id="load-status"></div>
   </section>
 
@@ -390,9 +384,9 @@
     <section>
       <div class="section-head"><h2>Exporter</h2></div>
       <div class="export-actions">
-        <button class="export-btn" id="export-json">Télécharger le JSON modifié</button>
+        <button class="export-btn" id="export-json">Télécharger le zip mis à jour</button>
       </div>
-      <div class="hint">Remplace le fichier <code>.json</code> d'origine par celui-ci pour appliquer les modifications — aucun autre traitement nécessaire, le fichier audio n'est jamais modifié.</div>
+      <div class="hint">Régénère un zip identique à celui chargé (même audio, inchangé) avec le fichier <code>.json</code> mis à jour à la place de l'ancien.</div>
     </section>
 
   </div>
@@ -413,14 +407,13 @@ let isPlaying = false;
 let nextId = 1;
 let pixelsPerSecond = 100;
 
-let nomFichierJson = '';
+let nomFichierZip = '';
 let donnees = null; // { pistes, structure:{bpm,beats,downbeats,beat_positions}, accords, melodie, paroles, metadata, releves }
 let structureSegments = [];
 let accordSegments = [];
 let melodieNotes = [];   // {id, start, end, midi}
 let parolesSegments = []; // {id, start, end, value=texte}
 
-let audioCharge = false, jsonCharge = false;
 
 const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 function midiToName(m){ return noteNames[((m%12)+12)%12] + (Math.floor(m/12)-1); }
@@ -442,73 +435,197 @@ function parseTemps(str){
 function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 // ============================================================
-// Chargement des 2 fichiers
+// Lecteur / ecriveur ZIP minimal (CRC32 + STORE, deflate en lecture via
+// DecompressionStream natif du navigateur -- aucune dependance externe)
 // ============================================================
 
-function armerDropzone(inputId, dropzoneId, onFile){
-  const input = document.getElementById(inputId);
-  const zone = document.getElementById(dropzoneId);
-  input.addEventListener('change', (e) => { if (e.target.files[0]) onFile(e.target.files[0]); });
-  zone.addEventListener('dragover', (e) => e.preventDefault());
-  zone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); });
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(bytes){
+  let crc = 0xFFFFFFFF;
+  for (let i=0; i<bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
-const loadStatus = document.getElementById('load-status');
+async function lireZip(arrayBuffer){
+  const bytes = new Uint8Array(arrayBuffer);
+  const dv = new DataView(arrayBuffer);
+  let eocdOffset = -1;
+  const limiteRecherche = Math.max(0, bytes.length - 22 - 65557);
+  for (let i = bytes.length-22; i >= limiteRecherche; i--){
+    if (dv.getUint32(i, true) === 0x06054b50){ eocdOffset = i; break; }
+  }
+  if (eocdOffset === -1) throw new Error("zip invalide (fin de repertoire central introuvable)");
 
-armerDropzone('file-input-audio', 'dropzone-audio', async (file) => {
+  const entryCount = dv.getUint16(eocdOffset+10, true);
+  let offset = dv.getUint32(eocdOffset+16, true);
+  const fichiers = {};
+
+  for (let i=0; i<entryCount; i++){
+    if (dv.getUint32(offset, true) !== 0x02014b50) throw new Error("entree de repertoire central invalide");
+    const methode = dv.getUint16(offset+10, true);
+    const compSize = dv.getUint32(offset+20, true);
+    const nameLen = dv.getUint16(offset+28, true);
+    const extraLen = dv.getUint16(offset+30, true);
+    const commentLen = dv.getUint16(offset+32, true);
+    const localHeaderOffset = dv.getUint32(offset+42, true);
+    const nom = new TextDecoder().decode(bytes.subarray(offset+46, offset+46+nameLen));
+    offset += 46 + nameLen + extraLen + commentLen;
+
+    const lhNameLen = dv.getUint16(localHeaderOffset+26, true);
+    const lhExtraLen = dv.getUint16(localHeaderOffset+28, true);
+    const dataStart = localHeaderOffset + 30 + lhNameLen + lhExtraLen;
+    const donneesCompressees = bytes.slice(dataStart, dataStart+compSize);
+
+    if (nom.endsWith('/')) continue; // dossier, pas un fichier
+
+    let donneesFinales;
+    if (methode === 0){
+      donneesFinales = donneesCompressees;
+    } else if (methode === 8){
+      const ds = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      writer.write(donneesCompressees);
+      writer.close();
+      donneesFinales = new Uint8Array(await new Response(ds.readable).arrayBuffer());
+    } else {
+      throw new Error(`methode de compression non geree (${methode}) pour ${nom}`);
+    }
+    fichiers[nom] = donneesFinales;
+  }
+  return fichiers;
+}
+
+function construireZip(entrees){
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  entrees.forEach(({ nom, data }) => {
+    const nomBytes = encoder.encode(nom);
+    const crc = crc32(data);
+    const size = data.length;
+
+    const localHeader = new Uint8Array(30 + nomBytes.length);
+    const lv = new DataView(localHeader.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true); // methode = store (audio deja compresse, JSON petit -- pas d'interet a re-compresser)
+    lv.setUint16(10, 0, true);
+    lv.setUint16(12, 0, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true);
+    lv.setUint32(22, size, true);
+    lv.setUint16(26, nomBytes.length, true);
+    lv.setUint16(28, 0, true);
+    localHeader.set(nomBytes, 30);
+    localParts.push(localHeader, data);
+
+    const centralHeader = new Uint8Array(46 + nomBytes.length);
+    const cv = new DataView(centralHeader.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nomBytes.length, true);
+    cv.setUint32(42, offset, true);
+    centralHeader.set(nomBytes, 46);
+    centralParts.push(centralHeader);
+
+    offset += localHeader.length + data.length;
+  });
+
+  const centralDirStart = offset;
+  const centralDirSize = centralParts.reduce((a,p) => a+p.length, 0);
+
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, entrees.length, true);
+  ev.setUint16(10, entrees.length, true);
+  ev.setUint32(12, centralDirSize, true);
+  ev.setUint32(16, centralDirStart, true);
+
+  return new Blob([...localParts, ...centralParts, eocd]);
+}
+
+// ============================================================
+// Chargement du zip
+// ============================================================
+
+let entreesZipOriginales = {}; // nom -> Uint8Array, pour reconstruire le zip d'export (audio inchange)
+let nomEntreeAudio = '', nomEntreeJson = '';
+
+const loadStatus = document.getElementById('load-status');
+const inputZip = document.getElementById('file-input-zip');
+const dropzoneZip = document.getElementById('dropzone-zip');
+
+inputZip.addEventListener('change', (e) => { if (e.target.files[0]) chargerZip(e.target.files[0]); });
+dropzoneZip.addEventListener('dragover', (e) => e.preventDefault());
+dropzoneZip.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) chargerZip(e.dataTransfer.files[0]); });
+
+async function chargerZip(file){
   try{
     loadStatus.className = 'status';
-    loadStatus.textContent = 'Décodage audio...';
-    const arrayBuffer = await file.arrayBuffer();
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    duration = audioBuffer.duration;
-    audioCharge = true;
-    document.getElementById('dropzone-audio').classList.add('loaded');
-    document.getElementById('dropzone-audio-text').textContent = `✓ ${file.name}`;
-    loadStatus.textContent = '';
-    essayerActiverEditeur();
-  } catch(err){
-    loadStatus.className = 'status error';
-    loadStatus.textContent = "Erreur audio : " + err.message;
-    console.error(err);
-  }
-});
+    loadStatus.textContent = 'Lecture du zip...';
+    nomFichierZip = file.name;
 
-armerDropzone('file-input-json', 'dropzone-json', async (file) => {
-  try{
-    nomFichierJson = file.name;
-    const texte = await file.text();
-    donnees = JSON.parse(texte);
+    const arrayBuffer = await file.arrayBuffer();
+    entreesZipOriginales = await lireZip(arrayBuffer);
+    const noms = Object.keys(entreesZipOriginales);
+
+    nomEntreeJson = noms.find(n => n.toLowerCase().endsWith('.json'));
+    nomEntreeAudio = noms.find(n => n !== nomEntreeJson);
+    if (!nomEntreeJson || !nomEntreeAudio){
+      throw new Error("le zip doit contenir un fichier audio et un fichier .json");
+    }
+
+    donnees = JSON.parse(new TextDecoder('utf-8').decode(entreesZipOriginales[nomEntreeJson]));
     const structureBase = donnees.structure || {};
     structureSegments = (structureBase.segments || []).map(s => ({ id: nextId++, start: s.start, end: s.end, value: s.label }));
     accordSegments = (donnees.accords || []).map(a => ({ id: nextId++, start: a.start, end: a.end, value: a.chord }));
     melodieNotes = (donnees.melodie || []).map(n => ({ id: nextId++, start: n.start, end: n.end, midi: n.midi }));
     parolesSegments = (donnees.paroles || []).map(p => ({ id: nextId++, start: p.start, end: p.end, value: p.texte }));
-    jsonCharge = true;
-    document.getElementById('dropzone-json').classList.add('loaded');
-    document.getElementById('dropzone-json-text').textContent = `✓ ${file.name}`;
-    essayerActiverEditeur();
+
+    loadStatus.textContent = 'Décodage audio...';
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // decodeAudioData peut neutraliser le buffer -- on lui passe une copie
+    const audioBytes = entreesZipOriginales[nomEntreeAudio];
+    const copie = audioBytes.slice().buffer;
+    audioBuffer = await audioCtx.decodeAudioData(copie);
+    duration = audioBuffer.duration;
+
+    dropzoneZip.classList.add('loaded');
+    document.getElementById('dropzone-zip-text').textContent = `✓ ${file.name}`;
+    loadStatus.textContent = '';
+
+    document.getElementById('file-info').innerHTML = `
+      <span>${audioBuffer.numberOfChannels} canaux</span>
+      <span>${formatTemps(duration)}</span>
+      <span>${(donnees.pistes||[]).join(' / ')}</span>
+    `;
+    document.getElementById('editor-root').style.display = 'block';
+    pixelsPerSecond = calculerZoomAjuste();
+    appliquerLargeurTimeline();
+    dessinerWaveform();
+    rendreTout();
+    requestAnimationFrame(bouclePlayhead);
   } catch(err){
     loadStatus.className = 'status error';
-    loadStatus.textContent = "Erreur JSON : " + err.message;
+    loadStatus.textContent = "Erreur : " + err.message;
     console.error(err);
   }
-});
-
-function essayerActiverEditeur(){
-  if (!audioCharge || !jsonCharge) return;
-  document.getElementById('file-info').innerHTML = `
-    <span>${audioBuffer.numberOfChannels} canaux</span>
-    <span>${formatTemps(duration)}</span>
-    <span>${(donnees.pistes||[]).join(' / ')}</span>
-  `;
-  document.getElementById('editor-root').style.display = 'block';
-  pixelsPerSecond = calculerZoomAjuste();
-  appliquerLargeurTimeline();
-  dessinerWaveform();
-  rendreTout();
-  requestAnimationFrame(bouclePlayhead);
 }
 
 // ============================================================
@@ -917,8 +1034,7 @@ document.getElementById('add-melodie').addEventListener('click', () => {
 // Export
 // ============================================================
 
-function telechargerTexte(contenu, nomFichier, type){
-  const blob = new Blob([contenu], { type });
+function telechargerBlob(blob, nomFichier){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nomFichier;
@@ -943,7 +1059,13 @@ document.getElementById('export-json').addEventListener('click', () => {
     metadata: donnees.metadata || {},
     releves: donnees.releves || [],
   };
-  telechargerTexte(JSON.stringify(sortie, null, 2), nomFichierJson || 'metadonnees.json', 'application/json');
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(sortie, null, 2));
+
+  const zipBlob = construireZip([
+    { nom: nomEntreeAudio, data: entreesZipOriginales[nomEntreeAudio] }, // inchange
+    { nom: nomEntreeJson, data: jsonBytes },
+  ]);
+  telechargerBlob(zipBlob, nomFichierZip || 'bandes_modifie.zip');
 });
 </script>
 </body>

@@ -463,7 +463,7 @@
       <li><p>Ouvrez <a href="https://colab.research.google.com" target="_blank" rel="noopener">colab.research.google.com</a>, puis <code>Fichier → Importer un notebook</code> et sélectionnez le fichier téléchargé.</p></li>
       <li><p>Activez le GPU : <code>Exécution → Modifier le type d'exécution → T4 GPU</code>.</p></li>
       <li><p>Lancez <code>Exécution → Tout exécuter</code>, puis sélectionnez vos fichiers audio quand le widget d'upload apparaît — <strong>gardez exactement les mêmes noms de fichiers</strong> que ceux entrés ici pour que vos informations leur soient bien associées.</p></li>
-      <li><p>À la fin du traitement, le résultat se télécharge automatiquement dans votre navigateur : un fichier audio <code>.flac</code> (8 canaux) et un fichier <code>.json</code> de métadonnées pour un seul morceau, ou une archive <code>.zip</code> les regroupant s'il y en a plusieurs. Le <code>.json</code> peut s'éditer avec l'onglet « Éditer les métadonnées ».</p></li>
+      <li><p>À la fin du traitement, une archive <code>.zip</code> se télécharge automatiquement — un dossier par morceau, avec l'audio (<code>.opus</code>, 8 canaux) et les métadonnées (<code>.json</code>). Chargez ce zip directement dans l'onglet « Éditer les métadonnées » pour le corriger.</p></li>
     </ul>
   </section>
 
@@ -1045,7 +1045,7 @@ for r in rapports:
         r["paroles"] = []`
     ),
 
-    md(`## 7. Fusion des stems en un fichier FLAC 8 canaux + fichier de métadonnées séparé`),
+    md(`## 7. Fusion des stems en un fichier Opus 8 canaux + fichier de métadonnées séparé`),
 
     code(
 `import subprocess
@@ -1053,7 +1053,7 @@ for r in rapports:
 # Ordre canonique des pistes dans le fichier fusionne (4 x stereo = 8 canaux)
 ORDRE_STEMS = ['vocals', 'drums', 'bass', 'other']
 
-def fusionner_stems_flac(stem_files, sortie_path):
+def fusionner_stems_opus(stem_files, sortie_path):
     par_nom = {f.stem: f for f in stem_files}
     ordonnes = [par_nom[n] for n in ORDRE_STEMS if n in par_nom]
     ordonnes += [f for f in stem_files if f.stem not in ORDRE_STEMS]
@@ -1065,21 +1065,24 @@ def fusionner_stems_flac(stem_files, sortie_path):
     filtre = ''.join(f'[{i}:a]' for i in range(n)) + f'amerge=inputs={n}[a]'
 
     subprocess.run(
+        # mapping_family 255 : canaux traites comme independants (pas de semantique
+        # surround type 7.1, contrairement au mapping par defaut d'Opus pour 8 canaux)
         ['ffmpeg', '-y', *inputs, '-filter_complex', filtre, '-map', '[a]',
-         '-c:a', 'flac', str(sortie_path)],
+         '-c:a', 'libopus', '-mapping_family', '255', '-application', 'audio',
+         '-b:a', '384k', str(sortie_path)],
         check=True, capture_output=True,
     )
     return [f.stem for f in ordonnes]
 
 for r in rapports:
     nom = Path(r["nom_fichier"]).stem
-    flac_path = RESULT_DIR / f"{nom}_stems.flac"
-    ordre = fusionner_stems_flac(r["stem_files"], flac_path)
+    audio_path = RESULT_DIR / f"{nom}_stems.opus"
+    ordre = fusionner_stems_opus(r["stem_files"], audio_path)
 
     metadata = dict(r["metadata"])
     releves = metadata.pop('releves', [])
 
-    r["flac_path"] = flac_path
+    r["audio_path"] = audio_path
     r["metadonnees_completes"] = {
         "pistes": ordre,
         "structure": {
@@ -1101,28 +1104,22 @@ for r in rapports:
         json.dump(r["metadonnees_completes"], f, indent=2, ensure_ascii=False)
     r["json_path"] = json_path
 
-    print(f"{nom} : {flac_path.name} ({flac_path.stat().st_size / 1024:.0f} Ko, {len(ordre)} pistes -> {len(ordre)*2} canaux) + {json_path.name}")`
+    print(f"{nom} : {audio_path.name} ({audio_path.stat().st_size / 1024:.0f} Ko, {len(ordre)} pistes -> {len(ordre)*2} canaux) + {json_path.name}")`
     ),
 
     md(`## 8. Téléchargement du résultat`),
 
     code(
-`if len(rapports) == 1:
-    # Un seul morceau : pas besoin de zip, on telecharge directement les 2 fichiers
-    r = rapports[0]
-    print(f"Fichiers prets : {r['flac_path'].name}, {r['json_path'].name}")
-    files.download(str(r["flac_path"]))
-    files.download(str(r["json_path"]))
-else:
-    # Plusieurs morceaux : on zippe pour un seul telechargement groupe
-    zip_path = WORKDIR / f"resultats_{int(time.time())}.zip"
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for r in rapports:
-            nom = Path(r["nom_fichier"]).stem
-            zf.write(r["flac_path"], f"{nom}/{nom}_stems.flac")
-            zf.write(r["json_path"], f"{nom}/{nom}_metadonnees.json")
-    print(f"Zip cree : {zip_path.name} ({zip_path.stat().st_size / 1024:.0f} Ko)")
-    files.download(str(zip_path))`
+`# Toujours un seul zip par lancement, quel que soit le nombre de morceaux --
+# un seul fichier a fournir a l'editeur de metadonnees.
+zip_path = WORKDIR / f"resultats_{int(time.time())}.zip"
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    for r in rapports:
+        nom = Path(r["nom_fichier"]).stem
+        zf.write(r["audio_path"], f"{nom}/{nom}_stems.opus")
+        zf.write(r["json_path"], f"{nom}/{nom}_metadonnees.json")
+print(f"Zip cree : {zip_path.name} ({zip_path.stat().st_size / 1024:.0f} Ko)")
+files.download(str(zip_path))`
     ),
   ];
 

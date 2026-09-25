@@ -1,33 +1,33 @@
 # Format des fichiers « Bandes »
 
-Chaque morceau traité produit **deux fichiers séparés** (regroupés dans un zip si
-plusieurs morceaux sont traités en une fois) :
+Chaque morceau traité produit une **archive `.zip` unique** contenant :
 
-- `<nom>_stems.flac` — l'audio, 8 canaux (4 stems stéréo fusionnés)
+- `<nom>_stems.opus` — l'audio, 8 canaux (4 stems stéréo fusionnés)
 - `<nom>_metadonnees.json` — toutes les métadonnées, en clair
 
 Ce document décrit le format du fichier `.json`, destiné à être lu et écrit par le
 portail (formulaire prof/élève) et par l'éditeur web de Bandes.
 
-## Pourquoi deux fichiers séparés plutôt qu'un seul
+## Pourquoi un zip avec deux fichiers séparés plutôt qu'un seul fichier audio
 
 Une version précédente embarquait les métadonnées directement dans le fichier audio
 (tags Vorbis Comment). Ça fonctionnait mais compliquait l'édition (il fallait
-réécrire le conteneur audio à chaque modification) et le format audio choisi (Ogg
-Vorbis) n'est pas nativement lisible sur iOS. Séparer les deux : l'édition des
+réécrire le conteneur audio à chaque modification). Séparer les deux : l'édition des
 métadonnées devient une simple lecture/écriture JSON, et l'audio n'est plus jamais
-touché après sa génération.
+touché après sa génération. Le zip permet de continuer à ne fournir qu'un seul
+fichier à l'éditeur (qui sait le lire et en réécrire un à jour).
 
 ## Format audio
 
-- **Codec** : FLAC (lossless, compressé)
+- **Codec** : Opus (lossy, `mapping_family 255` — canaux traités comme indépendants,
+  sans sémantique surround)
 - **Canaux** : 8 = 4 paires stéréo fusionnées (`amerge` ffmpeg)
-- **Compatibilité native** : iOS (Safari 11+/AVFoundation), Android (natif depuis
-  Android 5.0, testé jusqu'à 8 canaux), Windows 10+, Linux (universel)
-- **Point d'attention** : la norme FLAC associe la configuration 8 canaux au layout
-  7.1 (surround). Nos 4 stems sont indépendants, pas du surround — sans incidence si
-  le fichier est lu par un script (ffmpeg, `soundfile`, etc.), mais un lecteur grand
-  public pourrait mal l'interpréter s'il tente un rendu spatial automatique.
+- **Compatibilité** : décodage natif dans tous les navigateurs modernes (Chrome,
+  Firefox, Edge, Safari 18.4+ y compris sur iOS) — donc dans l'éditeur web de Bandes,
+  sur toutes les plateformes. Point d'attention : en dehors du navigateur, iOS
+  n'ouvre pas nativement un fichier Opus/Ogg dans l'app Fichiers/Musique (il faudrait
+  un conteneur `.caf` propriétaire, incompatible avec les autres plateformes) — sans
+  impact tant que la consultation se fait via l'éditeur Bandes.
 
 ## Format JSON
 
