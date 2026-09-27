@@ -124,6 +124,12 @@
     margin-right: 10px;
   }
   .filename-pill.empty{ color: var(--text-muted); font-style: italic; }
+  .filename-drive-input{
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 0.82rem !important;
+    flex: 1;
+    margin-right: 10px;
+  }
 
   .file-btn{
     font-family: 'IBM Plex Mono', monospace;
@@ -399,6 +405,31 @@
       <h2>Vos morceaux</h2>
     </div>
 
+    <div class="voca-choice">
+      <label class="voca-option active" id="source-upload-label">
+        <input type="radio" name="source" value="upload" checked>
+        <div class="voca-title">Upload manuel</div>
+        <div class="voca-desc">Sélectionnez ou glissez vos fichiers locaux</div>
+      </label>
+      <label class="voca-option" id="source-drive-label">
+        <input type="radio" name="source" value="drive">
+        <div class="voca-title">Dossier Google Drive</div>
+        <div class="voca-desc">Le notebook va chercher les fichiers lui-même</div>
+      </label>
+    </div>
+
+    <div id="drive-config" style="display:none;">
+      <div class="field" style="margin-bottom:14px;">
+        <label>Chemin du dossier dans votre Drive</label>
+        <input type="text" id="drive-folder" placeholder="ex : Bandes/a_traiter">
+      </div>
+      <label class="toggle-row">
+        <input type="checkbox" id="drive-deplacer" checked>
+        <span>Déplacer les fichiers traités dans un sous-dossier "traites" (évite de les retraiter au prochain lancement)</span>
+      </label>
+      <div class="hint">En mode Drive, tapez le nom exact du fichier dans chaque carte ci-dessous pour lui associer des métadonnées — tout fichier présent dans le dossier mais non listé ici sera quand même traité, avec des métadonnées vides.</div>
+    </div>
+
     <div id="tracks-container"></div>
     <div id="empty-state" class="empty-state">Aucun morceau ajouté pour l'instant.</div>
 
@@ -473,6 +504,7 @@
 
 <script>
 let tracks = [];
+let sourceMode = 'upload';
 let nextId = 1;
 let nextInstrumentId = 1;
 let nextMarqueurId = 1;
@@ -597,11 +629,15 @@ function render(){
     card.dataset.trackId = t.id;
     card.innerHTML = `
       <div class="track-card-head">
-        <span class="filename-pill ${t.filename ? '' : 'empty'}">${t.filename || 'aucun fichier — cliquez ou glissez-le ici'}</span>
-        <label class="file-btn">
-          Choisir un fichier
-          <input type="file" accept="audio/*" data-id="${t.id}" class="file-input">
-        </label>
+        ${sourceMode === 'drive' ? `
+          <input type="text" class="filename-drive-input" data-id="${t.id}" data-field="filename" value="${escapeAttr(t.filename)}" placeholder="nom_exact_du_fichier.wav">
+        ` : `
+          <span class="filename-pill ${t.filename ? '' : 'empty'}">${t.filename || 'aucun fichier — cliquez ou glissez-le ici'}</span>
+          <label class="file-btn">
+            Choisir un fichier
+            <input type="file" accept="audio/*" data-id="${t.id}" class="file-input">
+          </label>
+        `}
         <button class="remove-btn" data-id="${t.id}" title="Retirer ce morceau">✕</button>
       </div>
       <div class="field-grid">
@@ -755,6 +791,17 @@ function syncVocaVisibility(){
 toggleAccords.addEventListener('change', syncVocaVisibility);
 syncVocaVisibility();
 
+document.querySelectorAll('input[name=source]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    if (!radio.checked) return;
+    sourceMode = radio.value;
+    document.getElementById('source-upload-label').classList.toggle('active', sourceMode === 'upload');
+    document.getElementById('source-drive-label').classList.toggle('active', sourceMode === 'drive');
+    document.getElementById('drive-config').style.display = sourceMode === 'drive' ? 'block' : 'none';
+    render(); // re-rendu des cartes avec le bon en-tete (bouton fichier vs champ texte)
+  });
+});
+
 // --- Construction du notebook ---
 
 function toSource(text){
@@ -765,7 +812,7 @@ function toSource(text){
 function md(text){ return { cell_type: 'markdown', metadata: {}, source: toSource(text) }; }
 function code(text){ return { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: toSource(text) }; }
 
-function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, parolesActif){
+function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer){
   const metadataParFichier = {};
   tracksList.forEach(t => {
     if (!t.filename) return;
@@ -792,6 +839,9 @@ function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, par
   const accordsPy = accordsActif ? 'True' : 'False';
   const melodiePy = melodieActif ? 'True' : 'False';
   const parolesPy = parolesActif ? 'True' : 'False';
+  const sourcePy = JSON.stringify(sourceMode || 'upload');
+  const driveFolderPy = JSON.stringify(driveFolder || '');
+  const driveDeplacerPy = driveDeplacer ? 'True' : 'False';
 
   const cells = [
     md(
@@ -801,8 +851,9 @@ Généré automatiquement par l'app **Bandes**. Vos informations (élève, prof,
 sont déjà pré-remplies dans la cellule de configuration ci-dessous.
 
 **À faire :** \`Exécution -> Modifier le type d'exécution -> GPU T4\`, puis
-\`Exécution -> Tout exécuter\`. Uploadez vos fichiers audio quand demandé,
-en gardant exactement les mêmes noms que ceux entrés dans l'app.`
+\`Exécution -> Tout exécuter\`.${sourceMode === 'drive'
+  ? " Une demande d'autorisation Google Drive apparaîtra (une fois par session) : acceptez-la pour que le notebook puisse lire le dossier indiqué."
+  : " Uploadez vos fichiers audio quand demandé, en gardant exactement les mêmes noms que ceux entrés dans l'app."}`
     ),
 
     md(`## 1. Configuration (générée par l'app — ne pas modifier)`),
@@ -821,7 +872,12 @@ BTC_LARGE_VOCA = ${btcVocaPy}
 # Modules optionnels a activer pour ce traitement
 ACCORDS_ACTIF = ${accordsPy}
 MELODIE_ACTIF = ${melodiePy}
-PAROLES_ACTIF = ${parolesPy}`
+PAROLES_ACTIF = ${parolesPy}
+
+# Source des fichiers audio : "upload" (widget d'upload) ou "drive" (dossier Google Drive)
+MODE_SOURCE = ${sourcePy}
+DRIVE_DOSSIER = ${driveFolderPy}  # chemin relatif a "Mon Drive", ex: "Bandes/a_traiter"
+DRIVE_DEPLACER_APRES_TRAITEMENT = ${driveDeplacerPy}`
     ),
 
     md(`## 2. Installation des dépendances`),
@@ -873,23 +929,54 @@ RESULT_DIR = WORKDIR / "resultats"
 RESULT_DIR.mkdir(exist_ok=True)`
     ),
 
-    md(`## 3. Upload de vos fichiers audio`),
+    md(`## 3. Récupération de vos fichiers audio`),
 
     code(
 `from google.colab import files
 
-print("Selectionnez un ou plusieurs fichiers audio :")
-uploaded = files.upload()
-
+EXTENSIONS_AUDIO = {'.wav', '.mp3', '.flac', '.m4a', '.aiff', '.aif', '.ogg', '.opus'}
 fichiers_a_traiter = []
-for nom_fichier, contenu in uploaded.items():
-    chemin_local = AUDIO_DIR / nom_fichier
-    chemin_local.write_bytes(contenu)
-    meta = METADATA_PAR_FICHIER.get(nom_fichier)
-    if meta is None:
-        print(f"  (i) Aucune metadonnee trouvee pour '{nom_fichier}' -- verifiez le nom exact du fichier dans l'app.")
-        meta = {"nom_fichier": nom_fichier}
-    fichiers_a_traiter.append({"chemin_local": chemin_local, "metadata": meta})
+
+if MODE_SOURCE == "upload":
+    print("Selectionnez un ou plusieurs fichiers audio :")
+    uploaded = files.upload()
+
+    for nom_fichier, contenu in uploaded.items():
+        chemin_local = AUDIO_DIR / nom_fichier
+        chemin_local.write_bytes(contenu)
+        meta = METADATA_PAR_FICHIER.get(nom_fichier)
+        if meta is None:
+            print(f"  (i) Aucune metadonnee trouvee pour '{nom_fichier}' -- verifiez le nom exact du fichier dans l'app.")
+            meta = {"nom_fichier": nom_fichier}
+        fichiers_a_traiter.append({"chemin_local": chemin_local, "metadata": meta})
+
+elif MODE_SOURCE == "drive":
+    from google.colab import drive
+    drive.mount('/content/drive')
+
+    dossier_drive = Path("/content/drive/MyDrive") / DRIVE_DOSSIER
+    if not dossier_drive.is_dir():
+        raise FileNotFoundError(f"Dossier introuvable dans Drive : {dossier_drive}")
+
+    fichiers_trouves = sorted(
+        f for f in dossier_drive.iterdir()
+        if f.is_file() and f.suffix.lower() in EXTENSIONS_AUDIO
+    )
+    print(f"{len(fichiers_trouves)} fichier(s) audio trouve(s) dans {dossier_drive}")
+
+    for chemin_drive in fichiers_trouves:
+        nom_fichier = chemin_drive.name
+        meta = METADATA_PAR_FICHIER.get(nom_fichier)
+        if meta is None:
+            print(f"  (i) Aucune metadonnee trouvee pour '{nom_fichier}' -- traite quand meme, metadonnees vides.")
+            meta = {"nom_fichier": nom_fichier}
+        # Copie locale (le traitement ne modifie jamais les fichiers directement dans Drive)
+        chemin_local = AUDIO_DIR / nom_fichier
+        chemin_local.write_bytes(chemin_drive.read_bytes())
+        fichiers_a_traiter.append({"chemin_local": chemin_local, "metadata": meta, "chemin_drive_origine": chemin_drive})
+
+else:
+    raise ValueError(f"MODE_SOURCE inconnu : {MODE_SOURCE}")
 
 print(f"{len(fichiers_a_traiter)} fichier(s) pret(s).")`
     ),
@@ -945,6 +1032,7 @@ for item in fichiers_a_traiter:
     rapports.append({
         "nom_fichier": chemin.name,
         "metadata": meta,
+        "chemin_drive_origine": item.get("chemin_drive_origine"),
         "duree_totale_s": round(time.time() - t_debut, 1),
         "bpm": getattr(resultat, "bpm", None),
         "beats": [float(b) for b in getattr(resultat, "beats", [])],
@@ -1164,7 +1252,17 @@ for r in rapports:
     md(`## 8. Téléchargement du résultat`),
 
     code(
-`# Toujours un seul zip par lancement, quel que soit le nombre de morceaux --
+`# Deplacement des fichiers traites dans Drive (evite de les retraiter au prochain lancement)
+if MODE_SOURCE == "drive" and DRIVE_DEPLACER_APRES_TRAITEMENT:
+    dossier_traites = Path("/content/drive/MyDrive") / DRIVE_DOSSIER / "traites"
+    dossier_traites.mkdir(exist_ok=True)
+    for r in rapports:
+        origine = r.get("chemin_drive_origine")
+        if origine and origine.exists():
+            origine.rename(dossier_traites / origine.name)
+            print(f"Deplace vers 'traites' : {origine.name}")
+
+# Toujours un seul zip par lancement, quel que soit le nombre de morceaux --
 # un seul fichier a fournir a l'editeur de metadonnees.
 zip_path = WORKDIR / f"resultats_{int(time.time())}.zip"
 with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -1193,21 +1291,30 @@ files.download(str(zip_path))`
 document.getElementById('generate-btn').addEventListener('click', () => {
   const status = document.getElementById('status');
   const withFilename = tracks.filter(t => t.filename);
+  const driveFolder = document.getElementById('drive-folder').value.trim();
+  const driveDeplacer = document.getElementById('drive-deplacer').checked;
 
-  if (tracks.length === 0){
-    status.textContent = "Ajoutez au moins un morceau avant de générer le notebook.";
-    return;
-  }
-  if (withFilename.length === 0){
-    status.textContent = "Choisissez le fichier audio de chaque morceau (bouton \"Choisir un fichier\").";
-    return;
+  if (sourceMode === 'upload'){
+    if (tracks.length === 0){
+      status.textContent = "Ajoutez au moins un morceau avant de générer le notebook.";
+      return;
+    }
+    if (withFilename.length === 0){
+      status.textContent = "Choisissez le fichier audio de chaque morceau (bouton \"Choisir un fichier\").";
+      return;
+    }
+  } else {
+    if (!driveFolder){
+      status.textContent = "Indiquez le chemin du dossier Google Drive à traiter.";
+      return;
+    }
   }
 
   const btcLargeVoca = document.querySelector('input[name=voca]:checked').value === 'large';
   const accordsActif = document.getElementById('toggle-accords').checked;
   const melodieActif = document.getElementById('toggle-melodie').checked;
   const parolesActif = document.getElementById('toggle-paroles').checked;
-  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif);
+  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer);
   const blob = new Blob([JSON.stringify(notebook, null, 1)], { type: 'application/x-ipynb+json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1219,7 +1326,8 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   a.remove();
   URL.revokeObjectURL(url);
 
-  status.textContent = `Notebook téléchargé (${withFilename.length} morceau${withFilename.length > 1 ? 'x' : ''}). Ouvrez-le dans Google Colab pour continuer.`;
+  const suffixe = sourceMode === 'drive' ? `dossier Drive "${driveFolder}"` : `${withFilename.length} morceau${withFilename.length > 1 ? 'x' : ''}`;
+  status.textContent = `Notebook téléchargé (${suffixe}). Ouvrez-le dans Google Colab pour continuer.`;
 });
 
 if ('serviceWorker' in navigator){
