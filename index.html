@@ -982,7 +982,10 @@ if MELODIE_ACTIF:
 
 if PAROLES_ACTIF:
     print("Installation de faster-whisper (paroles)...")
-    pip_install('faster-whisper')
+    # PyAV 19.0.0 (sorti tres recemment) a retire l'argument "metadata_errors" que
+    # faster-whisper utilise pour decoder l'audio en interne -> TypeError a l'usage.
+    # On fige donc av sous la 19 tant que faster-whisper n'est pas mis a jour.
+    pip_install('faster-whisper', 'av<19')
 
 print("Installation terminee.")`
     ),
