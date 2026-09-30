@@ -99,6 +99,18 @@
     margin-bottom: 14px;
   }
   .file-info strong{ color: var(--text); }
+  .mixette{ display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .mixette-btn{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    background: var(--panel-raised);
+    border: 1px solid var(--brass-dim);
+    color: var(--brass);
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .mixette-btn.muted{ background: transparent; border-color: var(--border); color: var(--text-muted); text-decoration: line-through; }
 
   .transport{ display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
   .transport button{
@@ -374,6 +386,7 @@
 
     <section>
       <div class="file-info" id="file-info"></div>
+      <div class="mixette" id="mixette" style="display:none;"></div>
       <button class="add-row-btn" id="btn-open-metadata" style="margin-bottom:14px;">✎ Modifier les métadonnées du morceau</button>
 
       <div class="transport">
@@ -498,9 +511,10 @@
 // ============================================================
 
 let audioCtx = null;
-let audioBuffer = null;
+let masterGain = null;
+let audioStems = []; // [{ nom, buffer, gainNode }] -- 1 entree en mode opus_8ch, 4 en mode aac_4pistes
 let duration = 0;
-let currentSource = null;
+let currentSources = []; // une AudioBufferSourceNode par element de audioStems, demarrees ensemble
 let playStartCtxTime = 0;
 let playOffset = 0;
 let isPlaying = false;
@@ -665,7 +679,7 @@ function construireZip(entrees){
 // ============================================================
 
 let entreesZipOriginales = {}; // nom -> Uint8Array, pour reconstruire le zip d'export (audio inchange)
-let nomEntreeAudio = '', nomEntreeJson = '';
+let nomsEntreesAudio = [], nomEntreeJson = '';
 
 const loadStatus = document.getElementById('load-status');
 const inputZip = document.getElementById('file-input-zip');
@@ -674,6 +688,12 @@ const dropzoneZip = document.getElementById('dropzone-zip');
 inputZip.addEventListener('change', (e) => { if (e.target.files[0]) chargerZip(e.target.files[0]); });
 dropzoneZip.addEventListener('dragover', (e) => e.preventDefault());
 dropzoneZip.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) chargerZip(e.dataTransfer.files[0]); });
+
+function trouverFichierPourPiste(nomPiste, nomsAudio){
+  const base = n => n.replace(/\.[^/.]+$/, '').toLowerCase();
+  const p = nomPiste.toLowerCase();
+  return nomsAudio.find(n => base(n).endsWith('_' + p)) || nomsAudio.find(n => base(n) === p);
+}
 
 async function chargerZip(file){
   try{
@@ -686,9 +706,9 @@ async function chargerZip(file){
     const noms = Object.keys(entreesZipOriginales);
 
     nomEntreeJson = noms.find(n => n.toLowerCase().endsWith('.json'));
-    nomEntreeAudio = noms.find(n => n !== nomEntreeJson);
-    if (!nomEntreeJson || !nomEntreeAudio){
-      throw new Error("le zip doit contenir un fichier audio et un fichier .json");
+    nomsEntreesAudio = noms.filter(n => n !== nomEntreeJson);
+    if (!nomEntreeJson || nomsEntreesAudio.length === 0){
+      throw new Error("le zip doit contenir au moins un fichier audio et un fichier .json");
     }
 
     donnees = JSON.parse(new TextDecoder('utf-8').decode(entreesZipOriginales[nomEntreeJson]));
@@ -700,21 +720,49 @@ async function chargerZip(file){
 
     loadStatus.textContent = 'Décodage audio...';
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // decodeAudioData peut neutraliser le buffer -- on lui passe une copie
-    const audioBytes = entreesZipOriginales[nomEntreeAudio];
-    const copie = audioBytes.slice().buffer;
-    audioBuffer = await audioCtx.decodeAudioData(copie);
-    duration = audioBuffer.duration;
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
+
+    const pistes = (donnees.pistes && donnees.pistes.length) ? donnees.pistes : ['fusion'];
+    audioStems = [];
+
+    if (nomsEntreesAudio.length === 1){
+      // Mode opus_8ch : un seul fichier, toutes les pistes fusionnees dedans
+      const copie = entreesZipOriginales[nomsEntreesAudio[0]].slice().buffer;
+      const buffer = await audioCtx.decodeAudioData(copie);
+      const gainNode = audioCtx.createGain();
+      gainNode.connect(masterGain);
+      audioStems.push({ nom: pistes.join(' + '), buffer, gainNode });
+    } else {
+      // Mode aac_4pistes : un fichier par piste, associe par nom
+      for (const nomPiste of pistes){
+        const nomFichier = trouverFichierPourPiste(nomPiste, nomsEntreesAudio);
+        if (!nomFichier){
+          console.warn(`Aucun fichier trouve pour la piste "${nomPiste}"`);
+          continue;
+        }
+        const copie = entreesZipOriginales[nomFichier].slice().buffer;
+        const buffer = await audioCtx.decodeAudioData(copie);
+        const gainNode = audioCtx.createGain();
+        gainNode.connect(masterGain);
+        audioStems.push({ nom: nomPiste, buffer, gainNode });
+      }
+      if (audioStems.length === 0) throw new Error("impossible d'associer les fichiers audio aux pistes declarees dans le JSON");
+    }
+
+    duration = Math.max(...audioStems.map(s => s.buffer.duration));
 
     dropzoneZip.classList.add('loaded');
     document.getElementById('dropzone-zip-text').textContent = `✓ ${file.name}`;
     loadStatus.textContent = '';
 
+    const nCanaux = audioStems.reduce((a,s) => a + s.buffer.numberOfChannels, 0);
     document.getElementById('file-info').innerHTML = `
-      <span>${audioBuffer.numberOfChannels} canaux</span>
+      <span>${audioStems.length > 1 ? audioStems.length + ' fichiers, ' : ''}${nCanaux} canaux</span>
       <span>${formatTemps(duration)}</span>
       <span>${(donnees.pistes||[]).join(' / ')}</span>
     `;
+    rendreMixette();
     document.getElementById('editor-root').style.display = 'block';
     pixelsPerSecond = calculerZoomAjuste();
     appliquerLargeurTimeline();
@@ -726,6 +774,23 @@ async function chargerZip(file){
     loadStatus.textContent = "Erreur : " + err.message;
     console.error(err);
   }
+}
+
+function rendreMixette(){
+  const zone = document.getElementById('mixette');
+  if (audioStems.length <= 1){ zone.innerHTML = ''; zone.style.display = 'none'; return; }
+  zone.style.display = 'flex';
+  zone.innerHTML = audioStems.map((s, i) => `
+    <button type="button" class="mixette-btn" data-i="${i}">${escapeHtml(s.nom)}</button>
+  `).join('');
+  zone.querySelectorAll('.mixette-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const stem = audioStems[Number(btn.dataset.i)];
+      const muet = stem.gainNode.gain.value > 0;
+      stem.gainNode.gain.value = muet ? 0 : 1;
+      btn.classList.toggle('muted', muet);
+    });
+  });
 }
 
 // ============================================================
@@ -774,7 +839,7 @@ timelineScroll.addEventListener('touchmove', (e) => {
 }, { passive: true });
 timelineScroll.addEventListener('touchend', (e) => { if (e.touches.length<2) pinchStartDist = null; });
 
-window.addEventListener('resize', () => { if (audioBuffer){ appliquerLargeurTimeline(); dessinerWaveform(); rendreTout(); } });
+window.addEventListener('resize', () => { if (audioStems.length){ appliquerLargeurTimeline(); dessinerWaveform(); rendreTout(); } });
 
 // ============================================================
 // Waveform + regle temporelle + grille rythmique
@@ -791,23 +856,26 @@ function dessinerWaveform(){
   const W = rect.width, H = rect.height;
   ctx.clearRect(0,0,W,H);
 
-  const nCh = audioBuffer.numberOfChannels;
-  const nSamples = audioBuffer.length;
-  const samplesPerPixel = Math.max(1, Math.floor(nSamples / W));
+  const nSamplesMax = Math.max(...audioStems.map(s => s.buffer.length));
+  const samplesPerPixel = Math.max(1, Math.floor(nSamplesMax / W));
 
   ctx.fillStyle = 'rgba(192,153,106,0.55)';
   const mid = H/2;
   for (let x=0; x<W; x++){
     const start = x*samplesPerPixel;
-    const end = Math.min(nSamples, start+samplesPerPixel);
+    const end = Math.min(nSamplesMax, start+samplesPerPixel);
     let min=0, max=0;
     const step = Math.max(1, Math.floor((end-start)/40));
-    for (let ch=0; ch<nCh; ch++){
-      const data = audioBuffer.getChannelData(ch);
-      for (let i=start; i<end; i+=step){
-        const v = data[i];
-        if (v<min) min=v;
-        if (v>max) max=v;
+    for (const stem of audioStems){
+      const buf = stem.buffer;
+      for (let ch=0; ch<buf.numberOfChannels; ch++){
+        const data = buf.getChannelData(ch);
+        const fin = Math.min(end, buf.length);
+        for (let i=start; i<fin; i+=step){
+          const v = data[i];
+          if (v<min) min=v;
+          if (v>max) max=v;
+        }
       }
     }
     const y1 = mid + min*mid*0.95;
@@ -849,25 +917,37 @@ document.getElementById('waveform').addEventListener('pointerdown', (e) => {
 // ============================================================
 
 function jouer(depuis){
-  if (currentSource) currentSource.stop();
-  currentSource = audioCtx.createBufferSource();
-  currentSource.buffer = audioBuffer;
-  currentSource.connect(audioCtx.destination);
-  currentSource.start(0, depuis);
-  playStartCtxTime = audioCtx.currentTime - depuis;
+  currentSources.forEach(s => { s.onended = null; s.stop(); });
+  currentSources = [];
+
+  // Horaire commun a toutes les pistes : demarrees dans la meme boucle, avant tout
+  // retour au navigateur, donc sur le meme "tick" audio -- c'est ce qui garantit
+  // l'absence de derive entre pistes (contrairement a plusieurs balises <audio>).
+  const startCtxTime = audioCtx.currentTime + 0.05;
+  audioStems.forEach((stem, i) => {
+    const source = audioCtx.createBufferSource();
+    source.buffer = stem.buffer;
+    source.connect(stem.gainNode);
+    source.start(startCtxTime, depuis);
+    if (i === 0){
+      source.onended = () => {
+        if (isPlaying && getTempsActuel() >= duration - 0.05){
+          isPlaying = false;
+          playOffset = 0;
+          document.getElementById('btn-play').textContent = '▶';
+        }
+      };
+    }
+    currentSources.push(source);
+  });
+  playStartCtxTime = startCtxTime - depuis;
   isPlaying = true;
   document.getElementById('btn-play').textContent = '⏸';
-  currentSource.onended = () => {
-    if (isPlaying && getTempsActuel() >= duration - 0.05){
-      isPlaying = false;
-      playOffset = 0;
-      document.getElementById('btn-play').textContent = '▶';
-    }
-  };
 }
 function pauser(){
   playOffset = getTempsActuel();
-  if (currentSource){ currentSource.onended=null; currentSource.stop(); currentSource=null; }
+  currentSources.forEach(s => { s.onended = null; s.stop(); });
+  currentSources = [];
   isPlaying = false;
   document.getElementById('btn-play').textContent = '▶';
 }
@@ -875,14 +955,14 @@ function getTempsActuel(){ return isPlaying ? Math.min(duration, audioCtx.curren
 function seekTo(t){
   t = Math.max(0, Math.min(duration, t));
   const enLecture = isPlaying;
-  if (enLecture && currentSource){ currentSource.onended=null; currentSource.stop(); }
+  if (enLecture){ currentSources.forEach(s => { s.onended = null; s.stop(); }); currentSources = []; }
   playOffset = t;
   if (enLecture) jouer(t); else dessinerPlayhead();
 }
 document.getElementById('btn-play').addEventListener('click', () => { if (isPlaying) pauser(); else jouer(playOffset); });
 
 function bouclePlayhead(){
-  if (audioBuffer){
+  if (audioStems.length){
     dessinerPlayhead();
     document.getElementById('time-display').textContent = `${formatTemps(getTempsActuel())} / ${formatTemps(duration)}`;
   }
@@ -1236,8 +1316,9 @@ document.getElementById('export-json').addEventListener('click', () => {
   };
   const jsonBytes = new TextEncoder().encode(JSON.stringify(sortie, null, 2));
 
+  const entreesAudio = nomsEntreesAudio.map(nom => ({ nom, data: entreesZipOriginales[nom] })); // inchange
   const zipBlob = construireZip([
-    { nom: nomEntreeAudio, data: entreesZipOriginales[nomEntreeAudio] }, // inchange
+    ...entreesAudio,
     { nom: nomEntreeJson, data: jsonBytes },
   ]);
   telechargerBlob(zipBlob, nomFichierZip || 'bandes_modifie.zip');
