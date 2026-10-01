@@ -937,8 +937,8 @@ AAC_BITRATE = ${aacBitratePy}  # par piste, en mode aac_4pistes uniquement
 # de ces seuils, un segment est juge hallucine et retire. Augmenter
 # PAROLES_NO_SPEECH_MAX ou diminuer PAROLES_LOGPROB_MIN = plus permissif (garde plus
 # de segments, risque un peu plus d'hallucinations).
-PAROLES_NO_SPEECH_MAX = 0.75
-PAROLES_LOGPROB_MIN = -1.3
+PAROLES_NO_SPEECH_MAX = 1.3
+PAROLES_LOGPROB_MIN = -2.2
 
 # Detection de la voix (VAD) avant transcription. Seuil plus bas = plus sensible
 # (detecte une voix plus faible/plus bruitee, mais peut aussi capter du bruit).
