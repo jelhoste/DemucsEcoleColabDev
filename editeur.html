@@ -163,6 +163,15 @@
     border-top: 1px solid var(--border);
     touch-action: pan-y;
   }
+  .lane-pianoroll{ height: 180px; }
+  #grille-overlay{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 8;
+  }
+  #pianoroll-canvas{ display: block; width: 100%; height: 100%; touch-action: none; }
   .lane-label{
     position: sticky;
     left: 4px;
@@ -405,8 +414,12 @@
           <canvas id="waveform"></canvas>
           <div class="lane" id="lane-structure" style="--lane-color: var(--brass);"><span class="lane-label">Structure</span></div>
           <div class="lane" id="lane-accords" style="--lane-color: var(--accord);"><span class="lane-label">Accords</span></div>
-          <div class="lane" id="lane-melodie" style="--lane-color: #7FA8C9;"><span class="lane-label">Mélodie</span></div>
+          <div class="lane lane-pianoroll" id="lane-melodie" style="--lane-color: #7FA8C9;">
+            <span class="lane-label">Mélodie</span>
+            <canvas id="pianoroll-canvas"></canvas>
+          </div>
           <div class="lane" id="lane-paroles" style="--lane-color: #B98FC9;"><span class="lane-label">Paroles</span></div>
+          <canvas id="grille-overlay"></canvas>
         </div>
       </div>
       <div class="hint">Trait marqué : premier temps de la mesure (downbeat). Trait fin : autres temps. Molette + Ctrl (ou pincement tactile) pour zoomer.</div>
@@ -767,6 +780,7 @@ async function chargerZip(file){
     pixelsPerSecond = calculerZoomAjuste();
     appliquerLargeurTimeline();
     dessinerWaveform();
+    dessinerGrilleRythmique();
     rendreTout();
     requestAnimationFrame(bouclePlayhead);
   } catch(err){
@@ -810,6 +824,7 @@ function setZoom(nouveauPxParSec){
   pixelsPerSecond = Math.max(10, Math.min(4000, nouveauPxParSec));
   appliquerLargeurTimeline();
   dessinerWaveform();
+  dessinerGrilleRythmique();
   rendreTout();
 }
 
@@ -839,7 +854,7 @@ timelineScroll.addEventListener('touchmove', (e) => {
 }, { passive: true });
 timelineScroll.addEventListener('touchend', (e) => { if (e.touches.length<2) pinchStartDist = null; });
 
-window.addEventListener('resize', () => { if (audioStems.length){ appliquerLargeurTimeline(); dessinerWaveform(); rendreTout(); } });
+window.addEventListener('resize', () => { if (audioStems.length){ appliquerLargeurTimeline(); dessinerWaveform(); dessinerGrilleRythmique(); rendreTout(); } });
 
 // ============================================================
 // Waveform + regle temporelle + grille rythmique
@@ -883,27 +898,40 @@ function dessinerWaveform(){
     ctx.fillRect(x, Math.min(y1,y2), 1, Math.max(1,Math.abs(y2-y1)));
   }
 
+  dessinerPlayhead();
+}
+
+function dessinerGrilleRythmique(){
+  const wrap = document.getElementById('timeline-wrap');
+  const canvas = document.getElementById('grille-overlay');
+  const rect = wrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const W = rect.width, H = rect.height;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,W,H);
+  if (!duration) return;
+
   const structureBase = donnees.structure || {};
   if (structureBase.beats){
-    ctx.strokeStyle = 'rgba(192,153,106,0.14)';
+    ctx.strokeStyle = 'rgba(192,153,106,0.10)';
     ctx.lineWidth = 1;
     structureBase.beats.forEach(t => {
       const x = (t/duration)*W;
-      ctx.beginPath(); ctx.moveTo(x,H-8); ctx.lineTo(x,H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
     });
   }
   if (structureBase.downbeats){
     structureBase.downbeats.forEach(t => {
       const x = (t/duration)*W;
-      ctx.strokeStyle = 'rgba(192,153,106,0.55)';
+      ctx.strokeStyle = 'rgba(192,153,106,0.4)';
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
       ctx.fillStyle = 'rgba(192,153,106,0.9)';
       ctx.fillRect(x-1.5, 0, 3, 7);
     });
   }
-
-  dessinerPlayhead();
 }
 
 document.getElementById('waveform').addEventListener('pointerdown', (e) => {
@@ -965,8 +993,22 @@ function bouclePlayhead(){
   if (audioStems.length){
     dessinerPlayhead();
     document.getElementById('time-display').textContent = `${formatTemps(getTempsActuel())} / ${formatTemps(duration)}`;
+    if (isPlaying) defilerVersCurseurSiNecessaire();
   }
   requestAnimationFrame(bouclePlayhead);
+}
+
+function defilerVersCurseurSiNecessaire(){
+  const scroll = document.getElementById('timeline-scroll');
+  const x = (getTempsActuel()/duration) * (duration*pixelsPerSecond);
+  const gauche = scroll.scrollLeft;
+  const droite = gauche + scroll.clientWidth;
+  // Curseur sorti de la fenetre visible (a droite, ou avant le debut) : on
+  // "tourne la page" plutot que de faire defiler en continu -- le curseur
+  // reapparait au debut de la nouvelle fenetre, la lecture se poursuit sans coupure.
+  if (x > droite - 4 || x < gauche){
+    scroll.scrollLeft = x;
+  }
 }
 function dessinerPlayhead(){
   document.querySelectorAll('.playhead').forEach(el => el.remove());
@@ -1080,26 +1122,133 @@ const laneParoles = creerLaneEditable(document.getElementById('lane-paroles'), (
 // Lane melodie (lecture seule pour l'instant, cf. hint dans l'UI)
 // ============================================================
 
-function rendreLaneMelodie(){
+const NOTES_NOIRES = new Set([1,3,6,8,10]); // C#,D#,F#,G#,A# (index mod 12)
+
+function calculerGeometriePianoRoll(){
   const lane = document.getElementById('lane-melodie');
-  lane.querySelectorAll('.tick-mark').forEach(el => el.remove());
-  if (!duration || melodieNotes.length===0) return;
-  const width = lane.clientWidth;
-  const midis = melodieNotes.map(n => n.midi);
-  const minM = Math.min(...midis), maxM = Math.max(...midis);
-  const span = Math.max(1, maxM-minM);
+  const rect = lane.getBoundingClientRect();
+  const W = rect.width, H = rect.height || 180;
+  let minM = 55, maxM = 74; // Sol3 -> Re5 par defaut, si pas encore de notes
+  if (melodieNotes.length){
+    minM = Math.min(...melodieNotes.map(n => n.midi)) - 2;
+    maxM = Math.max(...melodieNotes.map(n => n.midi)) + 2;
+  }
+  const nLignes = Math.max(1, maxM - minM + 1);
+  const hLigne = H / nLignes;
+  return { W, H, minM, maxM, hLigne, yDuMidi: (m) => (maxM - m) * hLigne };
+}
+
+function rendreLaneMelodie(){
+  const canvas = document.getElementById('pianoroll-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const geo = calculerGeometriePianoRoll();
+  const { W, H, minM, maxM, hLigne, yDuMidi } = geo;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,W,H);
+
+  if (!duration) return;
+
+  // Grille de fond façon piano : touches noires ombrees, reperes sur les Do
+  for (let m = minM; m <= maxM; m++){
+    const y = yDuMidi(m);
+    ctx.fillStyle = NOTES_NOIRES.has(((m%12)+12)%12) ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.02)';
+    ctx.fillRect(0, y, W, hLigne);
+    if (((m%12)+12)%12 === 0){ // Do : ligne de reference + etiquette
+      ctx.strokeStyle = 'rgba(192,153,106,0.25)';
+      ctx.beginPath(); ctx.moveTo(0, y+hLigne); ctx.lineTo(W, y+hLigne); ctx.stroke();
+      ctx.fillStyle = 'rgba(192,153,106,0.55)';
+      ctx.font = '9px "IBM Plex Mono", monospace';
+      ctx.fillText(midiToName(m), 4, y+hLigne-3);
+    }
+  }
+
+  // Notes
   melodieNotes.forEach(n => {
-    const x = (n.start/duration)*width;
-    const h = 22;
-    const yRatio = 1 - ((n.midi-minM)/span);
-    const el = document.createElement('div');
-    el.className = 'tick-mark';
-    el.style.left = x+'px';
-    el.style.height = (4+yRatio*h)+'px';
-    el.title = midiToName(n.midi);
-    lane.appendChild(el);
+    const x = (n.start/duration)*W;
+    const w = Math.max(2, ((n.end-n.start)/duration)*W);
+    const y = yDuMidi(n.midi);
+    const enCours = dragMelodie && dragMelodie.note === n;
+    ctx.fillStyle = enCours ? '#A9CBE6' : '#7FA8C9';
+    ctx.strokeStyle = enCours ? 'rgba(255,255,255,0.9)' : 'rgba(127,168,201,0.9)';
+    ctx.fillRect(x, y+1, w, hLigne-2);
+    ctx.strokeRect(x+0.5, y+1.5, w-1, hLigne-3);
   });
 }
+
+// --- Edition du piano roll : poignees de bord (resize) + corps (deplacement temps+hauteur) ---
+const EDGE_PX = 6;
+const MIDI_MIN = 0, MIDI_MAX = 127;
+let dragMelodie = null; // { note, mode: 'move'|'resize-start'|'resize-end', startX, startY, origStart, origEnd, origMidi }
+
+function trouverNoteSousCurseur(x, y, geo){
+  for (let i = melodieNotes.length - 1; i >= 0; i--){
+    const n = melodieNotes[i];
+    const nx = (n.start/duration)*geo.W;
+    const nw = Math.max(2, ((n.end-n.start)/duration)*geo.W);
+    const ny = geo.yDuMidi(n.midi);
+    if (y >= ny && y <= ny+geo.hLigne && x >= nx-2 && x <= nx+nw+2){
+      let mode = 'move';
+      if (Math.abs(x-nx) <= EDGE_PX) mode = 'resize-start';
+      else if (Math.abs(x-(nx+nw)) <= EDGE_PX) mode = 'resize-end';
+      return { note: n, mode };
+    }
+  }
+  return null;
+}
+
+const pianoCanvas = document.getElementById('pianoroll-canvas');
+
+pianoCanvas.addEventListener('pointerdown', (e) => {
+  if (!duration) return;
+  const rect = pianoCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const trouve = trouverNoteSousCurseur(x, y, calculerGeometriePianoRoll());
+  if (!trouve) return;
+  dragMelodie = {
+    note: trouve.note, mode: trouve.mode, startX: x, startY: y,
+    origStart: trouve.note.start, origEnd: trouve.note.end, origMidi: trouve.note.midi,
+  };
+  pianoCanvas.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+
+pianoCanvas.addEventListener('pointermove', (e) => {
+  const rect = pianoCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const geo = calculerGeometriePianoRoll();
+
+  if (!dragMelodie){
+    // Pas de glisser en cours : juste adapter le curseur au survol (poignee vs corps)
+    const survol = trouverNoteSousCurseur(x, y, geo);
+    pianoCanvas.style.cursor = survol ? (survol.mode === 'move' ? 'grab' : 'ew-resize') : 'default';
+    return;
+  }
+
+  const MIN_DUREE = 0.05;
+  const n = dragMelodie.note;
+  const dt = ((x - dragMelodie.startX)/geo.W) * duration;
+
+  if (dragMelodie.mode === 'resize-start'){
+    n.start = Math.max(0, Math.min(dragMelodie.origStart + dt, n.end - MIN_DUREE));
+  } else if (dragMelodie.mode === 'resize-end'){
+    n.end = Math.min(duration, Math.max(dragMelodie.origEnd + dt, n.start + MIN_DUREE));
+  } else {
+    const dureeOrig = dragMelodie.origEnd - dragMelodie.origStart;
+    const nouveauStart = Math.max(0, Math.min(dragMelodie.origStart + dt, duration - dureeOrig));
+    n.start = nouveauStart;
+    n.end = nouveauStart + dureeOrig;
+    const dyLignes = Math.round((y - dragMelodie.startY) / geo.hLigne);
+    n.midi = Math.max(MIDI_MIN, Math.min(MIDI_MAX, dragMelodie.origMidi - dyLignes));
+  }
+  rendreLaneMelodie();
+});
+
+pianoCanvas.addEventListener('pointerup', () => {
+  if (dragMelodie){ dragMelodie = null; rendreListeMelodie(); }
+});
+pianoCanvas.addEventListener('pointercancel', () => { dragMelodie = null; });
 
 // ============================================================
 // Listes detaillees
