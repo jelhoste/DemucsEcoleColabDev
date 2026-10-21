@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.11.0">
+<meta name="app-version" content="1.11.1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -2287,24 +2287,27 @@ addTrack();
   const V = document.querySelector('meta[name="app-version"]').content;
   const afficher = () => { const el = document.getElementById('app-version'); if (el) el.textContent = 'Bandes v' + V; };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', afficher); else window.addEventListener('load', afficher);
-  if (!('serviceWorker' in navigator)) return;
-  let rechargement = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!rechargement){ rechargement = true; location.reload(); } });
-  function proposer(sw){
-    const b = document.getElementById('maj-bandeau'); if (!b) return;
-    b.style.display = 'flex';
-    b.querySelector('button').onclick = () => sw.postMessage('SKIP_WAITING');
+  // Mise à jour : on compare la version de cette page à celle publiée (version.json, jamais mis en cache).
+  async function verifier(){
+    try {
+      const r = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+      const j = await r.json();
+      if (j.version && j.version !== V){
+        const b = document.getElementById('maj-bandeau'); if (!b) return;
+        b.querySelector('span').textContent = 'Nouvelle version disponible (v' + j.version + ').';
+        b.style.display = 'flex';
+        b.querySelector('button').textContent = 'Recharger';
+        b.querySelector('button').onclick = () => location.reload();
+      }
+    } catch (e) {}
   }
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      if (reg.waiting && navigator.serviceWorker.controller) proposer(reg.waiting);
-      reg.addEventListener('updatefound', () => {
-        const nv = reg.installing; if (!nv) return;
-        nv.addEventListener('statechange', () => { if (nv.state === 'installed' && navigator.serviceWorker.controller) proposer(nv); });
-      });
-      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
-    }).catch(() => {});
-  });
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(reg => { reg.update().catch(() => {}); }).catch(() => {});
+    });
+  }
+  window.addEventListener('load', () => { verifier(); setInterval(verifier, 10 * 60 * 1000); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) verifier(); });
 })();
 </script>
 <div id="maj-bandeau"><span>Nouvelle version disponible.</span><button type="button">Mettre à jour</button></div>

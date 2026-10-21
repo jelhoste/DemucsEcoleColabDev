@@ -5,6 +5,9 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.11.1 — 2026-10-21
+- PWA : le service worker ignore le cache HTTP de GitHub Pages (fichiers gardés 10 min) et prend la main immédiatement ; la bannière « Nouvelle version disponible — Recharger » compare maintenant la page à `version.json` (vérifié au démarrage, toutes les 10 min et au retour sur l'onglet), sans dépendre du cycle du service worker.
+
 ## 1.11.0 — 2026-10-21
 - Paroles : WhisperX est désormais le seul aligneur (Whisper seul et Montreal Forced Aligner retirés, installation conda supprimée).
 - Paroles : choix du modèle d'alignement dans l'interface — « Grand modèle » (défaut, le plus précis, plus lent), « Standard » (plus rapide), ou « Test » qui garde les deux versions à comparer dans l'éditeur.

@@ -1,11 +1,11 @@
 // Service worker de Bandes — la version vient de version.json / APP_VERSION.
 // À CHAQUE LIVRAISON : changer APP_VERSION ici, dans version.json et dans les deux pages (voir CHANGELOG.md).
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.11.1';
 const CACHE = 'bandes-' + APP_VERSION;
 const COQUILLE = ['./', './index.html', './editeur.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './version.json'];
 
 self.addEventListener('install', (e) => {
-  // pas de skipWaiting automatique : la page propose « Mettre à jour » (message SKIP_WAITING)
+  self.skipWaiting(); // la nouvelle version prend la main tout de suite (la page, elle, propose de recharger)
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(COQUILLE)));
 });
 self.addEventListener('activate', (e) => {
@@ -18,8 +18,8 @@ self.addEventListener('message', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return; // polices Google, etc. : réseau direct
-  // réseau d'abord (toujours la dernière version en ligne), cache en secours hors ligne
-  e.respondWith(fetch(req).then(r => {
+  // réseau d'abord (cache:'no-cache' = on ignore le cache HTTP de GitHub Pages, qui garde les fichiers 10 min), cache en secours hors ligne
+  e.respondWith(fetch(req, { cache: 'no-cache' }).then(r => {
     if (r.ok) { const copie = r.clone(); caches.open(CACHE).then(c => c.put(req, copie)); }
     return r;
   }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
