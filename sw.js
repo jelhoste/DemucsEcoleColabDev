@@ -1,6 +1,6 @@
 // Service worker de Bandes — la version vient de version.json / APP_VERSION.
 // À CHAQUE LIVRAISON : changer APP_VERSION ici, dans version.json et dans les deux pages (voir CHANGELOG.md).
-const APP_VERSION = '1.11.1';
+const APP_VERSION = '1.12.0';
 const CACHE = 'bandes-' + APP_VERSION;
 const COQUILLE = ['./', './index.html', './editeur.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './version.json'];
 

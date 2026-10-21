@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.11.1">
+<meta name="app-version" content="1.12.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -528,8 +528,8 @@
         <div class="field">
           <label>Modèle d'alignement des mots (WhisperX)</label>
           <select id="paroles-moteur">
-            <option value="grand" selected>Grand modèle — le plus précis, plus lent — recommandé</option>
-            <option value="standard">Modèle standard — plus rapide, un peu moins précis</option>
+            <option value="standard" selected>Modèle standard — plus rapide (par défaut)</option>
+            <option value="grand">Grand modèle — le plus précis, mais plus lent</option>
             <option value="tous">Test : lancer les deux et les comparer dans l'éditeur</option>
           </select>
         </div>
@@ -928,9 +928,9 @@ document.querySelectorAll('input[name=demucs]').forEach(radio => {
 });
 
 const HINTS_MOTEUR = {
-  grand: "Whisper transcrit, puis WhisperX recale chaque mot sur la voix isolée avec le plus gros modèle d'alignement disponible pour la langue (wav2vec2 « large », environ 1,2 Go : anglais, français, allemand, espagnol, italien). C'est normalement le plus précis, surtout sur les voyelles tenues du chant ; comptez quelques minutes de plus par morceau. Pour les autres langues, le modèle par défaut de WhisperX est utilisé.",
+  grand: "Whisper transcrit, puis WhisperX recale chaque mot sur la voix isolée avec le plus gros modèle d'alignement disponible pour la langue (wav2vec2 « large », environ 1,2 Go : anglais, français, allemand, espagnol, italien). C'est normalement le plus précis, surtout sur les voyelles tenues du chant, mais plus lent : comptez quelques minutes de plus par morceau. Pour les autres langues, le modèle par défaut de WhisperX est utilisé.",
   standard: "Whisper transcrit, puis WhisperX recale chaque mot avec son modèle d'alignement par défaut (plus petit : environ 0,4 Go en anglais et en français). Plus rapide, un peu moins précis. En allemand, espagnol et italien, le modèle standard est déjà le grand.",
-  tous: "Mode test : les mots sont alignés deux fois, avec le modèle standard puis avec le grand, et l'éditeur propose de comparer les deux versions (la version par défaut est la grande). Plus long.",
+  tous: "Mode test : les mots sont alignés deux fois, avec le modèle standard puis avec le grand, et l'éditeur propose de comparer les deux versions (la version active par défaut est la standard). Plus long.",
 };
 const selMoteur = document.getElementById('paroles-moteur');
 const togParoles = document.getElementById('toggle-paroles');
@@ -1036,7 +1036,7 @@ function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, par
   const aacBitratePy = JSON.stringify(aacBitrate || '192k');
   const opusBitratePy = JSON.stringify(opusBitrate || '128k');
   const demucsModelePy = JSON.stringify(demucsModele || 'htdemucs');
-  const parolesMoteurPy = JSON.stringify(['grand','standard','tous'].includes(parolesMoteur) ? parolesMoteur : 'grand');
+  const parolesMoteurPy = JSON.stringify(['grand','standard','tous'].includes(parolesMoteur) ? parolesMoteur : 'standard');
   const accordsMoteurPy = JSON.stringify(accordsMoteur || 'madmom');
   const melodieMoteurPy = JSON.stringify(melodieMoteur || 'fcpe');
 
@@ -2060,7 +2060,7 @@ for r in rapports:
                 px, ok = aligner_whisperx(voix, r["paroles"], langue_alignement, niveau == "grand")
                 if ok:
                     r["variantes_paroles"]["whisperx_" + niveau] = px
-            for choix in ("whisperx_grand", "whisperx_standard"):
+            for choix in ("whisperx_standard", "whisperx_grand"):
                 if choix in r["variantes_paroles"]:
                     r["paroles"] = r["variantes_paroles"][choix]
                     r["moteur_paroles"] = choix

@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.11.1">
+<meta name="app-version" content="1.12.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -561,6 +561,18 @@
     border: 1px solid transparent;
     cursor: pointer;
   }
+  .mot-tick{ position:absolute; bottom:1px; width:2px; height:9px; background: rgba(255,255,255,0.6); pointer-events:none; }
+  .mots-btn{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer; white-space:nowrap; }
+  .mots-btn:hover, .mots-btn.ouvert{ border-color: var(--brass); color: var(--brass); }
+  .mots-edit{ margin:2px 0 12px 20px; padding:8px 10px; border-left:2px solid var(--brass-dim); display:flex; flex-direction:column; gap:4px; }
+  .mots-edit .aide{ font-size:0.75rem; color: var(--text-muted); margin-bottom:4px; }
+  .mot-row{ display:flex; gap:6px; align-items:center; }
+  .mot-row input.mt{ flex:1; min-width:70px; }
+  .mot-row .mot-score{ font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color: var(--text-muted); width:2.6em; text-align:right; }
+  .mot-row.douteux input.mt{ border-color:#C98F8F; }
+  .mot-row button, .mots-edit .mots-bas button{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:2px 7px; cursor:pointer; font-size:0.8rem; }
+  .mot-row button:hover, .mots-edit .mots-bas button:hover{ border-color: var(--brass); color: var(--brass); }
+  .mots-edit .mots-bas{ margin-top:4px; display:flex; gap:8px; }
   .lyric-line .ly-time{
     font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--text-muted);
     flex-shrink: 0; width: 52px;
@@ -1530,6 +1542,15 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
         (jStart ? '' : '<div class="seg-handle" data-edge="start"></div>') +
         `<span class="seg-label">${escapeHtml(seg.value)}</span>` +
         (jEnd ? '' : '<div class="seg-handle" data-edge="end"></div>');
+      if (Array.isArray(seg.mots) && seg.mots.length){
+        const dseg = Math.max(0.001, seg.end - seg.start);
+        seg.mots.forEach(m => {
+          const tk = document.createElement('div'); tk.className = 'mot-tick';
+          tk.style.left = Math.max(0, Math.min(w - 2, ((m.start - seg.start) / dseg) * w)) + 'px';
+          tk.title = m.texte;
+          block.appendChild(tk);
+        });
+      }
       laneEl.appendChild(block);
       if (jEnd){
         const joint = document.createElement('div');
@@ -1632,8 +1653,8 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
 
     const valider = () => {
       if (input.value !== seg.value){
-        seg.value = input.value;
-        if ('mots' in seg) seg.mots = null; // texte modifie : les timestamps mot a mot ne correspondent plus
+        if ('mots' in seg) reconcilierMots(seg, input.value); // garde le minutage des mots inchanges / remplaces
+        else seg.value = input.value;
       }
       onChange(true);
     };
@@ -1770,6 +1791,56 @@ function creerVueCartes(containerId, getSegments, formatValeur){
     });
   }
   return { render, maj };
+}
+
+// --- Remplacer / corriger un texte sans perdre le minutage mot a mot ---
+function normMot(w){ return String(w).toLowerCase().replace(/[^\p{L}\p{N}']+/gu, ''); }
+function reconcilierMots(seg, texte){
+  seg.value = texte;
+  const anciens = seg.mots;
+  if (!Array.isArray(anciens) || !anciens.length) return;
+  const nv = texte.trim().split(/\s+/).filter(Boolean);
+  if (!nv.length){ seg.mots = null; return; }
+  const A = anciens.map(m => normMot(m.texte)), B = nv.map(normMot);
+  const n = A.length, p = B.length;
+  const L = Array.from({ length: n + 1 }, () => new Array(p + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = p - 1; j >= 0; j--)
+    L[i][j] = (A[i] && A[i] === B[j]) ? L[i+1][j+1] + 1 : Math.max(L[i+1][j], L[i][j+1]);
+  const res = [];
+  let i = 0, j = 0;
+  const bloc = (i0, i1, j0, j1) => {            // mots anciens [i0,i1) remplaces par nouveaux [j0,j1)
+    const k = j1 - j0; if (k <= 0) return;
+    const prev = res.length ? res[res.length-1] : null;
+    let deb = i1 > i0 ? anciens[i0].start : (prev ? prev.end : seg.start);
+    let fin = i1 > i0 ? anciens[i1-1].end : (i1 < n ? anciens[i1].start : seg.end);
+    const mini = 0.1 * k;
+    if (fin - deb < mini){                       // pas de place : on emprunte au mot precedent
+      if (prev && prev.end - prev.start > 0.06){ const pris = Math.min(mini - (fin - deb), (prev.end - prev.start) / 2); prev.end -= pris; deb -= pris; }
+      fin = Math.max(fin, deb + mini);
+    }
+    const poids = nv.slice(j0, j1).map(w => w.length + 1), tot = poids.reduce((x, y) => x + y, 0);
+    let acc = 0;
+    for (let q = 0; q < k; q++){
+      const d = deb + (fin - deb) * acc / tot; acc += poids[q];
+      res.push({ start: d, end: deb + (fin - deb) * acc / tot, texte: nv[j0 + q] });
+    }
+  };
+  let i0 = 0, j0 = 0;
+  while (i < n && j < p){
+    if (A[i] && A[i] === B[j]){
+      bloc(i0, i, j0, j);
+      const o = anciens[i]; res.push({ start: o.start, end: o.end, texte: nv[j], score: o.score });
+      i++; j++; i0 = i; j0 = j;
+    } else if (L[i+1][j] >= L[i][j+1]) i++; else j++;
+  }
+  bloc(i0, n, j0, p);
+  seg.mots = res;
+}
+function valeurDepuisMots(seg){ seg.value = seg.mots.map(m => m.texte).join(' '); }
+function ajusterBornesMots(seg){
+  if (!Array.isArray(seg.mots) || !seg.mots.length) return;
+  seg.start = Math.min(seg.start, seg.mots[0].start);
+  seg.end = Math.max(seg.end, seg.mots[seg.mots.length-1].end);
 }
 
 // Mots d'un segment de paroles : vrais timestamps de Whisper si presents, sinon repartition
@@ -3348,6 +3419,67 @@ function rendreListeAccords(){
   laneAccords.render();
   vueAccords.render();
 }
+const motsOuverts = new Set();
+function panneauMots(seg){
+  const el = document.createElement('div'); el.className = 'mots-edit';
+  if (!Array.isArray(seg.mots) || !seg.mots.length){
+    el.innerHTML = `<div class="aide">Cette ligne n'a pas de minutage mot à mot : les mots sont répartis automatiquement sur la durée de la ligne.</div>
+      <div class="mots-bas"><button data-act="generer" data-sid="${seg.id}">Créer le minutage mot à mot (répartition automatique), puis l'ajuster</button></div>`;
+    return el;
+  }
+  el.innerHTML = `<div class="aide">Chaque mot a son propre début et sa propre fin. Changer le texte d'un mot ne touche pas à son minutage. ⏱ place le début du mot à la position de lecture ; ▶ y saute ; + insère un mot après.</div>` +
+    seg.mots.map((m, k) => `<div class="mot-row${(m.score != null && m.score < 0.3) ? ' douteux' : ''}">
+      <input type="text" class="mt value-field" data-sid="${seg.id}" data-mi="${k}" data-wf="texte" value="${escapeHtml(m.texte)}">
+      <input type="text" class="time-field" data-sid="${seg.id}" data-mi="${k}" data-wf="start" value="${formatTemps(m.start)}">
+      <input type="text" class="time-field" data-sid="${seg.id}" data-mi="${k}" data-wf="end" value="${formatTemps(m.end)}">
+      <span class="mot-score" title="confiance de l'alignement">${m.score != null ? m.score.toFixed(2) : ''}</span>
+      <button data-act="curseur" data-sid="${seg.id}" data-mi="${k}" title="Début du mot = position de lecture">⏱</button>
+      <button data-act="ecouter" data-sid="${seg.id}" data-mi="${k}" title="Aller au début du mot">▶</button>
+      <button data-act="ajout" data-sid="${seg.id}" data-mi="${k}" title="Insérer un mot après">+</button>
+      <button data-act="suppr" data-sid="${seg.id}" data-mi="${k}" title="Supprimer ce mot">✕</button>
+    </div>`).join('') +
+    `<div class="mots-bas"><button data-act="retirer" data-sid="${seg.id}">Retirer le minutage mot à mot</button></div>`;
+  return el;
+}
+document.getElementById('list-paroles').addEventListener('click', (e) => {
+  const tog = e.target.closest('.mots-btn');
+  if (tog){ const id = Number(tog.dataset.sid); motsOuverts.has(id) ? motsOuverts.delete(id) : motsOuverts.add(id); rendreListeParoles(); return; }
+  const b = e.target.closest('.mots-edit button[data-act]'); if (!b) return;
+  const seg = parolesSegments.find(s => s.id === Number(b.dataset.sid)); if (!seg) return;
+  const k = Number(b.dataset.mi), a = b.dataset.act;
+  if (a === 'generer'){ seg.mots = motsDe(seg).map(m => ({ start: m.start, end: m.end, texte: m.texte })); }
+  else if (a === 'retirer'){ seg.mots = null; }
+  else {
+    const m = seg.mots[k]; if (!m) return;
+    if (a === 'ecouter'){ seekTo(m.start); return; }
+    if (a === 'curseur'){
+      const t = Math.max(0, Math.min(duration, getTempsActuel()));
+      m.start = t; if (m.end < t + 0.05) m.end = Math.min(duration, t + 0.2);
+      if (k > 0 && seg.mots[k-1].end > t) seg.mots[k-1].end = Math.max(seg.mots[k-1].start + 0.02, t);
+      ajusterBornesMots(seg);
+    } else if (a === 'ajout'){
+      const suiv = seg.mots[k+1];
+      let deb = m.end, fin = suiv ? suiv.start : Math.min(seg.end, m.end + 0.4);
+      if (fin - deb < 0.1){ const mil = (m.start + m.end) / 2; deb = mil; fin = m.end; m.end = mil; }
+      seg.mots.splice(k + 1, 0, { start: deb, end: Math.max(fin, deb + 0.05), texte: '…' });
+      valeurDepuisMots(seg); ajusterBornesMots(seg);
+    } else if (a === 'suppr'){
+      seg.mots.splice(k, 1);
+      if (!seg.mots.length) seg.mots = null; else valeurDepuisMots(seg);
+    }
+  }
+  rendreListeParoles();
+});
+document.getElementById('list-paroles').addEventListener('change', (e) => {
+  const inp = e.target.closest('input[data-wf]'); if (!inp) return;
+  const seg = parolesSegments.find(s => s.id === Number(inp.dataset.sid)); if (!seg || !seg.mots) return;
+  const k = Number(inp.dataset.mi), m = seg.mots[k]; if (!m) return;
+  if (inp.dataset.wf === 'texte'){ const v = inp.value.trim(); if (v) m.texte = v; valeurDepuisMots(seg); }
+  else if (inp.dataset.wf === 'start'){ const prev = seg.mots[k-1]; m.start = Math.max(prev ? prev.start : 0, Math.min(m.end - 0.02, parseTemps(inp.value))); }
+  else { const suiv = seg.mots[k+1]; m.end = Math.min(suiv ? suiv.end : duration, Math.max(m.start + 0.02, parseTemps(inp.value))); }
+  ajusterBornesMots(seg);
+  rendreListeParoles();
+});
 function rendreListeParoles(){
   const list = document.getElementById('list-paroles');
   document.getElementById('count-paroles').textContent = parolesSegments.length;
@@ -3357,9 +3489,11 @@ function rendreListeParoles(){
       <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
       <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
       <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="mots-btn${motsOuverts.has(seg.id) ? ' ouvert' : ''}" data-sid="${seg.id}" title="Minutage mot à mot">♪ ${Array.isArray(seg.mots) && seg.mots.length ? seg.mots.length : '—'}</button>
       <button class="split-btn" data-id="${seg.id}" title="Scinder (au curseur de lecture s'il est dans la carte, sinon au milieu)">✂</button>
       <button class="del-btn" data-id="${seg.id}">✕</button>
     `));
+    if (motsOuverts.has(seg.id)) list.appendChild(panneauMots(seg));
   });
   laneParoles.render();
   vueParoles.render();
@@ -3424,8 +3558,8 @@ function attacherListeEditable(listId, getSegments, apresChange, lier){
     }
     else if (input.dataset.field === 'midi') seg.midi = nomVersMidi(input.value, seg.midi);
     else {
-      if (input.value !== seg.value && 'mots' in seg) seg.mots = null;
-      seg.value = input.value;
+      if ('mots' in seg) reconcilierMots(seg, input.value);
+      else seg.value = input.value;
     }
     trierSegments(segments);
     apresChange();

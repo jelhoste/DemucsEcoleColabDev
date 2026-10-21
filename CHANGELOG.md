@@ -5,6 +5,12 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.12.0 — 2026-10-21
+- Colab : le modèle d'alignement par défaut redevient « standard » (le grand modèle reste un choix ; en mode Test, la version active est la standard).
+- Éditeur : minutage mot à mot modifiable. Bouton « ♪ n » sur chaque ligne de paroles : texte, début et fin de chaque mot, placement du début à la position de lecture, insertion et suppression de mots, création du minutage pour une ligne qui n'en a pas.
+- Éditeur : corriger le texte d'une ligne (liste ou piste) ne fait plus perdre le minutage : les mots inchangés ou remplacés gardent leurs temps, les mots ajoutés se répartissent entre leurs voisins.
+- Éditeur : petits repères sur la piste Paroles à chaque début de mot.
+
 ## 1.11.1 — 2026-10-21
 - PWA : le service worker ignore le cache HTTP de GitHub Pages (fichiers gardés 10 min) et prend la main immédiatement ; la bannière « Nouvelle version disponible — Recharger » compare maintenant la page à `version.json` (vérifié au démarrage, toutes les 10 min et au retour sur l'onglet), sans dépendre du cycle du service worker.
 
