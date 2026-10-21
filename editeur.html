@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.12.0">
+<meta name="app-version" content="1.13.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -561,6 +561,27 @@
     border: 1px solid transparent;
     cursor: pointer;
   }
+  .focus-bar{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 8px; font-size:0.78rem; color: var(--text-muted); }
+  .focus-bar button{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.78rem; }
+  .focus-bar button:hover{ border-color: var(--brass); color: var(--brass); }
+  .focus-bar button.actif{ background: var(--brass); border-color: var(--brass); color:#1C1712; font-weight:600; }
+  #timeline-scroll[data-focus="structure"] .lane:not(#lane-structure),
+  #timeline-scroll[data-focus="accords"] .lane:not(#lane-accords),
+  #timeline-scroll[data-focus="melodie"] .lane:not(#lane-melodie),
+  #timeline-scroll[data-focus="paroles"] .lane:not(#lane-paroles),
+  #timeline-scroll[data-focus="marqueurs"] .lane:not(#lane-marqueurs){ display:none; }
+  #timeline-scroll[data-focus="paroles"] #lane-paroles{ height: 132px; }
+  #timeline-scroll[data-focus="paroles"] #lane-paroles .seg-block, #timeline-scroll[data-focus="paroles"] #lane-paroles .seg-joint{ display:none; }
+  .mw-phrase{ position:absolute; top:22px; height:16px; background: color-mix(in srgb, var(--lane-color) 18%, var(--panel)); border-left:1px solid var(--lane-color); font-size:0.64rem; color: var(--text-muted); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding:0 4px; line-height:16px; pointer-events:none; }
+  .mw{ position:absolute; height:36px; background: color-mix(in srgb, var(--lane-color) 40%, var(--panel)); border:1px solid var(--lane-color); border-radius:4px; cursor:grab; touch-action:none; overflow:hidden; display:flex; align-items:center; user-select:none; min-width:8px; }
+  .mw span.t{ padding:0 8px; font-size:0.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; color: var(--text); }
+  .mw.virtuel{ border-style:dashed; background: color-mix(in srgb, var(--lane-color) 14%, var(--panel)); }
+  .mw.douteux{ border-color:#C98F8F; }
+  .mw.actif{ background: color-mix(in srgb, var(--lane-color) 75%, var(--panel)); }
+  .mw.choisi{ outline:2px solid #fff; }
+  .mw .h{ position:absolute; top:0; bottom:0; width:7px; cursor:ew-resize; background: var(--lane-color); opacity:0.75; }
+  .mw .h[data-edge=start]{ left:0; } .mw .h[data-edge=end]{ right:0; }
+  .mw-aide{ position:absolute; left:90px; top:4px; font-size:0.7rem; color: var(--text-muted); pointer-events:none; }
   .mot-tick{ position:absolute; bottom:1px; width:2px; height:9px; background: rgba(255,255,255,0.6); pointer-events:none; }
   .mots-btn{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer; white-space:nowrap; }
   .mots-btn:hover, .mots-btn.ouvert{ border-color: var(--brass); color: var(--brass); }
@@ -643,7 +664,16 @@
         <label class="epingle-label" id="epingle-label"><input type="checkbox" id="chk-epingle" checked> Épingler la forme d'onde</label>
       </div>
 
-      <div class="timeline-scroll" id="timeline-scroll">
+      <div class="focus-bar" id="focus-bar">
+        <span>Piste affichée :</span>
+        <button type="button" data-focus="toutes">Toutes</button>
+        <button type="button" data-focus="structure">Structure</button>
+        <button type="button" data-focus="accords">Accords</button>
+        <button type="button" data-focus="melodie">Mélodie</button>
+        <button type="button" data-focus="paroles">Paroles (mot à mot)</button>
+        <button type="button" data-focus="marqueurs">Marqueurs</button>
+      </div>
+      <div class="timeline-scroll" id="timeline-scroll" data-focus="toutes">
         <div class="timeline-wrap" id="timeline-wrap">
           <canvas id="waveform"></canvas>
           <div class="lane" id="lane-structure" style="--lane-color: var(--brass);"><span class="lane-label">Structure</span></div>
@@ -1158,6 +1188,7 @@ async function chargerZip(file){
     appliquerLargeurTimeline();
     dessinerWaveform();
     dessinerGrilleRythmique();
+    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); } } catch (_) {}
     rendreTout();
     requestAnimationFrame(bouclePlayhead);
   } catch(err){
@@ -3240,7 +3271,7 @@ function calerMarqueurs(){
 }
 
 function majVues(t){
-  laneStructure.maj(t); laneAccords.maj(t); laneParoles.maj(t);
+  laneStructure.maj(t); laneAccords.maj(t); laneParoles.maj(t); majMotsLane(t);
   vueStructure.maj(t); vueAccords.maj(t); vueParoles.maj(t); majComparaison(t); majComparaisonAccords(t); majComparaisonMelodie(t); majPianoRollPanneau(t);
 }
 
@@ -3419,6 +3450,135 @@ function rendreListeAccords(){
   laneAccords.render();
   vueAccords.render();
 }
+// ============================================================
+// Piste affichee seule + paroles mot a mot sur la piste
+// ============================================================
+let focusPiste = 'toutes';
+let motChoisi = null;     // { seg, m }
+function motsPlats(){     // tous les mots dans l'ordre, y compris ceux d'une ligne sans minutage (virtuels)
+  const out = [];
+  parolesSegments.forEach(seg => {
+    const reels = Array.isArray(seg.mots) && seg.mots.length;
+    motsDe(seg).forEach(m => out.push({ seg, m, virtuel: !reels }));
+  });
+  return out;
+}
+function rendreMotsLane(){
+  const lane = document.getElementById('lane-paroles');
+  lane.querySelectorAll('.mw, .mw-phrase, .mw-aide').forEach(x => x.remove());
+  if (focusPiste !== 'paroles' || !duration) return;
+  const W = lane.clientWidth; if (!W) return;
+  parolesSegments.forEach(seg => {
+    const ph = document.createElement('div'); ph.className = 'mw-phrase';
+    ph.style.left = (seg.start / duration * W) + 'px'; ph.style.width = Math.max(4, (seg.end - seg.start) / duration * W) + 'px';
+    ph.textContent = seg.value; lane.appendChild(ph);
+  });
+  const plats = motsPlats(); motsLaneCache = plats;
+  if (plats.some(p => p.virtuel)){
+    const a = document.createElement('div'); a.className = 'mw-aide';
+    a.textContent = 'Blocs en pointillés : ligne sans minutage mot à mot (répartition automatique). Touchez-en un pour le créer.';
+    lane.appendChild(a);
+  }
+  plats.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'mw' + (p.virtuel ? ' virtuel' : '') + ((p.m.score != null && p.m.score < 0.3) ? ' douteux' : '') + ((motChoisi && motChoisi.m === p.m) ? ' choisi' : '');
+    el.dataset.i = i; el.title = p.m.texte + (p.m.score != null ? '  (confiance ' + p.m.score + ')' : '');
+    el.style.top = (44 + (i % 2) * 40) + 'px';
+    el.innerHTML = '<span class="h" data-edge="start"></span><span class="t">' + escapeHtml(p.m.texte) + '</span><span class="h" data-edge="end"></span>';
+    positionnerMot(el, p.m, W);
+    lane.appendChild(el);
+  });
+  majMotsLane(getTempsActuel());
+}
+function positionnerMot(el, m, W){
+  el.style.left = (m.start / duration * W) + 'px';
+  el.style.width = Math.max(8, (m.end - m.start) / duration * W) + 'px';
+}
+function majMotsLane(t){
+  if (focusPiste !== 'paroles') return;
+  document.querySelectorAll('#lane-paroles .mw').forEach(el => {
+    const p = motsLaneCache && motsLaneCache[Number(el.dataset.i)];
+    el.classList.toggle('actif', !!p && t >= p.m.start && t < p.m.end);
+  });
+}
+let motsLaneCache = null;
+(function(){
+  const lane = document.getElementById('lane-paroles');
+  let drag = null;
+  const EPS = 0.025;
+  function temps(e){ const r = lane.getBoundingClientRect(); return Math.max(0, Math.min(duration, (e.clientX - r.left) / r.width * duration)); }
+  lane.addEventListener('pointerdown', (e) => {
+    if (focusPiste !== 'paroles') return;
+    const el = e.target.closest('.mw'); if (!el) return;
+    const plats = motsPlats(); const p = plats[Number(el.dataset.i)]; if (!p) return;
+    if (p.virtuel){ p.seg.mots = motsDe(p.seg).map(m => ({ start: m.start, end: m.end, texte: m.texte })); }  // cree le minutage
+    const seg = p.seg;
+    const reel = seg.mots[plats.filter(x => x.seg === seg).indexOf(p)];
+    const plats2 = motsPlats(); const idx = plats2.findIndex(x => x.m === reel);
+    motChoisi = { seg, m: reel };
+    drag = { el, idx, plats: plats2, seg, m: reel, mode: e.target.closest('.h') ? e.target.closest('.h').dataset.edge : 'corps',
+             t0: temps(e), s0: reel.start, e0: reel.end, bouge: false };
+    e.preventDefault(); el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    if (p.virtuel) rendreMotsLane();
+    document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); document.addEventListener('pointercancel', onUp);
+  });
+  function onMove(e){
+    if (!drag) return;
+    const { plats, idx, m, mode } = drag;
+    const prev = plats[idx-1] && plats[idx-1].m, next = plats[idx+1] && plats[idx+1].m;
+    const t = temps(e); const d = t - drag.t0;
+    if (Math.abs(d) > 0.005) drag.bouge = true;
+    if (mode === 'start'){
+      const joint = prev && Math.abs(prev.end - drag.s0) <= EPS;
+      const mini = joint ? prev.start + EPS : (prev ? Math.min(prev.end, drag.s0) : 0);
+      m.start = Math.max(mini, Math.min(m.end - EPS, t));
+      if (joint) prev.end = m.start;
+    } else if (mode === 'end'){
+      const joint = next && Math.abs(next.start - drag.e0) <= EPS;
+      const maxi = joint ? next.end - EPS : (next ? Math.max(next.start, drag.e0) : duration);
+      m.end = Math.min(maxi, Math.max(m.start + EPS, t));
+      if (joint) next.start = m.end;
+    } else {
+      const dur = drag.e0 - drag.s0;
+      const mini = prev ? Math.min(prev.end, drag.s0) : 0, maxi = next ? Math.max(next.start, drag.e0) : duration;
+      let s = Math.max(mini, Math.min(maxi - dur, drag.s0 + d));
+      m.start = s; m.end = s + dur;
+    }
+    const W = lane.clientWidth;
+    [prev, m, next].forEach(x => { if (!x) return; const k = plats.findIndex(y => y.m === x); const el = lane.querySelector('.mw[data-i="' + k + '"]'); if (el) positionnerMot(el, x, W); });
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); document.removeEventListener('pointercancel', onUp);
+    if (!drag) return;
+    const { bouge, m, seg, el } = drag; drag = null;
+    if (bouge){ ajusterBornesMots(seg); rendreListeParoles(); }
+    else { seekTo(m.start); lane.querySelectorAll('.mw').forEach(x => x.classList.toggle('choisi', x === el)); }  // pas de re-rendu : le double-clic doit retrouver son bloc
+  }
+  // double-clic : renommer le mot (le minutage ne change pas)
+  lane.addEventListener('dblclick', (e) => {
+    if (focusPiste !== 'paroles') return;
+    const el = e.target.closest('.mw'); if (!el) return;
+    const p = motsPlats()[Number(el.dataset.i)]; if (!p || p.virtuel) return;
+    const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'seg-edit-input'; inp.value = p.m.texte;
+    inp.style.cssText = 'position:absolute;inset:3px 8px;width:calc(100% - 16px);';
+    el.appendChild(inp); inp.focus(); inp.select();
+    let fini = false;
+    const fin = (ok) => { if (fini) return; fini = true; const v = inp.value.trim(); if (ok && v){ p.m.texte = v; valeurDepuisMots(p.seg); } rendreListeParoles(); };
+    inp.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter'){ ev.preventDefault(); fin(true); } else if (ev.key === 'Escape'){ fin(false); } });
+    inp.addEventListener('pointerdown', ev => ev.stopPropagation());
+    inp.addEventListener('blur', () => fin(true));
+  });
+})();
+function definirFocus(f, sauver){
+  focusPiste = f;
+  document.getElementById('timeline-scroll').dataset.focus = f;
+  document.querySelectorAll('#focus-bar button').forEach(b => b.classList.toggle('actif', b.dataset.focus === f));
+  if (sauver !== false){ try { localStorage.setItem('bandes.focus', f); } catch (_) {} }
+  if (typeof rendreTout === 'function' && duration){ rendreTout(); dessinerGrilleRythmique(); dessinerPlayhead(); }
+}
+document.getElementById('focus-bar').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-focus]'); if (b) definirFocus(b.dataset.focus); });
+document.getElementById('focus-bar').querySelector('button[data-focus="toutes"]').classList.add('actif');
+
 const motsOuverts = new Set();
 function panneauMots(seg){
   const el = document.createElement('div'); el.className = 'mots-edit';
@@ -3496,6 +3656,8 @@ function rendreListeParoles(){
     if (motsOuverts.has(seg.id)) list.appendChild(panneauMots(seg));
   });
   laneParoles.render();
+  motsLaneCache = motsPlats();
+  rendreMotsLane();
   vueParoles.render();
 }
 function rendreListeMelodie(){

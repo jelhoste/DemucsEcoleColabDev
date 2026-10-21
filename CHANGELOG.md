@@ -5,6 +5,10 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.13.0 — 2026-10-21
+- Éditeur : sélecteur « Piste affichée » au-dessus de la forme d'onde (Toutes, Structure, Accords, Mélodie, Paroles, Marqueurs) : la forme d'onde reste toujours visible, une seule piste s'affiche à la fois. Le choix est mémorisé.
+- Éditeur : en mode « Paroles (mot à mot) », chaque mot est un bloc sur la piste, avec ses deux ancres. Glisser le corps déplace le mot, glisser un bord change son début ou sa fin (le bord d'un mot collé à son voisin entraîne celui-ci), clic = aller au mot, double-clic = renommer sans toucher au minutage. Les lignes sans minutage s'affichent en pointillés et le minutage est créé au premier geste.
+
 ## 1.12.0 — 2026-10-21
 - Colab : le modèle d'alignement par défaut redevient « standard » (le grand modèle reste un choix ; en mode Test, la version active est la standard).
 - Éditeur : minutage mot à mot modifiable. Bouton « ♪ n » sur chaque ligne de paroles : texte, début et fin de chaque mot, placement du début à la position de lecture, insertion et suppression de mots, création du minutage pour une ligne qui n'en a pas.
