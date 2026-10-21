@@ -5,6 +5,10 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.15.0 — 2026-10-21
+- Éditeur, piste Paroles seule : la piste ne montre plus que les phrases (cartes entières, agrandies comme les accords). Sous la forme d'onde, un panneau « phrase » occupe toute la largeur : la phrase survolée, sinon la phrase épinglée (clic sur une carte), sinon celle de la lecture. Il montre cette seule phrase étirée sur toute la largeur, avec forme d'onde et temps de la grille, les mots, leurs ancres à gauche, l'édition du texte (du mot par un clic, de la phrase dans l'en-tête sans perdre le minutage), phrase précédente / suivante, « Suivre la lecture ».
+- Les boutons ＋ / ✂ / 🗑 agissent sur les mots de ce panneau.
+
 ## 1.14.0 — 2026-10-21
 - Éditeur, piste Paroles seule : poignée d'ancre à gauche de chaque mot (déplace son début ; un simple clic dessus saute au mot), fin du mot à droite, corps pour déplacer. Le texte s'écrit en entier : les mots se placent sur autant de rangées que nécessaire pour ne jamais se recouvrir. Un clic sur un mot ouvre l'édition du texte.
 - Éditeur, pistes Paroles / Accords / Structure seules : boutons « ＋ Carte au curseur », « ✂ Scinder » (à la position de lecture, ou au curseur de texte pendant l'écriture d'un mot) et « 🗑 Supprimer » ; la carte choisie est entourée de blanc.
