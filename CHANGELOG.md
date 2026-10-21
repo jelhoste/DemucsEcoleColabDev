@@ -5,6 +5,11 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.16.0 — 2026-10-21
+- Éditeur : bouton « ↕ Hauteurs » : réglage de la hauteur de la forme d'onde, du piano roll de la mélodie (jusqu'à 700 px) et des cartes ; mémorisé.
+- Éditeur : bouton « ♫ + Mélodie » : le piano roll s'affiche en même temps que la piste choisie (Structure, Accords, Paroles, Marqueurs). Touches blanches nommées quand le piano roll est assez haut.
+- Éditeur : synthétiseur de contrôle de la mélodie (♪ Synthé mélodie) : joue les notes en synchronisation avec la lecture, timbre (triangle, sinus, dent de scie, carré), octave −1/0/+1, volume. Aperçu sonore d'une note quand on la déplace en hauteur ; suit les modifications pendant la lecture.
+
 ## 1.15.0 — 2026-10-21
 - Éditeur, piste Paroles seule : la piste ne montre plus que les phrases (cartes entières, agrandies comme les accords). Sous la forme d'onde, un panneau « phrase » occupe toute la largeur : la phrase survolée, sinon la phrase épinglée (clic sur une carte), sinon celle de la lecture. Il montre cette seule phrase étirée sur toute la largeur, avec forme d'onde et temps de la grille, les mots, leurs ancres à gauche, l'édition du texte (du mot par un clic, de la phrase dans l'en-tête sans perdre le minutage), phrase précédente / suivante, « Suivre la lecture ».
 - Les boutons ＋ / ✂ / 🗑 agissent sur les mots de ce panneau.

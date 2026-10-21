@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.15.0">
+<meta name="app-version" content="1.16.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -150,7 +150,7 @@
   canvas#waveform{
     display: block;
     width: 100%;
-    height: 140px;
+    height: var(--h-wave, 140px);
     background: var(--panel);
     cursor: pointer;
     touch-action: pan-y;
@@ -159,12 +159,12 @@
   .lane{
     position: relative;
     width: 100%;
-    height: 34px;
+    height: var(--h-cartes, 34px);
     background: var(--panel);
     border-top: 1px solid var(--border);
     touch-action: pan-y;
   }
-  .lane-pianoroll{ height: 180px; }
+  .lane-pianoroll{ height: var(--h-melodie, 180px); }
   #grille-overlay{
     position: absolute;
     top: 0; left: 0;
@@ -571,6 +571,19 @@
   #timeline-scroll[data-focus="paroles"] .lane:not(#lane-paroles),
   #timeline-scroll[data-focus="marqueurs"] .lane:not(#lane-marqueurs){ display:none; }
   #timeline-scroll{ --ech: 1.5; }
+  #timeline-scroll[data-melo="on"][data-focus] #lane-melodie{ display:block; }
+  .focus-bar .sep{ width:1px; align-self:stretch; background: var(--border); margin:0 4px; }
+  .hauteurs{ display:none; background: var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px 12px; margin:0 0 8px; gap:18px; flex-wrap:wrap; align-items:center; font-size:0.78rem; color: var(--text-muted); }
+  .hauteurs.ouvert{ display:flex; }
+  .hauteurs label{ display:inline-flex; align-items:center; gap:6px; }
+  .hauteurs input[type=range]{ width:130px; accent-color: var(--brass); }
+  .hauteurs .val{ font-family:'IBM Plex Mono',monospace; font-size:0.68rem; width:3em; }
+  .synth-bar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 8px; font-size:0.78rem; color: var(--text-muted); }
+  .synth-bar button{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.78rem; }
+  .synth-bar button.actif{ background: #7FA8C9; border-color:#7FA8C9; color:#1C1712; font-weight:600; }
+  .synth-bar select{ background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:4px; padding:3px 6px; font-size:0.78rem; }
+  .synth-bar input[type=range]{ width:100px; accent-color:#7FA8C9; }
+
   .focus-actions{ display:none; align-items:center; gap:6px; flex-wrap:wrap; }
   .focus-actions label{ display:inline-flex; align-items:center; gap:6px; }
   .focus-actions input[type=range]{ width:90px; accent-color: var(--brass); }
@@ -693,6 +706,9 @@
         <button type="button" data-focus="melodie">Mélodie</button>
         <button type="button" data-focus="paroles">Paroles (mot à mot)</button>
         <button type="button" data-focus="marqueurs">Marqueurs</button>
+        <span class="sep"></span>
+        <button type="button" id="btn-melo-avec" style="display:none" title="Afficher aussi le piano roll de la mélodie avec la piste choisie">♫ + Mélodie</button>
+        <button type="button" id="btn-hauteurs" title="Régler la hauteur d'affichage de chaque strate">↕ Hauteurs</button>
         <span class="focus-actions" id="focus-actions">
           <button type="button" data-fa="ajout" title="Ajouter une carte (en Paroles : un mot) à la position de lecture">＋ Carte au curseur</button>
           <button type="button" data-fa="scinder" title="Scinder la carte choisie en deux (au curseur de lecture, ou à la position du curseur de texte si vous êtes en train d'écrire)">✂ Scinder</button>
@@ -700,7 +716,20 @@
           <label title="Taille du texte et hauteur des cartes">Taille <input type="range" id="focus-taille" min="1" max="2.5" step="0.1" value="1.5"></label>
         </span>
       </div>
-      <div class="timeline-scroll" id="timeline-scroll" data-focus="toutes">
+      <div class="hauteurs" id="hauteurs">
+        <label>Forme d'onde <input type="range" id="h-wave" min="60" max="320" step="10" value="140"><span class="val" id="h-wave-v">140</span></label>
+        <label>Mélodie (piano roll) <input type="range" id="h-melodie" min="100" max="700" step="10" value="180"><span class="val" id="h-melodie-v">180</span></label>
+        <label>Cartes (toutes pistes) <input type="range" id="h-cartes" min="28" max="120" step="2" value="34"><span class="val" id="h-cartes-v">34</span></label>
+        <button type="button" id="h-reset" class="add-row-btn" style="margin:0;">Réinitialiser</button>
+      </div>
+      <div class="synth-bar" id="synth-bar">
+        <button type="button" id="synth-toggle" title="Joue les notes de la mélodie avec un petit synthétiseur, en synchronisation avec la lecture, pour les contrôler à l'écoute">♪ Synthé mélodie</button>
+        <label>Timbre <select id="synth-timbre"><option value="triangle">Doux (triangle)</option><option value="sine">Pur (sinus)</option><option value="sawtooth">Brillant (dent de scie)</option><option value="square">Creux (carré)</option></select></label>
+        <label>Octave <select id="synth-octave"><option value="-1">−1</option><option value="0" selected>0</option><option value="1">+1</option></select></label>
+        <label>Volume <input type="range" id="synth-vol" min="0" max="100" value="50"></label>
+        <span id="synth-note" style="font-size:0.72rem;">Astuce : coupez la piste Voix dans le mixeur pour n'entendre que le synthé.</span>
+      </div>
+      <div class="timeline-scroll" id="timeline-scroll" data-focus="toutes" data-melo="off">
         <div class="timeline-wrap" id="timeline-wrap">
           <canvas id="waveform"></canvas>
           <div class="lane" id="lane-structure" style="--lane-color: var(--brass);"><span class="lane-label">Structure</span></div>
@@ -1225,7 +1254,7 @@ async function chargerZip(file){
     appliquerLargeurTimeline();
     dessinerWaveform();
     dessinerGrilleRythmique();
-    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none'; } } catch (_) {}
+    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none'; document.getElementById('btn-melo-avec').style.display = (f === 'toutes' || f === 'melodie') ? 'none' : ''; } } catch (_) {}
     rendreTout();
     requestAnimationFrame(bouclePlayhead);
   } catch(err){
@@ -1511,6 +1540,7 @@ function jouer(depuis){
           isPlaying = false;
           playOffset = 0;
           document.getElementById('btn-play').textContent = '▶';
+          if (typeof synthCouper === 'function') synthCouper();
         }
       };
     }
@@ -1519,6 +1549,7 @@ function jouer(depuis){
   playStartCtxTime = startCtxTime - depuis;
   isPlaying = true;
   document.getElementById('btn-play').textContent = '⏸';
+  if (typeof synthReinit === 'function') synthReinit();
 }
 function pauser(){
   playOffset = getTempsActuel();
@@ -1526,6 +1557,7 @@ function pauser(){
   currentSources = [];
   isPlaying = false;
   document.getElementById('btn-play').textContent = '▶';
+  if (typeof synthCouper === 'function') synthCouper();
 }
 function getTempsActuel(){ return isPlaying ? Math.min(duration, audioCtx.currentTime - playStartCtxTime) : playOffset; }
 function seekTo(t){
@@ -3352,6 +3384,10 @@ function rendreLaneMelodie(){
     const y = yDuMidi(m);
     ctx.fillStyle = NOTES_NOIRES.has(((m%12)+12)%12) ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.02)';
     ctx.fillRect(0, y, W, hLigne);
+    if (hLigne >= 13 && !NOTES_NOIRES.has(((m%12)+12)%12) && ((m%12)+12)%12 !== 0){  // piano roll haut : toutes les touches blanches sont nommees
+      ctx.fillStyle = 'rgba(192,153,106,0.32)'; ctx.font = '9px "IBM Plex Mono", monospace';
+      ctx.fillText(midiToName(m), 4, y+hLigne-3);
+    }
     if (((m%12)+12)%12 === 0){ // Do : ligne de reference + etiquette
       ctx.strokeStyle = 'rgba(192,153,106,0.25)';
       ctx.beginPath(); ctx.moveTo(0, y+hLigne); ctx.lineTo(W, y+hLigne); ctx.stroke();
@@ -3403,6 +3439,7 @@ pianoCanvas.addEventListener('pointerdown', (e) => {
   const x = e.clientX - rect.left, y = e.clientY - rect.top;
   const trouve = trouverNoteSousCurseur(x, y, calculerGeometriePianoRoll());
   if (!trouve) return;
+  if (typeof synthApercu === 'function') synthApercu(trouve.note.midi);
   dragMelodie = {
     note: trouve.note, mode: trouve.mode, startX: x, startY: y,
     origStart: trouve.note.start, origEnd: trouve.note.end, origMidi: trouve.note.midi,
@@ -3437,7 +3474,9 @@ pianoCanvas.addEventListener('pointermove', (e) => {
     n.start = nouveauStart;
     n.end = nouveauStart + dureeOrig;
     const dyLignes = Math.round((y - dragMelodie.startY) / geo.hLigne);
+    const ancienMidi = n.midi;
     n.midi = Math.max(MIDI_MIN, Math.min(MIDI_MAX, dragMelodie.origMidi - dyLignes));
+    if (n.midi !== ancienMidi && typeof synthApercu === 'function') synthApercu(n.midi);
   }
   rendreLaneMelodie();
 });
@@ -3820,11 +3859,101 @@ document.getElementById('focus-taille').addEventListener('input', (ev) => {
   dessinerGrilleRythmique(); dessinerPlayhead();
 });
 try { const v = localStorage.getItem('bandes.focus.taille'); if (v){ document.getElementById('focus-taille').value = v; document.getElementById('timeline-scroll').style.setProperty('--ech', v); } } catch (_) {}
+// ============================================================
+// Synthe de controle de la melodie
+// ============================================================
+const synth = { actif:false, timbre:'triangle', octave:0, vol:0.5, bus:null, voix:[], prochain:0, notes:[] };
+function freqMidi(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+function synthBus(){
+  if (!synth.bus && audioCtx){ synth.bus = audioCtx.createGain(); synth.bus.gain.value = synth.vol; synth.bus.connect(masterGain || audioCtx.destination); }
+  return synth.bus;
+}
+function synthNote(midi, tCtx, dur){
+  const bus = synthBus(); if (!bus) return;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = synth.timbre; o.frequency.value = freqMidi(midi + 12 * synth.octave);
+  const A = 0.012, R = 0.07, fin = tCtx + Math.max(0.06, dur);
+  g.gain.setValueAtTime(0, tCtx); g.gain.linearRampToValueAtTime(0.5, tCtx + A);
+  g.gain.setValueAtTime(0.5, Math.max(tCtx + A, fin - R)); g.gain.linearRampToValueAtTime(0, fin);
+  o.connect(g); g.connect(bus); o.start(tCtx); o.stop(fin + 0.03);
+  const v = { o, g };
+  synth.voix.push(v);
+  o.onended = () => { synth.voix = synth.voix.filter(x => x !== v); try { g.disconnect(); } catch (_) {} };
+}
+function synthCouper(){
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  synth.voix.forEach(v => { try { v.g.gain.cancelScheduledValues(now); v.g.gain.setTargetAtTime(0, now, 0.01); v.o.stop(now + 0.06); } catch (_) {} });
+  synth.voix = [];
+}
+function synthReinit(){
+  synthCouper();
+  synth.notes = melodieNotes.slice().sort((a, b) => a.start - b.start);
+  const t = getTempsActuel(); let i = 0;
+  while (i < synth.notes.length && synth.notes[i].end <= t) i++;
+  synth.prochain = i;
+}
+function synthPlanifier(){
+  if (!synth.actif || !isPlaying || !audioCtx) return;
+  const t = getTempsActuel(), horizon = t + 0.6;
+  while (synth.prochain < synth.notes.length && synth.notes[synth.prochain].start < horizon){
+    const n = synth.notes[synth.prochain++];
+    if (n.end <= t) continue;
+    const debut = Math.max(n.start, t);
+    synthNote(n.midi, playStartCtxTime + debut, n.end - debut);
+  }
+}
+function synthApercu(midi){
+  if (!synth.actif || !audioCtx || isPlaying) return;
+  synthNote(midi, audioCtx.currentTime + 0.01, 0.3);
+}
+setInterval(synthPlanifier, 40);
+(function(){
+  const btn = document.getElementById('synth-toggle'), tb = document.getElementById('synth-timbre'), oc = document.getElementById('synth-octave'), vl = document.getElementById('synth-vol');
+  function sauver(){ try { localStorage.setItem('bandes.synth', JSON.stringify({ actif: synth.actif, timbre: synth.timbre, octave: synth.octave, vol: synth.vol })); } catch (_) {} }
+  function afficher(){ btn.classList.toggle('actif', synth.actif); tb.value = synth.timbre; oc.value = String(synth.octave); vl.value = Math.round(synth.vol * 100); }
+  try { const s = JSON.parse(localStorage.getItem('bandes.synth') || 'null'); if (s){ synth.actif = !!s.actif; synth.timbre = s.timbre || 'triangle'; synth.octave = Number(s.octave) || 0; synth.vol = typeof s.vol === 'number' ? s.vol : 0.5; } } catch (_) {}
+  afficher();
+  btn.addEventListener('click', () => { synth.actif = !synth.actif; afficher(); sauver(); if (synth.actif){ if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); if (isPlaying) synthReinit(); } else synthCouper(); });
+  tb.addEventListener('change', () => { synth.timbre = tb.value; sauver(); if (isPlaying) synthReinit(); });
+  oc.addEventListener('change', () => { synth.octave = Number(oc.value); sauver(); if (isPlaying) synthReinit(); });
+  vl.addEventListener('input', () => { synth.vol = Number(vl.value) / 100; if (synth.bus) synth.bus.gain.value = synth.vol; sauver(); });
+})();
+
+// ============================================================
+// Hauteur d'affichage des strates
+// ============================================================
+const HAUTEURS_DEF = { wave: 140, melodie: 180, cartes: 34 };
+let hauteurs = { ...HAUTEURS_DEF };
+function appliquerHauteurs(redessiner){
+  const ts = document.getElementById('timeline-scroll');
+  ts.style.setProperty('--h-wave', hauteurs.wave + 'px'); ts.style.setProperty('--h-melodie', hauteurs.melodie + 'px'); ts.style.setProperty('--h-cartes', hauteurs.cartes + 'px');
+  ['wave', 'melodie', 'cartes'].forEach(k => { document.getElementById('h-' + k).value = hauteurs[k]; document.getElementById('h-' + k + '-v').textContent = hauteurs[k]; });
+  if (redessiner && duration){ dessinerWaveform(); rendreLaneMelodie(); dessinerGrilleRythmique(); dessinerPlayhead(); }
+}
+try { const h = JSON.parse(localStorage.getItem('bandes.hauteurs') || 'null'); if (h) hauteurs = { ...HAUTEURS_DEF, ...h }; } catch (_) {}
+appliquerHauteurs(false);
+['wave', 'melodie', 'cartes'].forEach(k => document.getElementById('h-' + k).addEventListener('input', (ev) => {
+  hauteurs[k] = Number(ev.target.value); try { localStorage.setItem('bandes.hauteurs', JSON.stringify(hauteurs)); } catch (_) {}
+  appliquerHauteurs(true);
+}));
+document.getElementById('h-reset').addEventListener('click', () => { hauteurs = { ...HAUTEURS_DEF }; try { localStorage.removeItem('bandes.hauteurs'); } catch (_) {} appliquerHauteurs(true); });
+document.getElementById('btn-hauteurs').addEventListener('click', () => { const p = document.getElementById('hauteurs'); p.classList.toggle('ouvert'); document.getElementById('btn-hauteurs').classList.toggle('actif', p.classList.contains('ouvert')); });
+function definirMelodieAvec(on, sauver){
+  document.getElementById('timeline-scroll').dataset.melo = on ? 'on' : 'off';
+  document.getElementById('btn-melo-avec').classList.toggle('actif', on);
+  if (sauver !== false){ try { localStorage.setItem('bandes.melo', on ? '1' : '0'); } catch (_) {} }
+  if (duration){ rendreLaneMelodie(); dessinerGrilleRythmique(); dessinerPlayhead(); }
+}
+document.getElementById('btn-melo-avec').addEventListener('click', () => definirMelodieAvec(document.getElementById('timeline-scroll').dataset.melo !== 'on'));
+try { if (localStorage.getItem('bandes.melo') === '1'){ document.getElementById('timeline-scroll').dataset.melo = 'on'; document.getElementById('btn-melo-avec').classList.add('actif'); } } catch (_) {}
+
 function definirFocus(f, sauver){
   focusPiste = f;
   document.getElementById('timeline-scroll').dataset.focus = f;
   document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f));
   document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none';
+  document.getElementById('btn-melo-avec').style.display = (f === 'toutes' || f === 'melodie') ? 'none' : '';
   if (sauver !== false){ try { localStorage.setItem('bandes.focus', f); } catch (_) {} }
   phraseSurvol = null;
   if (typeof rendreTout === 'function' && duration){ rendreTout(); dessinerGrilleRythmique(); dessinerPlayhead(); }
@@ -3913,6 +4042,7 @@ function rendreListeParoles(){
   vueParoles.render();
 }
 function rendreListeMelodie(){
+  if (typeof synthReinit === 'function' && isPlaying) synthReinit();
   const list = document.getElementById('list-melodie');
   document.getElementById('count-melodie').textContent = melodieNotes.length;
   list.innerHTML = '';
