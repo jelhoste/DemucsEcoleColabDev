@@ -5,6 +5,10 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.17.0 — 2026-10-21
+- Générateur : la mélodie se choisit par cases à cocher (FCPE, RMVPE, Basic Pitch, SwiftF0, CREPE, Melodia, pYIN), autant que voulu ; ★ sur FCPE, RMVPE et Basic Pitch. Le premier détecteur réussi (dans l'ordre de la liste) devient la version active ; comparaison dans l'éditeur dès 2 résultats.
+- Notebook : bloc de réglages Basic Pitch en haut, commentés (seuils d'attaque et de note, durée minimale, tessiture, melodia trick, fusion des trous, correction des octaves isolées). Repli automatique si la version installée n'accepte pas tous les réglages.
+
 ## 1.16.0 — 2026-10-21
 - Éditeur : bouton « ↕ Hauteurs » : réglage de la hauteur de la forme d'onde, du piano roll de la mélodie (jusqu'à 700 px) et des cartes ; mémorisé.
 - Éditeur : bouton « ♫ + Mélodie » : le piano roll s'affiche en même temps que la piste choisie (Structure, Accords, Paroles, Marqueurs). Touches blanches nommées quand le piano roll est assez haut.

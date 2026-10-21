@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.16.0">
+<meta name="app-version" content="1.17.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -327,6 +327,11 @@
   .generate-btn:disabled{ background: var(--panel-raised); color: var(--text-muted); cursor: not-allowed; }
 
   .hint{ font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; }
+  .checks{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .check{ display:flex; gap:10px; align-items:flex-start; font-size:0.86rem; color: var(--text-muted); cursor:pointer; line-height:1.35; }
+  .check input{ margin-top:3px; accent-color: var(--brass); flex-shrink:0; }
+  .check b{ color: var(--text); }
+  .check input:checked + span{ color: var(--text); }
 
   .steps-list{ list-style: none; padding: 0; margin: 0; counter-reset: steps; }
   .steps-list li{
@@ -502,20 +507,20 @@
       </label>
       <div id="melodie-moteur-wrap" style="margin-top:12px;">
         <div class="field">
-          <label>Détecteur de hauteur (pitch)</label>
-          <select id="melodie-moteur">
-            <option value="rmvpe">RMVPE</option>
-            <option value="swiftf0">SwiftF0 (léger, rapide)</option>
-            <option value="crepe">CREPE (torchcrepe)</option>
-            <option value="fcpe" selected>FCPE (torchfcpe) — par défaut</option>
-            <option value="melodia">Melodia (Essentia, sommation harmonique)</option>
-            <option value="basicpitch">Basic Pitch (Spotify, notes directes)</option>
-            <option value="pyin">pYIN (librosa, référence classique)</option>
-            <option value="tous">Test : lancer tous les détecteurs et les comparer dans l'éditeur</option>
-          </select>
+          <label>Détecteurs à lancer (cochez-en un ou plusieurs : ils tournent l'un après l'autre sur la voix isolée et l'éditeur les compare)</label>
+          <div class="checks" id="melodie-checks">
+            <label class="check"><input type="checkbox" value="fcpe" checked><span><b>FCPE ★</b> — estimateur récent, rapide, très proche de RMVPE en précision sur la voix chantée.</span></label>
+            <label class="check"><input type="checkbox" value="rmvpe"><span><b>RMVPE ★</b> — conçu pour la voix chantée, robuste aux restes d'accompagnement ; référence de précision.</span></label>
+            <label class="check"><input type="checkbox" value="basicpitch"><span><b>Basic Pitch ★</b> — Spotify : donne directement des notes (attaque, durée), avec des réglages détaillés en haut du notebook. Polyphonique : on garde la note la plus forte. Son installation dépend de la version de Python de Colab.</span></label>
+            <label class="check"><input type="checkbox" value="swiftf0"><span><b>SwiftF0</b> — petit réseau ONNX très rapide, sans GPU. Pas spécialisé chant : à tester.</span></label>
+            <label class="check"><input type="checkbox" value="crepe"><span><b>CREPE</b> (torchcrepe, modèle « full ») — référence très répandue, précise sur voix propre, plus gourmande.</span></label>
+            <label class="check"><input type="checkbox" value="melodia"><span><b>Melodia</b> (Essentia) — sommation harmonique, pensée pour une mélodie noyée dans d'autres sons.</span></label>
+            <label class="check"><input type="checkbox" value="pyin"><span><b>pYIN</b> (librosa) — algorithme classique, sans réseau de neurones ; point de comparaison, sensible au bruit résiduel.</span></label>
+          </div>
         </div>
         <div class="hint" id="melodie-moteur-hint" style="margin-top:6px;"></div>
       </div>
+    </div>
     </div>
 
     <div class="option-toggle">
@@ -942,23 +947,21 @@ selMoteur.addEventListener('change', syncMoteurParoles);
 togParoles.addEventListener('change', syncMoteurParoles);
 syncMoteurParoles();
 
-const HINTS_MELODIE = {
-  rmvpe: "RMVPE, conçu pour la voix chantée, robuste aux restes d'accompagnement. Moteur utilisé jusqu'ici.",
-  swiftf0: "SwiftF0 : petit réseau ONNX (pas de GPU nécessaire), annoncé comme précis et très rapide sur les sons monophoniques. Pas du chant seulement : à tester.",
-  crepe: "CREPE (version torchcrepe, modèle « full ») : référence très répandue ; tend à être gourmand mais précis sur voix propre.",
-  fcpe: "FCPE (Fast Context-based Pitch Estimation) : estimateur récent issu du monde du chant synthétique ; API non vérifiée ici : en cas d'échec, RMVPE puis pYIN prennent le relais.",
-  melodia: "Melodia (Salamon et Gómez) via Essentia : repère la hauteur par « sommation harmonique » (énergie des harmoniques de chaque fréquence candidate), puis suit un contour. Appliqué ici à la voix isolée, comme les autres.",
-  basicpitch: "Basic Pitch (Spotify) : réseau qui produit directement des notes (début, fin, hauteur) et non une courbe de hauteur. Il est polyphonique : on garde ici la note la plus forte à chaque instant. Son installation dépend de la version de Python de Colab : ignoré en cas d'échec.",
-  pyin: "pYIN : algorithme classique sans réseau de neurones (librosa). Sert de point de comparaison ; sensible au bruit résiduel.",
-  tous: "Mode test : chaque détecteur analyse la voix isolée ; les versions sont gardées dans le fichier (par défaut RMVPE) et l'éditeur propose de les comparer. Le découpage en notes est le même pour tous : seule la détection de hauteur change.",
-};
-const selMelodieMoteur = document.getElementById('melodie-moteur');
 const toggleMelodie = document.getElementById('toggle-melodie');
+function detecteursMelodieChoisis(){
+  const l = [...document.querySelectorAll('#melodie-checks input:checked')].map(i => i.value);
+  return l.length ? l : ['fcpe'];
+}
 function syncMelodieMoteur(){
   document.getElementById('melodie-moteur-wrap').style.display = toggleMelodie.checked ? 'block' : 'none';
-  document.getElementById('melodie-moteur-hint').textContent = HINTS_MELODIE[selMelodieMoteur.value] || '';
+  const l = [...document.querySelectorAll('#melodie-checks input:checked')].map(i => i.value);
+  const h = document.getElementById('melodie-moteur-hint');
+  if (!l.length) h.textContent = 'Aucun détecteur coché : FCPE sera utilisé.';
+  else if (l.length === 1) h.textContent = '★ = recommandés. Un seul détecteur : pas de comparaison dans l\'éditeur.';
+  else h.textContent = '★ = recommandés. ' + l.length + ' détecteurs : leurs versions sont gardées dans le fichier (version active par défaut : le premier de la liste qui a fonctionné) et l\'éditeur propose de les comparer. Le découpage en notes est le même pour tous ; seule la détection change. Chaque détecteur ajoute son temps de calcul.';
+  if (l.includes('basicpitch')) h.textContent += ' Réglages de Basic Pitch : cellule de configuration, en haut du notebook.';
 }
-selMelodieMoteur.addEventListener('change', syncMelodieMoteur);
+document.querySelectorAll('#melodie-checks input').forEach(i => i.addEventListener('change', syncMelodieMoteur));
 toggleMelodie.addEventListener('change', syncMelodieMoteur);
 syncMelodieMoteur();
 
@@ -1038,7 +1041,10 @@ function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, par
   const demucsModelePy = JSON.stringify(demucsModele || 'htdemucs');
   const parolesMoteurPy = JSON.stringify(['grand','standard','tous'].includes(parolesMoteur) ? parolesMoteur : 'standard');
   const accordsMoteurPy = JSON.stringify(accordsMoteur || 'madmom');
-  const melodieMoteurPy = JSON.stringify(melodieMoteur || 'fcpe');
+  const TOUS_DETECTEURS = ['fcpe', 'rmvpe', 'basicpitch', 'swiftf0', 'crepe', 'melodia', 'pyin'];
+  let detecteursListe = String(melodieMoteur || 'fcpe') === 'tous' ? TOUS_DETECTEURS : String(melodieMoteur || 'fcpe').split(',').map(x => x.trim()).filter(x => TOUS_DETECTEURS.includes(x));
+  if (!detecteursListe.length) detecteursListe = ['fcpe'];
+  const melodieMoteurPy = JSON.stringify(TOUS_DETECTEURS.filter(x => detecteursListe.includes(x)));
 
   const cells = [
     md(
@@ -1071,8 +1077,9 @@ ACCORDS_ACTIF = ${accordsPy}
 # Moteur d'accords : btc, madmom, simple (reference librosa) ou tous (test comparatif)
 ACCORDS_MOTEUR = ${accordsMoteurPy}
 MELODIE_ACTIF = ${melodiePy}
-# Detecteur de hauteur : rmvpe, swiftf0, crepe, fcpe, pyin ou tous (test comparatif)
-MELODIE_MOTEUR = ${melodieMoteurPy}
+# Detecteurs de melodie a lancer (liste ; plusieurs = comparaison dans l'editeur) :
+# fcpe, rmvpe, basicpitch, swiftf0, crepe, melodia, pyin
+MELODIE_DETECTEURS = ${melodieMoteurPy}
 PAROLES_ACTIF = ${parolesPy}
 
 # Source des fichiers audio : "upload" (widget d'upload) ou "drive" (dossier Google Drive)
@@ -1109,6 +1116,48 @@ MODELES_ALIGNEMENT = {
     "it": (None, None),
 }
 PAROLES_ALIGN_MARGE = 0.3  # secondes de contexte audio avant/apres chaque segment pour l'alignement
+
+# =========================================================
+# Reglages de Basic Pitch (melodie). Ne comptent que si "Basic Pitch" est coche.
+# Modifiables ici puis relancer uniquement la cellule d'analyse (pas besoin de
+# tout reprendre depuis le debut) pour ajuster par essai-erreur.
+# =========================================================
+
+# Sensibilite aux ATTAQUES de notes (0 a 1 ; valeur d'origine de Basic Pitch : 0.5).
+# Plus haut = n'accepte qu'une attaque bien nette : moins de fausses notes, mais des
+# notes douces ou liees peuvent disparaitre. Plus bas = plus de notes, dont des parasites.
+BP_SEUIL_ATTAQUE = 0.5
+
+# Sensibilite a la PRESENCE d'une note (0 a 1 ; valeur d'origine : 0.3).
+# Plus bas = les notes durent plus longtemps et se rejoignent mieux (mais les queues de
+# notes et la reverberation sont gardees). Plus haut = notes plus courtes et plus nettes.
+BP_SEUIL_NOTE = 0.3
+
+# Duree minimale d'une note, en millisecondes (valeur d'origine : 127.7).
+# Plus haut = ignore les notes tres breves (artefacts) ; plus bas = garde les notes rapides
+# (ornements, vocalises) mais aussi plus de bruit.
+BP_DUREE_MIN_MS = 127.7
+
+# Tessiture du chanteur : limite les frequences cherchees et evite que des harmoniques
+# soient prises pour la note (erreurs d'octave). Choisir la plus etroite qui convient :
+#   "grave"  : 70 a 450 Hz   (voix d'homme grave : basse, baryton)
+#   "medium" : 90 a 750 Hz   (ténor, alto : la plupart des voix)
+#   "aigue"  : 150 a 1100 Hz (soprano, voix tres aigue)
+#   "large"  : 50 a 1100 Hz  (reglage d'origine du notebook, le plus permissif)
+BP_TESSITURE = "medium"
+BP_TESSITURES = {"grave": (70, 450), "medium": (90, 750), "aigue": (150, 1100), "large": (50, 1100)}
+
+# "Melodia trick" de Basic Pitch : comble les petits trous a l'interieur d'une note tenue
+# en retrouvant l'energie residuelle (True = notes plus continues ; False = plus strict).
+BP_MELODIA_TRICK = True
+
+# Nettoyage apres Basic Pitch (notre propre post-traitement, sur les notes obtenues) :
+#  - fusionne deux notes identiques separees par un trou plus court que BP_FUSION_TROU_MS
+#    (une note tenue coupee en deux par un petit creux d'energie) ;
+#  - ramene dans l'octave de ses voisines une note breve isolee a plus d'une octave
+#    d'elles (erreur d'octave typique). Mettre BP_CORRIGER_OCTAVES = False pour desactiver.
+BP_FUSION_TROU_MS = 80
+BP_CORRIGER_OCTAVES = True
 
 # =========================================================
 # Reglages fins de la transcription des paroles (faster-whisper).
@@ -1185,7 +1234,7 @@ for _moteur_pitch, _paquets_pitch in (("swiftf0", [["swift-f0"]]), ("crepe", [["
                                       # Basic Pitch : on evite ses dependances figees (tensorflow, numpy) et on utilise le moteur ONNX
                                       ("basicpitch", [["--no-deps", "--ignore-requires-python", "basic-pitch"],
                                                       ["onnxruntime", "pretty_midi", "resampy", "mir_eval"]])):
-    if MELODIE_ACTIF and MELODIE_MOTEUR in (_moteur_pitch, "tous"):
+    if MELODIE_ACTIF and _moteur_pitch in MELODIE_DETECTEURS:
         print(f"Installation du detecteur {_moteur_pitch} (melodie)...")
         try:
             for _paquets in _paquets_pitch:
@@ -1639,25 +1688,53 @@ def notes_monophoniques(evenements):
     return [{"start": round(x["start"], 3), "end": round(x["end"], 3), "midi": x["midi"]}
             for x in segs if x["end"] - x["start"] >= MIN_NOTE_DURATION]
 
+def nettoyer_notes_bp(notes):
+    """Post-traitement des notes de Basic Pitch : fusion des trous courts, correction des octaves isolees."""
+    notes = [dict(n) for n in notes]
+    fus = []
+    for n in notes:
+        if fus and fus[-1]["midi"] == n["midi"] and (n["start"] - fus[-1]["end"]) * 1000.0 <= BP_FUSION_TROU_MS:
+            fus[-1]["end"] = n["end"]
+        else:
+            fus.append(n)
+    if BP_CORRIGER_OCTAVES:
+        for i in range(1, len(fus) - 1):
+            p, n, q = fus[i - 1], fus[i], fus[i + 1]
+            if n["end"] - n["start"] > 0.3 or n["start"] - p["end"] > 0.3 or q["start"] - n["end"] > 0.3:
+                continue
+            if abs(p["midi"] - q["midi"]) > 3:
+                continue
+            ref = (p["midi"] + q["midi"]) / 2.0
+            if abs(n["midi"] - ref) >= 11:
+                corrige = n["midi"] - 12 * round((n["midi"] - ref) / 12.0)
+                if abs(corrige - ref) <= 3:
+                    n["midi"] = int(corrige)
+    return fus
+
 def notes_basicpitch(chemin):
     from basic_pitch.inference import predict
+    fmin, fmax = BP_TESSITURES.get(BP_TESSITURE, (50, 1100))
+    reglages = dict(onset_threshold=BP_SEUIL_ATTAQUE, frame_threshold=BP_SEUIL_NOTE, minimum_note_length=BP_DUREE_MIN_MS,
+                    minimum_frequency=fmin, maximum_frequency=fmax, melodia_trick=BP_MELODIA_TRICK)
     try:
-        _, _, evenements = predict(str(chemin), minimum_frequency=50, maximum_frequency=1100)
+        _, _, evenements = predict(str(chemin), **reglages)
     except TypeError:
+        print("    [Basic Pitch] cette version n'accepte pas tous les reglages : reglages par defaut utilises")
         _, _, evenements = predict(str(chemin))
-    return notes_monophoniques([(float(e[0]), float(e[1]), int(e[2]), float(e[3])) for e in evenements])
+    notes = notes_monophoniques([(float(e[0]), float(e[1]), int(e[2]), float(e[3])) for e in evenements])
+    return nettoyer_notes_bp(notes)
 
 # (nom, fonction, type de sortie) : "pitch" = courbe de hauteur a decouper en notes, "notes" = notes deja pretes
-# L'ordre donne aussi le detecteur par defaut en mode test (le premier qui a fonctionne)
-DETECTEURS_PITCH = [("fcpe", pitch_fcpe, "pitch"), ("rmvpe", pitch_rmvpe, "pitch"), ("swiftf0", pitch_swiftf0, "pitch"),
-                    ("crepe", pitch_crepe, "pitch"), ("melodia", pitch_melodia, "pitch"),
-                    ("basicpitch", notes_basicpitch, "notes"), ("pyin", pitch_pyin, "pitch")]
+# L'ordre donne aussi le detecteur actif par defaut quand plusieurs tournent (le premier qui a fonctionne)
+DETECTEURS_PITCH = [("fcpe", pitch_fcpe, "pitch"), ("rmvpe", pitch_rmvpe, "pitch"), ("basicpitch", notes_basicpitch, "notes"),
+                    ("swiftf0", pitch_swiftf0, "pitch"), ("crepe", pitch_crepe, "pitch"), ("melodia", pitch_melodia, "pitch"),
+                    ("pyin", pitch_pyin, "pitch")]
 
 def extraire_melodies(chemin_voix):
     """Lance le(s) detecteur(s) choisi(s). Renvoie (notes_par_moteur, moteur_par_defaut)."""
     resultats = {}
     for nom_moteur, fonction, type_sortie in DETECTEURS_PITCH:
-        if MELODIE_MOTEUR not in (nom_moteur, "tous"):
+        if nom_moteur not in MELODIE_DETECTEURS:
             continue
         t0 = time.time()
         try:
@@ -2035,7 +2112,7 @@ for r in rapports:
         r["melodie"] = notes_par_moteur.get(moteur_melodie, []) if moteur_melodie else []
         r["moteur_melodie"] = moteur_melodie
         non_vides = {k: v for k, v in notes_par_moteur.items() if v}
-        r["variantes_melodie"] = non_vides if (MELODIE_MOTEUR == "tous" and len(non_vides) >= 2) else {}
+        r["variantes_melodie"] = non_vides if len(non_vides) >= 2 else {}
         print(f"  {r['nom_fichier']} -- melodie ({len(r['melodie'])} notes, detecteur : {moteur_melodie}) : {time.time()-t0:.1f} s")
     else:
         r["melodie"] = []
@@ -2263,7 +2340,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   const opusBitrate = document.getElementById('opus-bitrate').value;
   const demucsModele = document.querySelector('input[name=demucs]:checked').value;
   const parolesMoteur = document.getElementById('paroles-moteur').value;
-  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer, formatExport, aacBitrate, opusBitrate, demucsModele, parolesMoteur, document.getElementById('accords-moteur').value, document.getElementById('melodie-moteur').value);
+  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer, formatExport, aacBitrate, opusBitrate, demucsModele, parolesMoteur, document.getElementById('accords-moteur').value, detecteursMelodieChoisis().join(','));
   const blob = new Blob([JSON.stringify(notebook, null, 1)], { type: 'application/x-ipynb+json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
