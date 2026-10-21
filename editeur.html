@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.10.0">
+<meta name="app-version" content="1.11.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1845,8 +1845,8 @@ const vueParoles = creerVueParoles('cards-paroles', () => parolesSegments);
 // ============================================================
 // Comparaison des placements de paroles (uniquement si >= 2 versions dans le JSON)
 // ============================================================
-const COULEURS_MOTEURS = { whisper: '#8FB8C9', whisperx: '#E0B25A', mfa: '#C98F8F' };
-const NOMS_MOTEURS = { whisper: 'Whisper', whisperx: 'WhisperX', mfa: 'MFA' };
+const COULEURS_MOTEURS = { whisper: '#8FB8C9', whisperx: '#E0B25A', whisperx_standard: '#8FB8C9', whisperx_grand: '#E0B25A', mfa: '#C98F8F' };
+const NOMS_MOTEURS = { whisper: 'Whisper', whisperx: 'WhisperX', whisperx_standard: 'WhisperX standard', whisperx_grand: 'WhisperX grand modèle', mfa: 'MFA' };
 let variantesParoles = {};   // nom -> segments editeur (copie de travail)
 let varianteActive = null;
 let motsAplatis = {};        // nom -> [{start,end,texte}]

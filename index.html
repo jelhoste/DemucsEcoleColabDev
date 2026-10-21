@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.10.0">
+<meta name="app-version" content="1.11.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -526,12 +526,11 @@
       <div class="hint" style="margin-top:6px;">Télécharge un modèle de reconnaissance vocale (~3 Go) au premier lancement dans Colab — désactivez si vous n'en avez pas besoin.</div>
       <div id="paroles-moteur-wrap" style="margin-top:12px;">
         <div class="field">
-          <label>Placement des mots dans le temps</label>
+          <label>Modèle d'alignement des mots (WhisperX)</label>
           <select id="paroles-moteur">
-            <option value="whisper">Whisper seul (rapide, placement approximatif)</option>
-            <option value="whisperx" selected>Whisper + WhisperX (alignement wav2vec2) — recommandé</option>
-            <option value="mfa">Whisper + Montreal Forced Aligner (installation longue)</option>
-            <option value="tous">Test : lancer les trois et les comparer dans l'éditeur</option>
+            <option value="grand" selected>Grand modèle — le plus précis, plus lent — recommandé</option>
+            <option value="standard">Modèle standard — plus rapide, un peu moins précis</option>
+            <option value="tous">Test : lancer les deux et les comparer dans l'éditeur</option>
           </select>
         </div>
         <div class="hint" id="paroles-moteur-hint" style="margin-top:6px;"></div>
@@ -929,10 +928,9 @@ document.querySelectorAll('input[name=demucs]').forEach(radio => {
 });
 
 const HINTS_MOTEUR = {
-  whisper: "Les mots gardent les temps estimés par Whisper (précision de l'ordre de 0,1 à 0,3 s, moins bonne sur le chant).",
-  whisperx: "Whisper transcrit, puis WhisperX recale chaque mot sur la voix isolée (modèle wav2vec2) et donne une confiance par mot. Langues prises en charge par défaut : français, anglais, allemand, espagnol, italien. Seule la partie alignement de WhisperX est installée.",
-  tous: "Mode test : Whisper transcrit une fois, puis WhisperX et le Montreal Forced Aligner replacent chacun les mêmes mots. Les trois versions sont gardées dans le fichier de métadonnées (la version par défaut est WhisperX) et l'éditeur propose de les comparer. Plus long : installation de MFA comprise.",
-  mfa: "Whisper transcrit, puis le Montreal Forced Aligner recale les mots. Installe un environnement conda dans Colab (environ 5 à 10 minutes la première fois) ; modèles français et anglais. Conçu pour la parole : à tester sur du chant.",
+  grand: "Whisper transcrit, puis WhisperX recale chaque mot sur la voix isolée avec le plus gros modèle d'alignement disponible pour la langue (wav2vec2 « large », environ 1,2 Go : anglais, français, allemand, espagnol, italien). C'est normalement le plus précis, surtout sur les voyelles tenues du chant ; comptez quelques minutes de plus par morceau. Pour les autres langues, le modèle par défaut de WhisperX est utilisé.",
+  standard: "Whisper transcrit, puis WhisperX recale chaque mot avec son modèle d'alignement par défaut (plus petit : environ 0,4 Go en anglais et en français). Plus rapide, un peu moins précis. En allemand, espagnol et italien, le modèle standard est déjà le grand.",
+  tous: "Mode test : les mots sont alignés deux fois, avec le modèle standard puis avec le grand, et l'éditeur propose de comparer les deux versions (la version par défaut est la grande). Plus long.",
 };
 const selMoteur = document.getElementById('paroles-moteur');
 const togParoles = document.getElementById('toggle-paroles');
@@ -1038,7 +1036,7 @@ function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, par
   const aacBitratePy = JSON.stringify(aacBitrate || '192k');
   const opusBitratePy = JSON.stringify(opusBitrate || '128k');
   const demucsModelePy = JSON.stringify(demucsModele || 'htdemucs');
-  const parolesMoteurPy = JSON.stringify(parolesMoteur || 'whisper');
+  const parolesMoteurPy = JSON.stringify(['grand','standard','tous'].includes(parolesMoteur) ? parolesMoteur : 'grand');
   const accordsMoteurPy = JSON.stringify(accordsMoteur || 'madmom');
   const melodieMoteurPy = JSON.stringify(melodieMoteur || 'fcpe');
 
@@ -1097,11 +1095,19 @@ OPUS_BITRATE = ${opusBitratePy}  # par piste stereo, en mode opus_4pistes unique
 #                   (All-In-One garde ses propres 4 pistes pour l'analyse de structure)
 DEMUCS_MODELE = ${demucsModelePy}
 
-# Moteur de placement des mots des paroles (le texte vient toujours de Whisper) :
-#  "whisper"  -> temps de Whisper tels quels
-#  "whisperx" -> alignement forced wav2vec2 (partie alignement de WhisperX)
-#  "mfa"      -> Montreal Forced Aligner (environnement conda installe dans Colab)
+# Alignement des mots des paroles (le texte et le decoupage en lignes viennent toujours de Whisper) :
+#  "grand"    -> WhisperX avec le plus gros modele wav2vec2 de la langue (le plus precis, plus lent)
+#  "standard" -> WhisperX avec son modele par defaut (plus petit, plus rapide)
+#  "tous"     -> les deux, gardes dans le JSON pour les comparer dans l'editeur
 PAROLES_MOTEUR = ${parolesMoteurPy}
+# (modele standard, grand modele) par langue ; None = modele par defaut de WhisperX
+MODELES_ALIGNEMENT = {
+    "en": (None, "facebook/wav2vec2-large-960h-lv60-self"),
+    "fr": (None, "jonatasgrosman/wav2vec2-large-xlsr-53-french"),
+    "de": (None, None),   # le modele par defaut de WhisperX est deja un grand modele
+    "es": (None, None),
+    "it": (None, None),
+}
 PAROLES_ALIGN_MARGE = 0.3  # secondes de contexte audio avant/apres chaque segment pour l'alignement
 
 # =========================================================
@@ -1197,55 +1203,15 @@ if PAROLES_ACTIF:
     # cuBLAS 12 a part, precharge ensuite par precharger_cublas12().
     pip_install('faster-whisper', 'av<19', 'nvidia-cublas-cu12')
 
-if PAROLES_ACTIF and PAROLES_MOTEUR in ("whisperx", "tous"):
+if PAROLES_ACTIF:
     print("Installation de WhisperX (alignement des mots)...")
     # WhisperX complet impose torch 2.8 et pyannote : on n'installe QUE le paquet, sans ses
     # dependances (on n'utilise que son module d'alignement), pour ne pas toucher a torch.
     pip_install('--no-deps', 'whisperx')
-    pip_install('nltk', 'pandas', 'transformers', 'librosa', 'soundfile')
+    pip_install('nltk', 'pandas', 'transformers', 'librosa', 'soundfile', 'num2words')
 
-# --- Montreal Forced Aligner : uniquement disponible via conda (binaires Kaldi) ---
 import os, shutil
 from pathlib import Path as _Path
-
-MFA_RACINE = _Path("/content/mfa_env")
-MFA_DONNEES = _Path("/content/mfa_data")
-MFA_MODELES = {"en": "english_us_arpa", "fr": "french_mfa"}
-MFA_PRET = False
-
-def lancer_mfa(*args):
-    env = dict(os.environ, MFA_ROOT_DIR=str(MFA_DONNEES), MAMBA_ROOT_PREFIX=str(MFA_RACINE))
-    return subprocess.run([str(MFA_RACINE / "bin" / "micromamba"), "run", "-n", "mfa", "mfa", *args],
-                          env=env, check=True, capture_output=True, text=True)
-
-def installer_mfa():
-    global MFA_PRET
-    print("Installation du Montreal Forced Aligner (conda, 5 a 10 minutes)...")
-    try:
-        MFA_RACINE.mkdir(parents=True, exist_ok=True)
-        MFA_DONNEES.mkdir(parents=True, exist_ok=True)
-        mm = MFA_RACINE / "bin" / "micromamba"
-        if not mm.exists():
-            subprocess.run(f"curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xj -C {MFA_RACINE} bin/micromamba",
-                           shell=True, check=True)
-        env = dict(os.environ, MAMBA_ROOT_PREFIX=str(MFA_RACINE))
-        subprocess.run([str(mm), "create", "-y", "-n", "mfa", "-c", "conda-forge", "python=3.11", "montreal-forced-aligner"],
-                       env=env, check=True, capture_output=True, text=True)
-        for nom_modele in MFA_MODELES.values():
-            for type_modele in ("acoustic", "dictionary", "g2p"):
-                lancer_mfa("model", "download", type_modele, nom_modele)
-        MFA_PRET = True
-        print("  MFA installe.")
-    except subprocess.CalledProcessError as e:
-        print("  [!] Installation de MFA impossible :", (e.stderr or "")[-600:])
-        print("      Les paroles garderont les temps de Whisper.")
-    except Exception as e:
-        print(f"  [!] Installation de MFA impossible : {type(e).__name__}: {e}")
-        print("      Les paroles garderont les temps de Whisper.")
-
-if PAROLES_ACTIF and PAROLES_MOTEUR in ("mfa", "tous"):
-    installer_mfa()
-
 print("Installation terminee.")`
     ),
 
@@ -1902,14 +1868,92 @@ def charger_whisper():
         print(f"      Repli sur CPU avec le modele '{WHISPER_MODELE_CPU}' -- nettement plus lent.")
         return WhisperModel(WHISPER_MODELE_CPU, device="cpu", compute_type="int8")
 
-# --- Alignement des mots : WhisperX (wav2vec2) ou Montreal Forced Aligner ---
+# --- Alignement des mots : WhisperX (wav2vec2) ---
 # Le texte et le decoupage en segments viennent de Whisper ; l'aligneur ne fait que repositionner
 # chaque mot dans le temps. Chaque fonction renvoie (paroles, ok) : si quoi que ce soit echoue,
 # les paroles de Whisper sont conservees telles quelles.
 
 MODELES_WAV2VEC_HF = {"en": "facebook/wav2vec2-base-960h", "fr": "jonatasgrosman/wav2vec2-large-xlsr-53-french"}
+ALIGN_CACHE = {}
 
-def aligner_whisperx(chemin_voix, paroles, langue):
+def charger_aligneur(code, grand, device):
+    import whisperx
+    nom = MODELES_ALIGNEMENT.get(code, (None, None))[1 if grand else 0]
+    cle = (code, nom)
+    if cle in ALIGN_CACHE:
+        return ALIGN_CACHE[cle]
+    res = None
+    if nom:
+        try:
+            res = whisperx.load_align_model(language_code=code, device=device, model_name=nom)
+            print(f"    [WhisperX] modele d'alignement : {nom}")
+        except Exception as e0:
+            print(f"    [WhisperX] grand modele indisponible ({type(e0).__name__}) -- modele par defaut a la place")
+    if res is None:
+        try:
+            res = whisperx.load_align_model(language_code=code, device=device)
+            print(f"    [WhisperX] modele d'alignement : par defaut ({code})")
+        except Exception as e1:
+            if code not in MODELES_WAV2VEC_HF:
+                raise
+            print(f"    [WhisperX] modele par defaut indisponible ({type(e1).__name__}) -- essai avec {MODELES_WAV2VEC_HF[code]}")
+            res = whisperx.load_align_model(language_code=code, device=device, model_name=MODELES_WAV2VEC_HF[code])
+    ALIGN_CACHE[cle] = res
+    return res
+
+def grand_modele_distinct(langue):
+    return MODELES_ALIGNEMENT.get((langue or "")[:2], (None, None))[1] is not None
+
+def mots_pour_alignement(texte, code):
+    """Texte -> liste de (mot d'origine, [formes a aligner]). Ponctuation retiree, chiffres ecrits en lettres."""
+    try:
+        from num2words import num2words
+    except Exception:
+        num2words = None
+    sortie = []
+    for brut in texte.split():
+        t = brut.replace(chr(8217), "'").replace(chr(8216), "'")
+        t = "".join(c for c in t if c.isalnum() or c in "'-")
+        t = t.strip("'-")
+        if not t:
+            continue
+        formes = [t]
+        if t.isdigit() and num2words is not None:
+            try:
+                ecrit = num2words(int(t), lang=code if code in ("en", "fr", "de", "es", "it") else "en")
+                formes = "".join(c if c.isalnum() or c == "'" else " " for c in ecrit).split() or [t]
+            except Exception:
+                formes = [t]
+        sortie.append((brut, formes))
+    return sortie
+
+def _temps_ok(v):
+    return v is not None and v == v
+
+def combler_mots(mots, t0, t1):
+    """Les mots que WhisperX n'a pas pu placer (chiffres, mots hors vocabulaire...) sont repartis
+    regulierement entre leurs voisins au lieu d'etre perdus. Leur score est mis a 0."""
+    n = len(mots)
+    i = 0
+    while i < n:
+        if not (_temps_ok(mots[i].get("start")) and _temps_ok(mots[i].get("end"))):
+            j = i
+            while j < n and not (_temps_ok(mots[j].get("start")) and _temps_ok(mots[j].get("end"))):
+                j += 1
+            a = mots[i - 1]["end"] if i > 0 else t0
+            b = mots[j]["start"] if j < n else t1
+            if b < a:
+                b = a
+            pas = (b - a) / (j - i)
+            for k in range(i, j):
+                mots[k]["start"] = a + pas * (k - i)
+                mots[k]["end"] = a + pas * (k - i + 1)
+                mots[k]["score"] = 0.0
+            i = j
+        else:
+            i += 1
+
+def aligner_whisperx(chemin_voix, paroles, langue, grand=True):
     try:
         import torch
         import librosa
@@ -1920,128 +1964,57 @@ def aligner_whisperx(chemin_voix, paroles, langue):
             pass
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         code = (langue or "")[:2]
-        try:
-            modele, meta = whisperx.load_align_model(language_code=code, device=device)
-        except Exception as e1:
-            if code not in MODELES_WAV2VEC_HF:
-                raise
-            print(f"    [WhisperX] modele par defaut indisponible ({type(e1).__name__}) -- essai avec {MODELES_WAV2VEC_HF[code]}")
-            modele, meta = whisperx.load_align_model(language_code=code, device=device, model_name=MODELES_WAV2VEC_HF[code])
+        modele, meta = charger_aligneur(code, grand, device)
         audio, _ = librosa.load(str(chemin_voix), sr=16000, mono=True)
         duree = len(audio) / 16000.0
         sortie = []
         n_alignes = 0
+        n_interpoles = 0
         for p in paroles:
             debut = max(0.0, p["start"] - PAROLES_ALIGN_MARGE)
             fin = min(duree, p["end"] + PAROLES_ALIGN_MARGE)
+            groupes = mots_pour_alignement(p["texte"], code)
+            texte_align = " ".join(f for _, formes in groupes for f in formes)
             resultat = None
             try:
-                if fin - debut > 0.1 and p["texte"].strip():
-                    resultat = whisperx.align([{"text": p["texte"], "start": debut, "end": fin}], modele, meta, audio, device)
+                if fin - debut > 0.1 and texte_align.strip():
+                    resultat = whisperx.align([{"text": texte_align, "start": debut, "end": fin}], modele, meta, audio, device)
             except Exception as e2:
                 print(f"    [WhisperX] segment ignore ({type(e2).__name__}: {e2})")
-            ajoutes = 0
+            plats = []
             for sg in (resultat or {}).get("segments", []):
-                mots = []
                 for w in sg.get("words", []):
-                    if "start" in w and "end" in w:
-                        mot = {"start": round(float(w["start"]), 3), "end": round(float(w["end"]), 3), "texte": w["word"]}
-                        if w.get("score") is not None:
-                            mot["score"] = round(float(w["score"]), 3)
-                        mots.append(mot)
-                if mots:
-                    sortie.append({"start": mots[0]["start"], "end": mots[-1]["end"], "texte": sg["text"].strip(), "mots": mots})
-                    ajoutes += 1
-            if ajoutes:
-                n_alignes += 1
-            else:
+                    plats.append({"start": w.get("start"), "end": w.get("end"), "score": w.get("score"), "texte": w.get("word", "")})
+            attendu = sum(len(formes) for _, formes in groupes)
+            if not plats or not any(_temps_ok(w["start"]) for w in plats):
                 sortie.append(p)  # alignement impossible : on garde le segment de Whisper
-        print(f"    [WhisperX] {n_alignes}/{len(paroles)} segments realignes")
+                continue
+            combler_mots(plats, p["start"], p["end"])
+            n_interpoles += sum(1 for w in plats if w["score"] == 0.0)
+            mots = []
+            if len(plats) == attendu:
+                k = 0
+                for brut, formes in groupes:  # un mot d'origine peut couvrir plusieurs formes (chiffres)
+                    morceau = plats[k:k + len(formes)]
+                    k += len(formes)
+                    sc = [w["score"] for w in morceau if w["score"] is not None]
+                    mot = {"start": round(float(morceau[0]["start"]), 3), "end": round(float(morceau[-1]["end"]), 3), "texte": brut}
+                    if sc:
+                        mot["score"] = round(float(min(sc)), 3)
+                    mots.append(mot)
+            else:  # decoupage inattendu : on garde les mots tels que WhisperX les rend
+                for w in plats:
+                    mot = {"start": round(float(w["start"]), 3), "end": round(float(w["end"]), 3), "texte": w["texte"]}
+                    if w["score"] is not None:
+                        mot["score"] = round(float(w["score"]), 3)
+                    mots.append(mot)
+            sortie.append({"start": mots[0]["start"], "end": mots[-1]["end"], "texte": p["texte"].strip(), "mots": mots})
+            n_alignes += 1
+        print(f"    [WhisperX] {n_alignes}/{len(paroles)} segments realignes, {n_interpoles} mot(s) non reconnus par le modele, repartis entre leurs voisins")
         sortie.sort(key=lambda x: x["start"])
         return sortie, n_alignes > 0
     except Exception as e:
         print(f"    [!] WhisperX indisponible ({type(e).__name__}: {e}) -- paroles conservees avec les temps de Whisper.")
-        return paroles, False
-
-def lire_textgrid_mots(chemin):
-    """Intervalles (debut, fin, mot) du tier 'words' d'un TextGrid au format long (silences exclus)."""
-    texte = chemin.read_text(encoding="utf-8")
-    for tier in texte.split("item [")[1:]:
-        m = re.search('name = "([^"]*)"', tier)
-        if m and m.group(1).endswith("words"):
-            intervalles = re.findall('xmin = ([0-9.eE+-]+)[^a-z]+xmax = ([0-9.eE+-]+)[^a-z]+text = "([^"]*)"', tier)
-            return [(float(a), float(b), t) for a, b, t in intervalles if t.strip()]
-    return []
-
-def aligner_mfa(chemin_voix, paroles, langue):
-    if not MFA_PRET:
-        print("    [!] MFA non installe -- paroles conservees avec les temps de Whisper.")
-        return paroles, False
-    try:
-        import librosa
-        import soundfile as sf
-        modele = MFA_MODELES.get((langue or "")[:2])
-        if modele is None:
-            print(f"    [MFA] langue '{langue}' non prise en charge (fr, en) -- paroles conservees.")
-            return paroles, False
-        audio, sr = librosa.load(str(chemin_voix), sr=16000, mono=True)
-        duree = len(audio) / float(sr)
-        racine_corpus = MFA_DONNEES / "corpus"
-        corpus = racine_corpus / "voix"  # un seul "locuteur" (le nom du dossier)
-        sortie = MFA_DONNEES / "sortie"
-        shutil.rmtree(racine_corpus, ignore_errors=True)
-        shutil.rmtree(sortie, ignore_errors=True)
-        corpus.mkdir(parents=True)
-        decalages = {}
-        for i, p in enumerate(paroles):
-            debut = max(0.0, p["start"] - PAROLES_ALIGN_MARGE)
-            fin = min(duree, p["end"] + PAROLES_ALIGN_MARGE)
-            if fin - debut < 0.1 or not p["texte"].strip():
-                continue
-            nom_seg = f"seg_{i:04d}"
-            sf.write(str(corpus / f"{nom_seg}.wav"), audio[int(debut*sr):int(fin*sr)], sr)
-            (corpus / f"{nom_seg}.lab").write_text(p["texte"], encoding="utf-8")
-            decalages[nom_seg] = debut
-        g2p = MFA_DONNEES / "pretrained_models" / "g2p" / f"{modele}.zip"
-        base = ["align", str(racine_corpus), modele, modele, str(sortie), "--clean", "--output_format", "long_textgrid"]
-        essais = []
-        if g2p.exists():
-            essais.append(base + ["--g2p_model_path", str(g2p), "--beam", "100", "--retry_beam", "400"])
-        essais.append(base + ["--beam", "100", "--retry_beam", "400"])
-        essais.append(base)
-        reussi = False
-        for args in essais:
-            try:
-                lancer_mfa(*args)
-                reussi = True
-                break
-            except subprocess.CalledProcessError as e:
-                print("    [MFA] tentative echouee :", (e.stderr or e.stdout or "")[-300:].replace(chr(10), " "))
-        if not reussi:
-            return paroles, False
-        grilles = {g.stem: g for g in sortie.rglob("*.TextGrid")}
-        resultat_final = []
-        n_alignes = 0
-        for i, p in enumerate(paroles):
-            nom_seg = f"seg_{i:04d}"
-            intervalles = lire_textgrid_mots(grilles[nom_seg]) if nom_seg in grilles else []
-            if not intervalles:
-                resultat_final.append(p)
-                continue
-            decalage = decalages[nom_seg]
-            jetons = p["texte"].split()
-            conserver_texte = len(jetons) == len(intervalles)  # sinon on garde l'orthographe de MFA
-            mots = []
-            for k, (a, b, t) in enumerate(intervalles):
-                mots.append({"start": round(a + decalage, 3), "end": round(b + decalage, 3),
-                             "texte": jetons[k] if conserver_texte else t})
-            resultat_final.append({"start": mots[0]["start"], "end": mots[-1]["end"], "texte": p["texte"], "mots": mots})
-            n_alignes += 1
-        print(f"    [MFA] {n_alignes}/{len(paroles)} segments realignes")
-        resultat_final.sort(key=lambda x: x["start"])
-        return resultat_final, n_alignes > 0
-    except Exception as e:
-        print(f"    [!] MFA a echoue ({type(e).__name__}: {e}) -- paroles conservees avec les temps de Whisper.")
         return paroles, False
 
 if PAROLES_ACTIF:
@@ -2079,18 +2052,16 @@ for r in rapports:
         langue_alignement = langue or DERNIERE_LANGUE["code"]
         r["variantes_paroles"] = {}
         if r["paroles"]:
-            if PAROLES_MOTEUR == "tous":
-                r["variantes_paroles"]["whisper"] = copy.deepcopy(r["paroles"])
-            if PAROLES_MOTEUR in ("whisperx", "tous"):
-                px, ok = aligner_whisperx(voix, r["paroles"], langue_alignement)
+            niveaux = ["standard", "grand"] if PAROLES_MOTEUR == "tous" else [PAROLES_MOTEUR]
+            if PAROLES_MOTEUR == "tous" and not grand_modele_distinct(langue_alignement):
+                print("    [WhisperX] pas de modele plus grand que le standard pour cette langue : une seule version.")
+                niveaux = ["standard"]
+            for niveau in niveaux:
+                px, ok = aligner_whisperx(voix, r["paroles"], langue_alignement, niveau == "grand")
                 if ok:
-                    r["variantes_paroles"]["whisperx"] = px
-            if PAROLES_MOTEUR in ("mfa", "tous"):
-                pm, ok = aligner_mfa(voix, r["paroles"], langue_alignement)
-                if ok:
-                    r["variantes_paroles"]["mfa"] = pm
-            for choix in ("whisperx", "mfa"):
-                if choix in r["variantes_paroles"] and (PAROLES_MOTEUR == choix or PAROLES_MOTEUR == "tous"):
+                    r["variantes_paroles"]["whisperx_" + niveau] = px
+            for choix in ("whisperx_grand", "whisperx_standard"):
+                if choix in r["variantes_paroles"]:
                     r["paroles"] = r["variantes_paroles"][choix]
                     r["moteur_paroles"] = choix
                     break

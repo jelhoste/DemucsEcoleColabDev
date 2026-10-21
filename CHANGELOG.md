@@ -5,6 +5,13 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.11.0 — 2026-10-21
+- Paroles : WhisperX est désormais le seul aligneur (Whisper seul et Montreal Forced Aligner retirés, installation conda supprimée).
+- Paroles : choix du modèle d'alignement dans l'interface — « Grand modèle » (défaut, le plus précis, plus lent), « Standard » (plus rapide), ou « Test » qui garde les deux versions à comparer dans l'éditeur.
+- Paroles : grands modèles wav2vec2 pour l'anglais (large-960h-lv60-self) et le français (large-xlsr-53) ; repli automatique sur le modèle standard s'ils ne se chargent pas.
+- Paroles : les mots que le modèle ne sait pas placer (chiffres, mots hors vocabulaire) ne sont plus perdus : ils sont répartis entre leurs voisins avec une confiance de 0. Ponctuation retirée et chiffres écrits en lettres avant l'alignement ; le texte d'origine est conservé.
+- Éditeur : noms « WhisperX standard » / « WhisperX grand modèle » dans la comparaison (les anciens fichiers restent lisibles).
+
 ## 1.10.0 — 2026-10-21
 - Éditeur : réglage de volume global (0–150 %, double-clic = 100 %).
 - Éditeur : marqueurs personnels (types libres « Point » ou « Attaque + durée », couleur, piste dédiée, glisser/redimensionner, calage temps/mesures, import des relevés, export `marqueurs_perso`).
