@@ -9,6 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
+<meta name="app-version" content="1.10.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -368,6 +369,223 @@
   }
   .modal-body textarea{ resize: vertical; }
   .modal-foot{ padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
+  /* --- Mixette (ecoute des pistes) --- */
+  .mixette-piste{ display: inline-flex; }
+  .mixette-piste .mixette-btn{ border-radius: 4px 0 0 4px; }
+  .mixette-piste .mixette-solo{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-left: none;
+    color: var(--text-muted);
+    border-radius: 0 4px 4px 0;
+    padding: 5px 8px;
+    cursor: pointer;
+  }
+  .mixette-piste .mixette-solo.on{ background: var(--brass); border-color: var(--brass); color: #1C1712; font-weight: 600; }
+  .mixette{ align-items: flex-end; }
+  .mixette-piste{ flex-direction: column; gap: 4px; }
+  .mixette-ligne{ display: inline-flex; }
+  .mixette-vol-ligne{ display: flex; align-items: center; gap: 6px; }
+  .mixette-vol{ width: 96px; accent-color: var(--brass); }
+  .mixette-pct{ font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--text-muted); width: 2.6em; text-align: right; }
+  .quant-bar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; font-size:0.85rem; color: var(--text-muted); }
+  .quant-bar select{ background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:4px 8px; }
+  .quant-go{ background: transparent; color: var(--brass); border:1px solid var(--brass-dim); border-radius:6px; padding:4px 12px; cursor:pointer; font:inherit; }
+  .quant-msg{ color: var(--brass); }
+  #pr-canvas{ width:100%; display:block; background: var(--panel); border:1px solid var(--border); border-radius:8px; margin-bottom:12px; cursor:crosshair; }
+  .transport #btn-plein{ white-space: nowrap; width:auto; padding:0 12px; font-size:0.85rem; }
+  .vol-global{ display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; color: var(--text-muted); }
+  .vol-global input{ width: 110px; accent-color: var(--brass); }
+  #vol-global-pct{ font-family:'IBM Plex Mono', monospace; font-size:0.7rem; width:2.6em; text-align:right; }
+  .lane-marqueurs{ height: 34px; }
+  .mq-item{ position:absolute; height:20px; cursor:grab; touch-action:none; --c:#C9A0DC; }
+  .mq-bloc{ background: color-mix(in srgb, var(--c) 35%, var(--panel)); border:1px solid var(--c); border-radius:3px; overflow:hidden; display:flex; align-items:center; min-width:6px; }
+  .mq-bloc span.mq-txt{ font-size:0.7rem; padding:0 6px; white-space:nowrap; color: var(--text); pointer-events:none; }
+  .mq-point{ width:2px; background: var(--c); }
+  .mq-point::before{ content:''; position:absolute; left:-4px; top:-1px; width:10px; height:10px; background: var(--c); transform: rotate(45deg) scale(0.8); }
+  .mq-point span.mq-txt{ position:absolute; left:9px; top:1px; font-size:0.7rem; white-space:nowrap; color: var(--text); pointer-events:none; }
+  .mq-h{ position:absolute; top:0; bottom:0; width:6px; cursor:ew-resize; background: var(--c); opacity:0.7; }
+  .mq-h[data-edge=start]{ left:0; } .mq-h[data-edge=end]{ right:0; }
+  .type-row{ margin-bottom:6px; }
+  .type-row input[type=color]{ width:32px; height:28px; padding:0; border:1px solid var(--border); background:none; border-radius:4px; }
+  .type-row select, .edit-row select{ background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:4px; padding:5px 6px; font-family:'IBM Plex Mono', monospace; font-size:0.78rem; }
+  .type-row .mini-btn{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:5px 9px; cursor:pointer; font:inherit; font-size:0.75rem; }
+  .type-row .mini-btn:hover{ color: var(--brass); border-color: var(--brass-dim); }
+  .type-row .type-count{ color: var(--text-muted); font-size:0.75rem; min-width:3em; }
+  .epingle-label{ display:none; font-size:0.8rem; color: var(--text-muted); }
+  #stage.en-plein .epingle-label{ display:inline-flex; gap:6px; align-items:center; }
+  #stage.en-plein{ background: var(--bg); overflow:auto; padding:10px 20px 40px; }
+  #stage.pseudo-plein{ position:fixed; inset:0; z-index:1000; }
+  #stage:fullscreen{ overflow:auto; }
+  #stage.en-plein #btn-open-metadata, #stage.en-plein #file-info{ display:none; }
+  #stage.en-plein.epingle .stage-tete{ position:sticky; top:0; z-index:20; background: var(--bg); padding-bottom:6px; border-bottom:1px solid var(--border); margin-bottom:18px; }
+  .mixette-reset{ border-style: dashed; color: var(--text-muted); border-color: var(--border); background: transparent; }
+
+  /* --- Barre de scission --- */
+  .split-bar{
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    margin: 10px 0 0;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.74rem; color: var(--text-muted);
+  }
+  .split-bar button{
+    font-family: inherit; font-size: 0.74rem;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .split-bar button:hover{ border-color: var(--brass-dim); color: var(--brass); }
+  .split-bar .split-msg{ color: var(--rust); margin-left: 6px; }
+
+  /* --- Poignee de jonction entre deux cartes adjacentes --- */
+  .seg-joint{
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 24px; margin-left: -12px;
+    cursor: ew-resize;
+    z-index: 7;
+    touch-action: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .seg-joint::before{
+    content: '';
+    width: 10px;
+    height: calc(100% - 8px);
+    border-radius: 5px;
+    background: var(--lane-color);
+    box-shadow: 0 0 0 2px var(--panel);
+  }
+  .seg-joint::after{
+    content: '';
+    position: absolute;
+    width: 2px; height: 36%;
+    background: rgba(0,0,0,0.5);
+    border-radius: 1px;
+    box-shadow: -3px 0 0 rgba(0,0,0,0.5), 3px 0 0 rgba(0,0,0,0.5);
+  }
+  .seg-joint:hover::before, .seg-joint.drag::before{ filter: brightness(1.3); }
+  .seg-block.j-start .seg-label{ padding-left: 16px; }
+  .seg-block.j-end .seg-label{ padding-right: 16px; }
+  .seg-block.actif{
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--lane-color) 62%, var(--panel)) var(--prog, 0%),
+      color-mix(in srgb, var(--lane-color) 30%, var(--panel)) var(--prog, 0%));
+    box-shadow: 0 0 0 1px var(--lane-color);
+  }
+
+  /* --- Grandes cartes (vues dans les sections repliables) --- */
+  .cards-view{
+    --lane-color: var(--brass);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 2px 4px 4px 2px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .cards-view.cards-structure{ grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .cards-view .cards-vide{ grid-column: 1 / -1; color: var(--text-muted); font-size: 0.85rem; padding: 10px 2px; }
+  .big-card{
+    position: relative;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--lane-color) 12%, var(--panel-raised));
+    border: 1px solid color-mix(in srgb, var(--lane-color) 45%, var(--border));
+    border-radius: 8px;
+    min-height: 88px;
+    padding: 12px 10px 10px;
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    transition: opacity 0.15s, border-color 0.15s;
+  }
+  .big-card .bc-fill{
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    background: color-mix(in srgb, var(--lane-color) 38%, transparent);
+    pointer-events: none;
+  }
+  .big-card .bc-cursor{
+    position: absolute; top: 0; bottom: 0; left: 0; width: 2px;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(255,255,255,0.8);
+    display: none;
+    pointer-events: none;
+  }
+  .big-card .bc-val{
+    position: relative;
+    font-family: 'Fraunces', serif; font-weight: 600;
+    font-size: 1.7rem; line-height: 1.1;
+    word-break: break-word;
+  }
+  .cards-structure .big-card .bc-val{ font-size: 1.15rem; font-weight: 500; }
+  .big-card .bc-time{
+    position: relative;
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--text-muted);
+  }
+  .big-card.futur{ opacity: 0.8; }
+  .big-card.passe{ opacity: 0.5; }
+  .big-card.actif{ opacity: 1; border-color: #fff; }
+  .big-card.actif .bc-cursor{ display: block; }
+
+  /* --- Paroles : vue karaoke --- */
+  #section-compare[hidden], #section-compare-accords[hidden]{ display:none; }
+  #cmpm-canvas{ width:100%; display:block; background: var(--panel); border:1px solid var(--border); border-radius:8px; }
+  #section-compare-melodie[hidden]{ display:none; }
+  #cmpa-canvas{ width:100%; display:block; background: var(--panel); border:1px solid var(--border); border-radius:8px; }
+  .cmp-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; font-size:0.9rem; }
+  .cmp-row select{ background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:4px 8px; }
+  .cmp-btn{ background: transparent; color: var(--text-muted); border:1px solid var(--border); border-radius:999px; padding:5px 14px; cursor:pointer; font:inherit; }
+  .cmp-btn.actif{ color: var(--text); border-color: var(--brass); background: var(--panel-raised); }
+  #cmp-canvas{ width:100%; display:block; background: var(--panel); border:1px solid var(--border); border-radius:8px; }
+  .cmp-table{ border-collapse:collapse; width:100%; font-size:0.85rem; }
+  .cmp-table th,.cmp-table td{ text-align:right; padding:4px 8px; border-bottom:1px solid var(--border); }
+  .cmp-table th:first-child,.cmp-table td:first-child{ text-align:left; }
+  .cmp-liste{ max-height:260px; overflow:auto; border:1px solid var(--border); border-radius:8px; font-size:0.85rem; }
+  .cmp-item{ display:flex; gap:12px; padding:4px 10px; cursor:pointer; border-bottom:1px solid var(--border); }
+  .cmp-item:hover{ background: var(--panel-raised); }
+  .cmp-item .t{ color: var(--text-muted); width:56px; } .cmp-item .d{ margin-left:auto; color: var(--text-muted); }
+  .cards-view.cards-paroles{
+    --lane-color: #B98FC9;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .lyric-line{
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .lyric-line .ly-time{
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--text-muted);
+    flex-shrink: 0; width: 52px;
+  }
+  .lyric-line .ly-text{ font-family: 'Fraunces', serif; font-size: 1.35rem; line-height: 1.35; }
+  .lyric-line .mot{ color: color-mix(in srgb, var(--text) 38%, var(--panel)); transition: color 0.12s; }
+  .lyric-line.passe .mot, .lyric-line .mot.fait{ color: #C9A3DB; }
+  .lyric-line.passe{ opacity: 0.65; }
+  .lyric-line.actif{
+    background: color-mix(in srgb, var(--lane-color) 14%, var(--panel-raised));
+    border-color: color-mix(in srgb, var(--lane-color) 60%, var(--border));
+  }
+  .lyric-line.actif .mot.courant{ color: #fff; text-shadow: 0 0 10px rgba(185,143,201,0.9); }
+  .lyric-line .mot.douteux{ text-decoration: underline dotted; text-decoration-color: var(--rust); text-underline-offset: 4px; }
+  .lyric-line .ly-vide{ color: var(--text-muted); font-style: italic; font-size: 1rem; }
+
+  .edit-row .split-btn{
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 0.95rem; flex-shrink: 0; padding: 4px 6px;
+  }
+  .edit-row .split-btn:hover{ color: var(--brass); }
+
+  #maj-bandeau{ position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:12px; background:#2A231B; color:#EFE6D8; border:1px solid #C9A06A; border-radius:6px; padding:10px 14px; font:0.85rem 'IBM Plex Sans',sans-serif; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #maj-bandeau button{ background:#C9A06A; color:#1C1712; border:0; border-radius:4px; padding:6px 12px; font-weight:600; cursor:pointer; }
+  .app-version{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:#8a7f70; text-align:center; padding:8px 0 20px; }
 </style>
 </head>
 <body>
@@ -393,7 +611,8 @@
 
   <div id="editor-root" style="display:none;">
 
-    <section>
+  <div id="stage">
+    <section class="stage-tete">
       <div class="file-info" id="file-info"></div>
       <div class="mixette" id="mixette" style="display:none;"></div>
       <button class="add-row-btn" id="btn-open-metadata" style="margin-bottom:14px;">✎ Modifier les métadonnées du morceau</button>
@@ -407,6 +626,9 @@
           <button id="zoom-in" title="Zoom avant">+</button>
           <button id="zoom-fit" title="Ajuster à la largeur">⤢</button>
         </div>
+        <label class="vol-global" title="Volume général (double-clic : 100 %)">🔊 <input type="range" id="vol-global" min="0" max="150" value="100"><span id="vol-global-pct">100</span></label>
+        <button id="btn-plein" title="Plein écran : forme d'onde et cartes">⛶ Plein écran</button>
+        <label class="epingle-label" id="epingle-label"><input type="checkbox" id="chk-epingle" checked> Épingler la forme d'onde</label>
       </div>
 
       <div class="timeline-scroll" id="timeline-scroll">
@@ -419,10 +641,18 @@
             <canvas id="pianoroll-canvas"></canvas>
           </div>
           <div class="lane" id="lane-paroles" style="--lane-color: #B98FC9;"><span class="lane-label">Paroles</span></div>
+          <div class="lane lane-marqueurs" id="lane-marqueurs" style="--lane-color: #C9A0DC;"><span class="lane-label">Marqueurs</span></div>
           <canvas id="grille-overlay"></canvas>
         </div>
       </div>
-      <div class="hint">Trait marqué : premier temps de la mesure (downbeat). Trait fin : autres temps. Molette + Ctrl (ou pincement tactile) pour zoomer.</div>
+      <div class="split-bar">
+        <span>✂ Scinder la carte sous le curseur de lecture :</span>
+        <button type="button" data-split="structure">Structure</button>
+        <button type="button" data-split="accords">Accords</button>
+        <button type="button" data-split="paroles">Paroles</button>
+        <span class="split-msg" id="split-msg"></span>
+      </div>
+      <div class="hint">Trait marqué : premier temps de la mesure (downbeat). Trait fin : autres temps. Molette + Ctrl (ou pincement tactile) pour zoomer. Entre deux cartes qui se touchent, la poignée centrale déplace la coupure des deux cartes ensemble. Cliquez sur la forme d'onde pour placer le curseur, puis ✂ pour scinder.</div>
     </section>
 
     <section>
@@ -430,6 +660,11 @@
       <details open>
         <summary>Sections du morceau (<span id="count-structure">0</span>)</summary>
         <div class="details-body">
+          <div class="quant-bar" data-cle="structure"><span>Caler sur :</span>
+            <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
+            <button type="button" class="quant-go">Caler toutes les cartes</button>
+            <span class="quant-msg"></span></div>
+          <div class="cards-view cards-structure" id="cards-structure" style="--lane-color: var(--brass);"></div>
           <div class="row-list" id="list-structure"></div>
           <button class="add-row-btn" id="add-structure">+ Ajouter une section</button>
         </div>
@@ -438,9 +673,14 @@
 
     <section>
       <div class="section-head"><h2><span class="swatch" style="background:var(--accord)"></span>Accords</h2></div>
-      <details>
+      <details open>
         <summary>Timeline d'accords (<span id="count-accords">0</span>)</summary>
         <div class="details-body">
+          <div class="quant-bar" data-cle="accords"><span>Caler sur :</span>
+            <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
+            <button type="button" class="quant-go">Caler toutes les cartes</button>
+            <span class="quant-msg"></span></div>
+          <div class="cards-view cards-accords" id="cards-accords" style="--lane-color: var(--accord);"></div>
           <div class="row-list" id="list-accords"></div>
           <button class="add-row-btn" id="add-accord">+ Ajouter un accord</button>
         </div>
@@ -450,8 +690,12 @@
     <section>
       <div class="section-head"><h2><span class="swatch" style="background:#7FA8C9"></span>Mélodie</h2></div>
       <details>
-        <summary>Notes détectées (<span id="count-melodie">0</span>) — édition en liste ; glisser dans la bande arrive dans une prochaine version</summary>
+        <summary>Piano roll et notes détectées (<span id="count-melodie">0</span>)</summary>
         <div class="details-body">
+          <div class="cmp-row"><label for="pr-fen">Fenêtre</label>
+            <select id="pr-fen"><option value="4">4 s</option><option value="8" selected>8 s</option><option value="16">16 s</option><option value="0">Tout le morceau</option></select>
+            <span class="hint">Cliquez dans le piano roll pour déplacer la lecture. Édition des notes : liste ci-dessous ou bande sous la forme d'onde.</span></div>
+          <canvas id="pr-canvas" height="240"></canvas>
           <div class="row-list" id="list-melodie"></div>
           <button class="add-row-btn" id="add-melodie">+ Ajouter une note</button>
         </div>
@@ -460,13 +704,119 @@
 
     <section>
       <div class="section-head"><h2><span class="swatch" style="background:#B98FC9"></span>Paroles</h2></div>
-      <details>
+      <details open>
         <summary>Segments transcrits (<span id="count-paroles">0</span>)</summary>
         <div class="details-body">
+          <div class="cards-view cards-paroles" id="cards-paroles"></div>
           <div class="row-list" id="list-paroles"></div>
           <button class="add-row-btn" id="add-parole">+ Ajouter un segment</button>
         </div>
       </details>
+    </section>
+
+    <section id="section-marqueurs">
+      <div class="section-head"><h2><span class="swatch" style="background:#C9A0DC"></span>Marqueurs personnels</h2></div>
+      <details open>
+        <summary>Types et marqueurs (<span id="count-marqueurs">0</span>)</summary>
+        <div class="details-body">
+          <div class="hint" style="margin-bottom:10px;">Créez vos propres types de marqueurs. Un type « Point » marque un instant ; un type « Durée » (relevés, par exemple) a un point d'attaque et une durée. Chaque type a sa couleur et sa ligne dans la forme d'onde ; glissez un marqueur pour le déplacer, ses bords pour changer la durée.</div>
+          <div id="types-marqueurs"></div>
+          <div class="cmp-row" style="margin-top:8px;">
+            <button class="add-row-btn" id="add-type-marqueur" style="margin-top:0;">+ Nouveau type de marqueur</button>
+            <button class="add-row-btn" id="import-releves" style="margin-top:0; display:none;">⤓ Importer les relevés de la préparation</button>
+          </div>
+          <div class="quant-bar" data-cle="marqueurs" style="margin-top:12px;"><span>Caler sur :</span>
+            <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
+            <button type="button" class="quant-go">Caler tous les marqueurs</button>
+            <span class="quant-msg"></span></div>
+          <div class="row-list" id="list-marqueurs"></div>
+        </div>
+      </details>
+    </section>
+
+    <section id="section-compare" hidden>
+      <div class="section-head"><h2><span class="swatch" style="background:#B98FC9"></span>Comparer les placements des paroles</h2></div>
+      <div class="hint" style="margin-bottom:10px;">Ce fichier contient plusieurs versions des mêmes mots, placées par des moteurs différents. Choisissez celle que vous écoutez en karaoké ; c'est celle qui sera exportée.</div>
+      <div class="cmp-row" id="cmp-choix"></div>
+      <div class="cmp-row"><label for="cmp-fen">Fenêtre</label><select id="cmp-fen"><option value="2">±2 s</option><option value="4" selected>±4 s</option><option value="8">±8 s</option></select><span class="hint">Traits = temps, gros traits = mesures (numérotées). Clic = aller là.</span></div>
+      <canvas id="cmp-canvas" height="110"></canvas>
+      <div class="hint" id="cmp-legende" style="margin:4px 0 12px;"></div>
+      <div id="cmp-stats"></div>
+      <div class="cmp-row" style="margin-top:12px;">
+        <label for="cmp-a">Divergences entre</label>
+        <select id="cmp-a"></select> <span>et</span> <select id="cmp-b"></select>
+        <label for="cmp-seuil">au-delà de</label>
+        <select id="cmp-seuil"><option value="80">80 ms</option><option value="150" selected>150 ms</option><option value="300">300 ms</option></select>
+      </div>
+      <div id="cmp-liste" class="cmp-liste"></div>
+    </section>
+
+    <section id="section-compare-accords" hidden>
+      <div class="section-head"><h2><span class="swatch" style="background:#E0A84F"></span>Comparer les moteurs d'accords</h2></div>
+      <div class="hint" style="margin-bottom:10px;">Ce fichier contient plusieurs analyses d'accords du même morceau. Choisissez celle qui s'affiche dans la lane et les cartes ; c'est celle qui sera exportée.</div>
+      <div class="cmp-row" id="cmpa-choix"></div>
+      <div class="cmp-row"><label for="cmpa-fen">Fenêtre</label><select id="cmpa-fen"><option value="4">±4 s</option><option value="8" selected>±8 s</option><option value="16">±16 s</option></select><span class="hint">Traits = temps (avec leur numéro dans la mesure), gros traits = mesures. Clic = aller là.</span></div>
+      <canvas id="cmpa-canvas" height="110"></canvas>
+      <div class="hint" id="cmpa-legende" style="margin:4px 0 12px;"></div>
+      <div id="cmpa-stats"></div>
+      <div class="cmp-row" style="margin-top:12px;">
+        <label for="cmpa-a">Désaccords entre</label>
+        <select id="cmpa-a"></select> <span>et</span> <select id="cmpa-b"></select>
+        <label for="cmpa-mode">selon</label>
+        <select id="cmpa-mode"><option value="exact">accord exact</option><option value="reduit" selected>racine + majeur/mineur</option></select>
+        <label for="cmpa-duree">durée ≥</label>
+        <select id="cmpa-duree"><option value="0.3">0,3 s</option><option value="0.6" selected>0,6 s</option><option value="1.2">1,2 s</option></select>
+      </div>
+      <div id="cmpa-liste" class="cmp-liste"></div>
+    </section>
+
+    <section id="section-compare-melodie" hidden>
+      <div class="section-head"><h2><span class="swatch" style="background:#7FA8C9"></span>Comparer les détecteurs de mélodie</h2></div>
+      <div class="hint" style="margin-bottom:10px;">Ce fichier contient plusieurs mélodies détectées sur la même voix. Le découpage en notes est identique pour tous : seule la détection de hauteur diffère. Choisissez celle qui s'affiche (piano roll, bande, liste) ; c'est celle qui sera exportée.</div>
+      <div class="cmp-row" id="cmpm-choix"></div>
+      <div class="cmp-row"><label for="cmpm-fen">Fenêtre</label><select id="cmpm-fen"><option value="4">±4 s</option><option value="8" selected>±8 s</option><option value="16">±16 s</option></select><span class="hint">Une ligne par détecteur, même échelle de hauteur. Clic = aller là.</span></div>
+      <canvas id="cmpm-canvas" height="260"></canvas>
+      <div class="hint" id="cmpm-legende" style="margin:4px 0 12px;"></div>
+      <div id="cmpm-stats"></div>
+      <div class="cmp-row" style="margin-top:12px;">
+        <label for="cmpm-a">Désaccords entre</label>
+        <select id="cmpm-a"></select> <span>et</span> <select id="cmpm-b"></select>
+        <label for="cmpm-mode">type</label>
+        <select id="cmpm-mode"><option value="demiton" selected>écart ≥ 1 demi-ton (ou note absente d'un côté)</option><option value="octave">erreurs d'octave seulement</option></select>
+        <label for="cmpm-duree">durée ≥</label>
+        <select id="cmpm-duree"><option value="0.15">0,15 s</option><option value="0.3" selected>0,3 s</option><option value="0.6">0,6 s</option></select>
+      </div>
+      <div id="cmpm-liste" class="cmp-liste"></div>
+    </section>
+  </div><!-- /#stage -->
+
+    <section id="section-partition">
+      <div class="section-head"><h2>Exporter la partition (MusicXML / ABC)</h2></div>
+      <div class="hint" style="margin-bottom:10px;">La mélodie affichée (version choisie ci-dessus) est calée sur la grille des temps détectés, quantisée, puis écrite en notes : une seule voix, avec les liaisons nécessaires. Les accords, les paroles et les repères de structure peuvent être ajoutés.</div>
+      <div class="cmp-row">
+        <label for="part-quant">Quantification</label>
+        <select id="part-quant"><option value="4" selected>double croche</option><option value="2">croche</option></select>
+        <label for="part-mesure">Mesure</label>
+        <select id="part-mesure"><option value="0" selected>automatique</option><option value="2">2/4</option><option value="3">3/4</option><option value="4">4/4</option><option value="5">5/4</option><option value="6">6/4</option></select>
+        <label for="part-armure">Armure</label>
+        <select id="part-armure"></select>
+        <label for="part-debut">Début</label>
+        <select id="part-debut"><option value="note" selected>à la première note (anacrouse comprise)</option><option value="debut">au début du morceau (mesures vides)</option></select>
+      </div>
+      <div class="cmp-row">
+        <label><input type="checkbox" id="part-accords" checked> Accords</label>
+        <label><input type="checkbox" id="part-paroles" checked> Paroles</label>
+        <label><input type="checkbox" id="part-structure" checked> Repères de structure</label>
+      </div>
+      <div class="cmp-row">
+        <label><input type="checkbox" id="part-portees" checked> MusicXML : une portée par détecteur de mélodie</label>
+        <label><input type="checkbox" id="part-portees-acc" checked> MusicXML : une portée par moteur d'accords</label>
+      </div>
+      <div class="export-actions">
+        <button class="export-btn" id="part-xml">Télécharger MusicXML</button>
+        <button class="export-btn" id="part-abc">Télécharger ABC</button>
+      </div>
+      <div class="hint" id="partition-msg" style="margin-top:8px;"></div>
     </section>
 
     <section>
@@ -729,23 +1079,39 @@ async function chargerZip(file){
     structureSegments = (structureBase.segments || []).map(s => ({ id: nextId++, start: s.start, end: s.end, value: s.label }));
     accordSegments = (donnees.accords || []).map(a => ({ id: nextId++, start: a.start, end: a.end, value: a.chord }));
     melodieNotes = (donnees.melodie || []).map(n => ({ id: nextId++, start: n.start, end: n.end, midi: n.midi }));
-    parolesSegments = (donnees.paroles || []).map(p => ({ id: nextId++, start: p.start, end: p.end, value: p.texte }));
+    parolesSegments = (donnees.paroles || []).map(p => ({ id: nextId++, start: p.start, end: p.end, value: p.texte,
+      mots: (Array.isArray(p.mots) && p.mots.length) ? p.mots.map(m => ({ start: m.start, end: m.end, texte: m.texte, score: m.score })) : null }));
 
+    initComparaison();
+    initComparaisonAccords();
+    initComparaisonMelodie();
+    initMarqueurs();
     loadStatus.textContent = 'Décodage audio...';
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
     masterGain.connect(audioCtx.destination);
+    masterGain.gain.value = Number(document.getElementById('vol-global').value) / 100;
 
     const pistes = (donnees.pistes && donnees.pistes.length) ? donnees.pistes : ['fusion'];
     audioStems = [];
 
     if (nomsEntreesAudio.length === 1){
-      // Mode opus_8ch : un seul fichier, toutes les pistes fusionnees dedans
+      // Mode opus_8ch : un seul fichier, toutes les pistes fusionnees dedans (2 canaux
+      // par piste, dans l'ordre de donnees.pistes). Un AudioBuffer de plus de 2 canaux
+      // n'est pas mixe vers les haut-parleurs : seuls les 2 premiers canaux (= la
+      // premiere piste) seraient entendus. On cree donc une "piste" logique par paire de
+      // canaux, lue via un splitter/merger (aucune copie du buffer en memoire).
       const copie = entreesZipOriginales[nomsEntreesAudio[0]].slice().buffer;
       const buffer = await audioCtx.decodeAudioData(copie);
-      const gainNode = audioCtx.createGain();
-      gainNode.connect(masterGain);
-      audioStems.push({ nom: pistes.join(' + '), buffer, gainNode });
+      const nC = buffer.numberOfChannels;
+      if (pistes.length > 1 && nC >= pistes.length * 2){
+        const ordre = detecterOrdreCanaux(buffer, pistes.length);
+        pistes.forEach((nomPiste, i) => audioStems.push(creerStem(nomPiste, buffer, ordre[i])));
+      } else if (pistes.length > 1 && nC === pistes.length){
+        pistes.forEach((nomPiste, i) => audioStems.push(creerStem(nomPiste, buffer, [i])));
+      } else {
+        audioStems.push(creerStem(pistes.join(' + '), buffer, null));
+      }
     } else {
       // Mode aac_4pistes : un fichier par piste, associe par nom
       for (const nomPiste of pistes){
@@ -756,9 +1122,7 @@ async function chargerZip(file){
         }
         const copie = entreesZipOriginales[nomFichier].slice().buffer;
         const buffer = await audioCtx.decodeAudioData(copie);
-        const gainNode = audioCtx.createGain();
-        gainNode.connect(masterGain);
-        audioStems.push({ nom: nomPiste, buffer, gainNode });
+        audioStems.push(creerStem(nomPiste, buffer, null));
       }
       if (audioStems.length === 0) throw new Error("impossible d'associer les fichiers audio aux pistes declarees dans le JSON");
     }
@@ -769,9 +1133,10 @@ async function chargerZip(file){
     document.getElementById('dropzone-zip-text').textContent = `✓ ${file.name}`;
     loadStatus.textContent = '';
 
-    const nCanaux = audioStems.reduce((a,s) => a + s.buffer.numberOfChannels, 0);
+    const buffersUniques = [...new Set(audioStems.map(s => s.buffer))];
+    const nCanaux = buffersUniques.reduce((a,b) => a + b.numberOfChannels, 0);
     document.getElementById('file-info').innerHTML = `
-      <span>${audioStems.length > 1 ? audioStems.length + ' fichiers, ' : ''}${nCanaux} canaux</span>
+      <span>${nomsEntreesAudio.length > 1 ? nomsEntreesAudio.length + ' fichiers, ' : ''}${nCanaux} canaux</span>
       <span>${formatTemps(duration)}</span>
       <span>${(donnees.pistes||[]).join(' / ')}</span>
     `;
@@ -790,21 +1155,114 @@ async function chargerZip(file){
   }
 }
 
+const NOMS_PISTES_FR = { vocals: 'Voix', drums: 'Batterie', bass: 'Basse', other: 'Autres', guitar: 'Guitare', piano: 'Piano', fusion: 'Mix' };
+
+// Certains navigateurs (Chrome notamment) reordonnent les canaux d'un Opus a 6 ou 8 canaux
+// comme s'il s'agissait d'un fichier surround (ordre "Vorbis" -> ordre WAV), meme si le
+// fichier a ete encode avec des canaux independants. Resultat : la paire (gauche, droite)
+// d'une piste n'est plus aux canaux 2i et 2i+1. On teste donc l'ordre direct et l'ordre
+// surround : le bon est celui pour lequel les deux canaux d'une meme piste stereo sont le plus
+// correles entre eux (deux pistes differentes ne le sont presque pas).
+// PERM_SURROUND[n][k] = indice, dans le fichier, du canal que le navigateur place en position k.
+const PERM_SURROUND = { 6: [0,2,1,5,3,4], 8: [0,2,1,7,5,6,3,4] };
+
+function detecterOrdreCanaux(buffer, nPistes){
+  const nC = buffer.numberOfChannels;
+  const donnees = [];
+  for (let c = 0; c < nC; c++) donnees.push(buffer.getChannelData(c));
+  const pas = Math.max(1, Math.floor(buffer.length / 200000)); // ~200 000 echantillons par canal suffisent
+  const energie = donnees.map(d => { let e = 0; for (let i = 0; i < d.length; i += pas) e += d[i]*d[i]; return e; });
+  const cache = {};
+  const corr = (a, b) => {
+    const cle = a < b ? a + '_' + b : b + '_' + a;
+    if (cle in cache) return cache[cle];
+    let dot = 0; const da = donnees[a], db = donnees[b];
+    for (let i = 0; i < da.length; i += pas) dot += da[i]*db[i];
+    const den = Math.sqrt(energie[a]*energie[b]);
+    return (cache[cle] = den > 1e-12 ? Math.abs(dot)/den : 0);
+  };
+  // candidats : liste "canal du fichier -> position decodee"
+  const candidats = [Array.from({ length: nC }, (_, k) => k)];
+  if (PERM_SURROUND[nC]) candidats.push(PERM_SURROUND[nC]);
+  let meilleur = null, meilleurScore = -1;
+  candidats.forEach(perm => {
+    // position decodee de chaque canal d'origine j
+    const pos = []; perm.forEach((orig, k) => { pos[orig] = k; });
+    const paires = [];
+    let score = 0;
+    for (let i = 0; i < nPistes; i++){
+      const a = pos[2*i], b = pos[2*i+1];
+      paires.push([a, b]);
+      score += corr(a, b);
+    }
+    if (score > meilleurScore + 1e-9){ meilleurScore = score; meilleur = paires; }
+  });
+  console.info('Ordre des canaux detecte :', JSON.stringify(meilleur));
+  return meilleur;
+}
+
+// canaux : indices des canaux du buffer qui forment cette piste (null = buffer entier).
+function creerStem(nom, buffer, canaux){
+  const gainNode = audioCtx.createGain();
+  gainNode.connect(masterGain);
+  return { nom, buffer, gainNode, canaux, muet: false, solo: false, volume: 1 };
+}
+
+function majGainsStems(){
+  const unSolo = audioStems.some(s => s.solo);
+  audioStems.forEach(s => {
+    const audible = unSolo ? s.solo : !s.muet;
+    s.gainNode.gain.setTargetAtTime(audible ? s.volume : 0, audioCtx.currentTime, 0.015);
+  });
+}
+
+function rafraichirMixette(){
+  const zone = document.getElementById('mixette');
+  const unSolo = audioStems.some(s => s.solo);
+  zone.querySelectorAll('.mixette-btn[data-act=mute]').forEach(btn => {
+    const s = audioStems[Number(btn.dataset.i)];
+    btn.classList.toggle('muted', unSolo ? !s.solo : s.muet);
+  });
+  zone.querySelectorAll('.mixette-solo').forEach(btn => {
+    btn.classList.toggle('on', audioStems[Number(btn.dataset.i)].solo);
+  });
+}
+
 function rendreMixette(){
   const zone = document.getElementById('mixette');
   if (audioStems.length <= 1){ zone.innerHTML = ''; zone.style.display = 'none'; return; }
   zone.style.display = 'flex';
   zone.innerHTML = audioStems.map((s, i) => `
-    <button type="button" class="mixette-btn" data-i="${i}">${escapeHtml(s.nom)}</button>
-  `).join('');
-  zone.querySelectorAll('.mixette-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const stem = audioStems[Number(btn.dataset.i)];
-      const muet = stem.gainNode.gain.value > 0;
-      stem.gainNode.gain.value = muet ? 0 : 1;
-      btn.classList.toggle('muted', muet);
-    });
-  });
+    <span class="mixette-piste">
+      <span class="mixette-ligne"><button type="button" class="mixette-btn" data-act="mute" data-i="${i}" title="Couper / activer cette piste">${escapeHtml(NOMS_PISTES_FR[s.nom] || s.nom)}</button><button type="button" class="mixette-solo" data-act="solo" data-i="${i}" title="Écouter cette piste seule">S</button></span>
+      <span class="mixette-vol-ligne"><input type="range" class="mixette-vol" min="0" max="150" value="${Math.round(s.volume*100)}" data-i="${i}" title="Volume (double-clic : 100 %)"><span class="mixette-pct" data-pct="${i}">${Math.round(s.volume*100)}</span></span>
+    </span>`).join('') + `<button type="button" class="mixette-btn mixette-reset" data-act="reset" title="Réactiver toutes les pistes">Tout</button>`;
+  zone.oninput = (e) => {
+    const r = e.target.closest('.mixette-vol'); if (!r) return;
+    const i = Number(r.dataset.i);
+    audioStems[i].volume = Number(r.value) / 100;
+    zone.querySelector(`[data-pct="${i}"]`).textContent = r.value;
+    majGainsStems();
+  };
+  zone.ondblclick = (e) => {
+    const r = e.target.closest('.mixette-vol'); if (!r) return;
+    r.value = 100; r.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  zone.onclick = (e) => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    if (btn.dataset.act === 'reset'){
+      audioStems.forEach(s => { s.muet = false; s.solo = false; });
+    } else {
+      const s = audioStems[Number(btn.dataset.i)];
+      if (btn.dataset.act === 'mute'){
+        // Pendant un solo, cliquer le nom d'une piste la rajoute a l'ecoute
+        if (audioStems.some(x => x.solo)) s.solo = !s.solo; else s.muet = !s.muet;
+      } else s.solo = !s.solo;
+    }
+    majGainsStems();
+    rafraichirMixette();
+  };
+  rafraichirMixette();
 }
 
 // ============================================================
@@ -871,7 +1329,8 @@ function dessinerWaveform(){
   const W = rect.width, H = rect.height;
   ctx.clearRect(0,0,W,H);
 
-  const nSamplesMax = Math.max(...audioStems.map(s => s.buffer.length));
+  const buffers = [...new Set(audioStems.map(s => s.buffer))]; // l'opus 8 canaux est partage par 4 pistes
+  const nSamplesMax = Math.max(...buffers.map(b => b.length));
   const samplesPerPixel = Math.max(1, Math.floor(nSamplesMax / W));
 
   ctx.fillStyle = 'rgba(192,153,106,0.55)';
@@ -881,8 +1340,7 @@ function dessinerWaveform(){
     const end = Math.min(nSamplesMax, start+samplesPerPixel);
     let min=0, max=0;
     const step = Math.max(1, Math.floor((end-start)/40));
-    for (const stem of audioStems){
-      const buf = stem.buffer;
+    for (const buf of buffers){
       for (let ch=0; ch<buf.numberOfChannels; ch++){
         const data = buf.getChannelData(ch);
         const fin = Math.min(end, buf.length);
@@ -955,7 +1413,17 @@ function jouer(depuis){
   audioStems.forEach((stem, i) => {
     const source = audioCtx.createBufferSource();
     source.buffer = stem.buffer;
-    source.connect(stem.gainNode);
+    if (stem.canaux){
+      // Extrait les canaux de cette piste du buffer multicanal et les envoie en stereo
+      const split = audioCtx.createChannelSplitter(stem.buffer.numberOfChannels);
+      const merge = audioCtx.createChannelMerger(2);
+      source.connect(split);
+      split.connect(merge, stem.canaux[0], 0);
+      split.connect(merge, stem.canaux.length > 1 ? stem.canaux[1] : stem.canaux[0], 1);
+      merge.connect(stem.gainNode);
+    } else {
+      source.connect(stem.gainNode);
+    }
     source.start(startCtxTime, depuis);
     if (i === 0){
       source.onended = () => {
@@ -992,7 +1460,9 @@ document.getElementById('btn-play').addEventListener('click', () => { if (isPlay
 function bouclePlayhead(){
   if (audioStems.length){
     dessinerPlayhead();
-    document.getElementById('time-display').textContent = `${formatTemps(getTempsActuel())} / ${formatTemps(duration)}`;
+    const tNow = getTempsActuel();
+    document.getElementById('time-display').textContent = `${formatTemps(tNow)} / ${formatTemps(duration)}`;
+    majVues(tNow);
     if (isPlaying) defilerVersCurseurSiNecessaire();
   }
   requestAnimationFrame(bouclePlayhead);
@@ -1020,7 +1490,7 @@ function dessinerPlayhead(){
   const ph = document.createElement('div');
   ph.className = 'playhead';
   ph.style.left = x+'px';
-  ph.style.height = (rect.height + 4*34)+'px';
+  ph.style.height = container.offsetHeight+'px';
   container.style.position = 'relative';
   container.appendChild(ph);
 }
@@ -1031,63 +1501,124 @@ function dessinerPlayhead(){
 
 function trierSegments(segments){ segments.sort((a,b) => a.start-b.start); }
 
-function creerLaneEditable(laneEl, getSegments, onChange){
+const JOINT_EPS = 0.02; // deux cartes dont l'ecart est inferieur sont considerees comme "jointes"
+const MIN_GAP = 0.05;   // duree minimale d'une carte
+
+function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
+  let actifId = null, actifEl = null;
+
   function render(){
-    laneEl.querySelectorAll('.seg-block').forEach(el => el.remove());
+    laneEl.querySelectorAll('.seg-block, .seg-joint').forEach(el => el.remove());
+    actifId = null; actifEl = null;
     const segments = getSegments();
     const width = laneEl.clientWidth;
-    segments.forEach(seg => {
+    segments.forEach((seg, idx) => {
+      const prev = segments[idx-1], next = segments[idx+1];
+      const jStart = !!prev && Math.abs(prev.end - seg.start) <= JOINT_EPS;
+      const jEnd = !!next && Math.abs(next.start - seg.end) <= JOINT_EPS;
       const left = (seg.start/duration)*width;
       const w = Math.max(6, ((seg.end-seg.start)/duration)*width);
       const block = document.createElement('div');
-      block.className = 'seg-block';
+      block.className = 'seg-block' + (jStart ? ' j-start' : '') + (jEnd ? ' j-end' : '');
       block.style.left = left+'px';
       block.style.width = w+'px';
       block.dataset.id = seg.id;
       block.title = seg.value;
-      block.innerHTML = `<div class="seg-handle" data-edge="start"></div><span class="seg-label">${escapeHtml(seg.value)}</span><div class="seg-handle" data-edge="end"></div>`;
+      // Poignee propre a la carte uniquement du cote "libre" (premier bord, dernier bord,
+      // ou bord qui ne touche pas la voisine) ; entre deux cartes jointes : une poignee commune.
+      block.innerHTML =
+        (jStart ? '' : '<div class="seg-handle" data-edge="start"></div>') +
+        `<span class="seg-label">${escapeHtml(seg.value)}</span>` +
+        (jEnd ? '' : '<div class="seg-handle" data-edge="end"></div>');
       laneEl.appendChild(block);
+      if (jEnd){
+        const joint = document.createElement('div');
+        joint.className = 'seg-joint';
+        joint.style.left = (((seg.end + next.start)/2/duration)*width)+'px';
+        joint.dataset.a = seg.id;
+        joint.dataset.b = next.id;
+        joint.title = 'Déplacer la coupure entre les deux cartes';
+        laneEl.appendChild(joint);
+      }
     });
   }
 
-  let dragging = null;
-  laneEl.addEventListener('pointerdown', (e) => {
-    const handle = e.target.closest('.seg-handle');
-    if (!handle || !duration) return;
-    const block = handle.closest('.seg-block');
+  // Surbrillance de la carte en cours de lecture + progression
+  function maj(t){
     const segments = getSegments();
-    const seg = segments.find(s => s.id === Number(block.dataset.id));
-    dragging = { seg, edge: handle.dataset.edge };
-    handle.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  });
-  laneEl.addEventListener('pointermove', (e) => {
+    let actif = null;
+    for (const sg of segments){ if (t >= sg.start && t < sg.end){ actif = sg; break; } }
+    const id = actif ? actif.id : null;
+    if (id !== actifId){
+      if (actifEl){ actifEl.classList.remove('actif'); actifEl.style.removeProperty('--prog'); }
+      actifId = id;
+      actifEl = id === null ? null : laneEl.querySelector(`.seg-block[data-id="${id}"]`);
+      if (actifEl) actifEl.classList.add('actif');
+    }
+    if (actif && actifEl) actifEl.style.setProperty('--prog', (100*(t-actif.start)/Math.max(0.001, actif.end-actif.start)).toFixed(1)+'%');
+  }
+
+  // --- Glisser : poignee de bord (libre) ou poignee de jonction (deux cartes a la fois) ---
+  let dragging = null;
+
+  function tempsSousPointeur(e){
+    const rect = laneEl.getBoundingClientRect();
+    return Math.max(0, Math.min(duration, ((e.clientX-rect.left)/rect.width)*duration));
+  }
+  function onMove(e){
     if (!dragging) return;
     const segments = getSegments();
-    const rect = laneEl.getBoundingClientRect();
-    let t = ((e.clientX-rect.left)/rect.width)*duration;
-    t = Math.max(0, Math.min(duration, t));
-    const idx = segments.indexOf(dragging.seg);
-    const MIN_GAP = 0.05;
-    if (dragging.edge === 'start'){
-      const minB = idx>0 ? segments[idx-1].end : 0;
-      dragging.seg.start = Math.max(minB, Math.min(t, dragging.seg.end - MIN_GAP));
+    const t = aimanter(cleQuantif, tempsSousPointeur(e));
+    if (dragging.kind === 'joint'){
+      const { a, b } = dragging;
+      const tc = Math.max(a.start + MIN_GAP, Math.min(t, b.end - MIN_GAP));
+      a.end = tc; b.start = tc;
     } else {
-      const maxB = idx<segments.length-1 ? segments[idx+1].start : duration;
-      dragging.seg.end = Math.min(maxB, Math.max(t, dragging.seg.start + MIN_GAP));
+      const { seg, edge } = dragging;
+      const idx = segments.indexOf(seg);
+      if (edge === 'start'){
+        const minB = idx>0 ? segments[idx-1].end : 0;
+        seg.start = Math.max(minB, Math.min(t, seg.end - MIN_GAP));
+      } else {
+        const maxB = idx<segments.length-1 ? segments[idx+1].start : duration;
+        seg.end = Math.min(maxB, Math.max(t, seg.start + MIN_GAP));
+      }
     }
-    render();
     onChange(false);
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    if (dragging){ dragging = null; onChange(true); }
+  }
+  laneEl.addEventListener('pointerdown', (e) => {
+    if (!duration) return;
+    const segments = getSegments();
+    const joint = e.target.closest('.seg-joint');
+    const handle = e.target.closest('.seg-handle');
+    if (joint){
+      const a = segments.find(sg => sg.id === Number(joint.dataset.a));
+      const b = segments.find(sg => sg.id === Number(joint.dataset.b));
+      if (!a || !b) return;
+      dragging = { kind: 'joint', a, b };
+    } else if (handle){
+      const seg = segments.find(sg => sg.id === Number(handle.closest('.seg-block').dataset.id));
+      if (!seg) return;
+      dragging = { kind: 'edge', seg, edge: handle.dataset.edge };
+    } else return;
+    e.preventDefault();
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
   });
-  laneEl.addEventListener('pointerup', () => { if (dragging){ dragging=null; onChange(true); } });
-  laneEl.addEventListener('pointercancel', () => { dragging = null; });
 
   laneEl.addEventListener('click', (e) => {
-    if (e.target.closest('.seg-handle')) return;
+    if (e.target.closest('.seg-handle, .seg-joint')) return;
     const block = e.target.closest('.seg-block');
     if (!block || block.querySelector('input')) return;
     const segments = getSegments();
-    const seg = segments.find(s => s.id === Number(block.dataset.id));
+    const seg = segments.find(sg => sg.id === Number(block.dataset.id));
     if (!seg) return;
 
     const labelEl = block.querySelector('.seg-label');
@@ -1100,7 +1631,10 @@ function creerLaneEditable(laneEl, getSegments, onChange){
     input.select();
 
     const valider = () => {
-      seg.value = input.value;
+      if (input.value !== seg.value){
+        seg.value = input.value;
+        if ('mots' in seg) seg.mots = null; // texte modifie : les timestamps mot a mot ne correspondent plus
+      }
       onChange(true);
     };
     input.addEventListener('blur', valider);
@@ -1111,12 +1645,1533 @@ function creerLaneEditable(laneEl, getSegments, onChange){
     input.addEventListener('pointerdown', (ev) => ev.stopPropagation());
   });
 
-  return { render };
+  return { render, maj };
 }
 
-const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (f) => { if (f) trierSegments(structureSegments); rendreListeStructure(); });
-const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (f) => { if (f) trierSegments(accordSegments); rendreListeAccords(); });
+const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (f) => { if (f) trierSegments(structureSegments); rendreListeStructure(); }, 'structure');
+const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (f) => { if (f) trierSegments(accordSegments); rendreListeAccords(); }, 'accords');
 const laneParoles = creerLaneEditable(document.getElementById('lane-paroles'), () => parolesSegments, (f) => { if (f) trierSegments(parolesSegments); rendreListeParoles(); });
+
+// ============================================================
+// Scission d'une carte
+// ============================================================
+
+// Coupe `seg` en deux au temps t ; renvoie la nouvelle carte (partie droite) ou null si t est trop pres d'un bord.
+function scinderSegment(segments, seg, t){
+  if (t - seg.start < MIN_GAP || seg.end - t < MIN_GAP) return null;
+  const nouveau = { id: nextId++, start: t, end: seg.end, value: seg.value };
+  if ('mots' in seg){
+    // Paroles : on repartit le texte entre les deux cartes
+    if (Array.isArray(seg.mots) && seg.mots.length){
+      const gauche = [], droite = [];
+      seg.mots.forEach(m => ((m.start + m.end)/2 < t ? gauche : droite).push(m));
+      seg.mots = gauche.length ? gauche : null;
+      nouveau.mots = droite.length ? droite : null;
+      seg.value = gauche.map(m => m.texte).join(' ');
+      nouveau.value = droite.map(m => m.texte).join(' ');
+    } else {
+      const mots = (seg.value || '').trim().split(/\s+/).filter(Boolean);
+      const k = Math.round(mots.length * (t - seg.start) / (seg.end - seg.start));
+      seg.value = mots.slice(0, k).join(' ');
+      nouveau.value = mots.slice(k).join(' ');
+      nouveau.mots = null;
+    }
+  }
+  seg.end = t;
+  segments.push(nouveau);
+  trierSegments(segments);
+  return nouveau;
+}
+
+const LANES_CFG = {
+  structure: { get: () => structureSegments, rendre: () => rendreListeStructure(), nom: 'Structure' },
+  accords:   { get: () => accordSegments,    rendre: () => rendreListeAccords(),   nom: 'Accords' },
+  paroles:   { get: () => parolesSegments,   rendre: () => rendreListeParoles(),   nom: 'Paroles' },
+};
+let splitMsgTimer = null;
+function messageScission(txt){
+  const el = document.getElementById('split-msg');
+  el.textContent = txt;
+  clearTimeout(splitMsgTimer);
+  if (txt) splitMsgTimer = setTimeout(() => { el.textContent = ''; }, 3500);
+}
+function scinderALaPosition(cle){
+  if (!duration) return;
+  const cfg = LANES_CFG[cle];
+  const t = getTempsActuel();
+  const seg = cfg.get().find(sg => t > sg.start && t < sg.end);
+  if (!seg){ messageScission(`Aucune carte « ${cfg.nom} » sous le curseur.`); return; }
+  if (!scinderSegment(cfg.get(), seg, t)){ messageScission('Curseur trop près du bord de la carte.'); return; }
+  messageScission('');
+  cfg.rendre();
+}
+document.querySelectorAll('.split-bar button[data-split]').forEach(btn => {
+  btn.addEventListener('click', () => scinderALaPosition(btn.dataset.split));
+});
+
+// ============================================================
+// Vues "grandes cartes" (sections repliables) avec curseur de lecture
+// ============================================================
+
+// Affichage lisible des accords au format BTC ("C:maj" -> "C", "A:min7" -> "Am7", "N" -> "–")
+function accordAffichage(c){
+  c = (c || '').trim();
+  if (!c) return '·';
+  if (c === 'N' || c === 'X') return '–';
+  const m = c.match(/^([A-G][#b]?)(?::([^/]*))?(\/.+)?$/);
+  if (!m) return c;
+  const QUAL = { maj: '', min: 'm', min7: 'm7', maj7: 'maj7', min6: 'm6', maj6: '6', dim: 'dim', dim7: 'dim7', hdim7: 'm7b5', aug: 'aug', sus2: 'sus2', sus4: 'sus4', '7': '7', '9': '9', min9: 'm9', maj9: 'maj9' };
+  const q = m[2] == null ? '' : (m[2] in QUAL ? QUAL[m[2]] : m[2]);
+  return m[1] + q + (m[3] || '');
+}
+
+function scrollerDansConteneur(container, el){
+  const haut = el.offsetTop, bas = haut + el.offsetHeight;
+  if (haut < container.scrollTop || bas > container.scrollTop + container.clientHeight){
+    container.scrollTop = Math.max(0, haut - 8);
+  }
+}
+
+function creerVueCartes(containerId, getSegments, formatValeur){
+  const container = document.getElementById(containerId);
+  let cartes = [];
+
+  function render(){
+    container.innerHTML = '';
+    cartes = [];
+    const segments = getSegments();
+    if (!segments.length){ container.innerHTML = '<div class="cards-vide">Aucune carte.</div>'; return; }
+    segments.forEach(seg => {
+      const el = document.createElement('div');
+      el.className = 'big-card futur';
+      el.innerHTML = `<div class="bc-fill"></div><div class="bc-cursor"></div><div class="bc-val">${escapeHtml(formatValeur(seg.value))}</div><div class="bc-time">${formatTemps(seg.start)}</div>`;
+      el.title = `${formatTemps(seg.start)} → ${formatTemps(seg.end)} — clic : aller ici`;
+      el.addEventListener('click', () => seekTo(seg.start));
+      container.appendChild(el);
+      cartes.push({ seg, el, fill: el.querySelector('.bc-fill'), cursor: el.querySelector('.bc-cursor'), etat: 'futur' });
+    });
+  }
+
+  function maj(t){
+    if (!cartes.length || container.offsetParent === null) return; // section repliee : rien a faire
+    cartes.forEach(c => {
+      const etat = t >= c.seg.end ? 'passe' : (t >= c.seg.start ? 'actif' : 'futur');
+      if (etat !== c.etat){
+        c.el.classList.remove(c.etat); c.el.classList.add(etat);
+        c.etat = etat;
+        if (etat === 'actif') scrollerDansConteneur(container, c.el);
+        if (etat !== 'actif'){ c.fill.style.width = etat === 'passe' ? '100%' : '0'; }
+      }
+      if (etat === 'actif'){
+        const pct = (100 * (t - c.seg.start) / Math.max(0.001, c.seg.end - c.seg.start)).toFixed(1) + '%';
+        c.fill.style.width = pct;
+        c.cursor.style.left = pct;
+      }
+    });
+  }
+  return { render, maj };
+}
+
+// Mots d'un segment de paroles : vrais timestamps de Whisper si presents, sinon repartition
+// proportionnelle a la longueur des mots sur la duree du segment.
+function motsDe(seg){
+  if (Array.isArray(seg.mots) && seg.mots.length) return seg.mots;
+  const mots = (seg.value || '').trim().split(/\s+/).filter(Boolean);
+  const poids = mots.map(m => m.length + 1);
+  const total = poids.reduce((a,b) => a+b, 0) || 1;
+  const dur = seg.end - seg.start;
+  let acc = 0;
+  return mots.map((m, i) => {
+    const debut = seg.start + dur*acc/total;
+    acc += poids[i];
+    return { texte: m, start: debut, end: seg.start + dur*acc/total };
+  });
+}
+
+function creerVueParoles(containerId, getSegments){
+  const container = document.getElementById(containerId);
+  let lignes = [];
+
+  function render(){
+    container.innerHTML = '';
+    lignes = [];
+    const segments = getSegments();
+    if (!segments.length){ container.innerHTML = '<div class="cards-vide">Aucune parole.</div>'; return; }
+    segments.forEach(seg => {
+      const mots = motsDe(seg);
+      const el = document.createElement('div');
+      el.className = 'lyric-line futur';
+      el.innerHTML = `<span class="ly-time">${formatTemps(seg.start)}</span><span class="ly-text">` +
+        (mots.length ? mots.map(m => `<span class="mot${(m.score != null && m.score < 0.3) ? ' douteux' : ''}" title="${m.score != null ? 'confiance ' + m.score : ''}">${escapeHtml(m.texte)}</span>`).join(' ') : '<span class="ly-vide">(vide)</span>') +
+        `</span>`;
+      el.addEventListener('click', () => seekTo(seg.start));
+      container.appendChild(el);
+      lignes.push({ seg, mots, el, spans: [...el.querySelectorAll('.mot')], etat: 'futur', nFait: 0, cur: -1 });
+    });
+  }
+
+  function appliquerMots(l, nFait, cur){
+    if (l.nFait === nFait && l.cur === cur) return;
+    l.spans.forEach((sp, i) => { sp.classList.toggle('fait', i < nFait); sp.classList.toggle('courant', i === cur); });
+    l.nFait = nFait; l.cur = cur;
+  }
+
+  function maj(t){
+    if (!lignes.length || container.offsetParent === null) return;
+    lignes.forEach(l => {
+      const etat = t >= l.seg.end ? 'passe' : (t >= l.seg.start ? 'actif' : 'futur');
+      if (etat !== l.etat){
+        l.el.classList.remove(l.etat); l.el.classList.add(etat);
+        l.etat = etat;
+        if (etat === 'actif') scrollerDansConteneur(container, l.el);
+      }
+      if (etat === 'passe') appliquerMots(l, l.spans.length, -1);
+      else if (etat === 'futur') appliquerMots(l, 0, -1);
+      else {
+        let nFait = 0, cur = -1;
+        l.mots.forEach((m, i) => { if (t >= m.end) nFait = i + 1; else if (t >= m.start && cur < 0) cur = i; });
+        appliquerMots(l, nFait, cur);
+      }
+    });
+  }
+  return { render, maj };
+}
+
+const vueStructure = creerVueCartes('cards-structure', () => structureSegments, v => v);
+const vueAccords = creerVueCartes('cards-accords', () => accordSegments, accordAffichage);
+const vueParoles = creerVueParoles('cards-paroles', () => parolesSegments);
+
+
+// ============================================================
+// Comparaison des placements de paroles (uniquement si >= 2 versions dans le JSON)
+// ============================================================
+const COULEURS_MOTEURS = { whisper: '#8FB8C9', whisperx: '#E0B25A', mfa: '#C98F8F' };
+const NOMS_MOTEURS = { whisper: 'Whisper', whisperx: 'WhisperX', mfa: 'MFA' };
+let variantesParoles = {};   // nom -> segments editeur (copie de travail)
+let varianteActive = null;
+let motsAplatis = {};        // nom -> [{start,end,texte}]
+
+function segmentsDepuisJson(liste){
+  return (liste || []).map(p => ({ id: nextId++, start: p.start, end: p.end, value: p.texte,
+    mots: (Array.isArray(p.mots) && p.mots.length) ? p.mots.map(m => ({ start: m.start, end: m.end, texte: m.texte, score: m.score })) : null }));
+}
+function aplatirMots(segments){
+  const out = [];
+  segments.forEach((seg, i) => motsDe(seg).forEach(m => out.push({ start: m.start, end: m.end, texte: m.texte, seg: i })));
+  return out;
+}
+function mediane(a){ if (!a.length) return 0; const b = [...a].sort((x,y) => x-y); const k = b.length >> 1; return b.length % 2 ? b[k] : (b[k-1]+b[k])/2; }
+function centile(a, q){ if (!a.length) return 0; const b = [...a].sort((x,y) => x-y); return b[Math.min(b.length-1, Math.floor(q*b.length))]; }
+
+// Apparie les mots segment par segment (seulement si le nombre de mots est identique).
+function apparier(nomA, nomB){
+  const A = motsAplatis[nomA], B = motsAplatis[nomB];
+  const parSegA = {}, parSegB = {};
+  A.forEach(m => (parSegA[m.seg] = parSegA[m.seg] || []).push(m));
+  B.forEach(m => (parSegB[m.seg] = parSegB[m.seg] || []).push(m));
+  const paires = []; let ignores = 0;
+  Object.keys(parSegA).forEach(k => {
+    const a = parSegA[k], b = parSegB[k];
+    if (b && a.length === b.length) a.forEach((m, i) => paires.push({ a: m, b: b[i] }));
+    else ignores += a.length;
+  });
+  return { paires, ignores };
+}
+
+function initComparaison(){
+  const bloc = document.getElementById('section-compare');
+  const brut = donnees.paroles_variantes || {};
+  const noms = Object.keys(brut).filter(n => Array.isArray(brut[n]) && brut[n].length);
+  variantesParoles = {}; motsAplatis = {}; varianteActive = null;
+  if (noms.length < 2){ bloc.hidden = true; return; }  // rien a comparer
+  noms.forEach(n => { variantesParoles[n] = segmentsDepuisJson(brut[n]); });
+  const demandee = donnees.analyse && donnees.analyse.placement_paroles;
+  varianteActive = noms.includes(demandee) ? demandee : noms[0];
+  parolesSegments = variantesParoles[varianteActive];
+  noms.forEach(n => { motsAplatis[n] = aplatirMots(variantesParoles[n]); });
+  bloc.hidden = false;
+  rendreChoixComparaison();
+  ['cmp-a','cmp-b'].forEach((id, k) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = noms.map(n => `<option value="${n}">${NOMS_MOTEURS[n] || n}</option>`).join('');
+    sel.selectedIndex = Math.min(k, noms.length-1);
+    sel.onchange = rendreDivergences;
+  });
+  document.getElementById('cmp-seuil').onchange = rendreDivergences;
+  document.getElementById('cmp-legende').innerHTML = noms.map(n => `<span style="color:${COULEURS_MOTEURS[n] || '#ccc'}">■</span> ${NOMS_MOTEURS[n] || n}`).join(' &nbsp; ') + ' &nbsp; (débuts de mots autour de la tête de lecture)';
+  rendreStatsComparaison();
+  rendreDivergences();
+  majComparaison(0);
+}
+
+function rendreChoixComparaison(){
+  const el = document.getElementById('cmp-choix');
+  el.innerHTML = '<span>Version écoutée :</span>';
+  Object.keys(variantesParoles).forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cmp-btn' + (n === varianteActive ? ' actif' : '');
+    b.textContent = NOMS_MOTEURS[n] || n;
+    b.addEventListener('click', () => changerVarianteActive(n));
+    el.appendChild(b);
+  });
+}
+
+function changerVarianteActive(n){
+  if (n === varianteActive) return;
+  variantesParoles[varianteActive] = parolesSegments;   // garde les retouches de la version quittee
+  varianteActive = n;
+  parolesSegments = variantesParoles[n];
+  rendreChoixComparaison();
+  rendreListeParoles();
+  vueParoles.render();
+  laneParoles.render();
+}
+
+function rendreStatsComparaison(){
+  const noms = Object.keys(motsAplatis);
+  let html = '<table class="cmp-table"><tr><th>Paire (B − A)</th><th>mots</th><th>écart médian |Δ|</th><th>90 % sous</th><th>biais (B−A)</th><th>&gt; 150 ms</th></tr>';
+  for (let i = 0; i < noms.length; i++) for (let j = i+1; j < noms.length; j++){
+    const { paires, ignores } = apparier(noms[i], noms[j]);
+    const d = paires.map(p => (p.b.start - p.a.start) * 1000);
+    const abs = d.map(Math.abs);
+    html += `<tr><td>${NOMS_MOTEURS[noms[i]]||noms[i]} → ${NOMS_MOTEURS[noms[j]]||noms[j]}</td><td>${paires.length}${ignores ? ` <span title="mots dans des segments de longueur différente, non comparés">(+${ignores} non appariés)</span>` : ''}</td>` +
+      `<td>${Math.round(mediane(abs))} ms</td><td>${Math.round(centile(abs, 0.9))} ms</td><td>${Math.round(mediane(d))} ms</td><td>${abs.filter(x => x > 150).length}</td></tr>`;
+  }
+  document.getElementById('cmp-stats').innerHTML = html + '</table>';
+}
+
+function rendreDivergences(){
+  const a = document.getElementById('cmp-a').value, b = document.getElementById('cmp-b').value;
+  const seuil = +document.getElementById('cmp-seuil').value / 1000;
+  const cont = document.getElementById('cmp-liste');
+  if (a === b){ cont.innerHTML = '<div class="cards-vide">Choisissez deux versions différentes.</div>'; return; }
+  const { paires } = apparier(a, b);
+  const div = paires.filter(p => Math.abs(p.b.start - p.a.start) > seuil).sort((x, y) => x.a.start - y.a.start);
+  if (!div.length){ cont.innerHTML = '<div class="cards-vide">Aucune divergence à ce seuil.</div>'; return; }
+  cont.innerHTML = '';
+  div.slice(0, 300).forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'cmp-item';
+    const dMs = Math.round((p.b.start - p.a.start) * 1000);
+    el.innerHTML = `<span class="t">${formatTemps(p.a.start)}</span><span>${escapeHtml(p.a.texte)}</span><span class="d">${dMs > 0 ? '+' : ''}${dMs} ms</span>`;
+    el.addEventListener('click', () => seekTo(Math.max(0, Math.min(p.a.start, p.b.start) - 0.6)));
+    cont.appendChild(el);
+  });
+  if (div.length > 300) cont.insertAdjacentHTML('beforeend', `<div class="cards-vide">… ${div.length - 300} autres</div>`);
+}
+
+function majComparaison(t){
+  const cv = document.getElementById('cmp-canvas');
+  if (!cv || cv.offsetParent === null) return;
+  const noms = Object.keys(motsAplatis);
+  if (!noms.length) return;
+  const w = cv.clientWidth, h = 110, dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w*dpr)){ cv.width = Math.round(w*dpr); cv.height = h*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const fen = +document.getElementById('cmp-fen').value;  // secondes de chaque cote
+  const x = tt => (tt - (t - fen)) / (2*fen) * w;
+  const haut = 14, ligne = (h - haut) / noms.length;
+  dessinerTempsCompare(g, x, t, fen, w, h);
+  g.font = '11px sans-serif'; g.textBaseline = 'middle';
+  noms.forEach((n, i) => {
+    const y0 = haut + i*ligne, c = COULEURS_MOTEURS[n] || '#ccc';
+    g.fillStyle = c;
+    motsAplatis[n].forEach(m => {
+      if (m.end < t - fen || m.start > t + fen) return;
+      const x1 = x(m.start), x2 = Math.max(x1 + 2, x(m.end));
+      g.globalAlpha = 0.35; g.fillRect(x1, y0 + 6, x2 - x1, ligne - 12);
+      g.globalAlpha = 1; g.fillRect(x1, y0 + 4, 2, ligne - 8);
+      if (x2 - x1 > 28){ g.fillStyle = '#1C1712'; g.fillText(m.texte, x1 + 4, y0 + ligne/2, x2 - x1 - 4); g.fillStyle = c; }
+    });
+  });
+  g.strokeStyle = '#EDE4D3'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(w/2, 0); g.lineTo(w/2, h); g.stroke();
+}
+
+// ============================================================
+// Comparaison des moteurs d'accords (uniquement si >= 2 analyses dans le JSON)
+// ============================================================
+const NOMS_MOTEURS_ACC = { btc: 'BTC', madmom: 'madmom', simple: 'Réf. simple' };
+const COULEURS_ACC = { btc: '#E0A84F', madmom: '#7FB8A4', simple: '#A99BD0' };
+let variantesAccords = {}, varianteAccordsActive = null;
+
+function segmentsAccordsDepuisJson(liste){
+  return (liste || []).map(a => ({ id: nextId++, start: a.start, end: a.end, value: a.chord }))
+    .sort((x, y) => x.start - y.start);
+}
+const NOTES_PAR_ALTERATION = { 'Db':'C#','Eb':'D#','Gb':'F#','Ab':'G#','Bb':'A#','Cb':'B','Fb':'E','E#':'F','B#':'C' };
+function reduireAccord(c){
+  c = String(c || 'N').split('/')[0];
+  if (!c || c === 'N' || c === 'X') return 'N';
+  const m = c.match(/^([A-G][#b]?)(?::|)(.*)$/);
+  if (!m) return c;
+  const racine = NOTES_PAR_ALTERATION[m[1]] || m[1];
+  const q = m[2];
+  const mineur = /^(min|m(?!aj))/.test(q) || /^dim/.test(q);
+  return racine + (mineur ? ':min' : ':maj');
+}
+function exactAccord(c){ c = String(c || 'N').split('/')[0]; return c === 'X' ? 'N' : c; }
+
+// Echantillonne une liste de segments {start,end,value} tous les `pas` secondes.
+function echantillonnerAccords(segs, pas, n, norm){
+  const out = new Array(n); let k = 0;
+  for (let i = 0; i < n; i++){
+    const t = i * pas;
+    while (k < segs.length && segs[k].end <= t) k++;
+    out[i] = (k < segs.length && segs[k].start <= t) ? norm(segs[k].value) : 'N';
+  }
+  return out;
+}
+
+function initComparaisonAccords(){
+  const bloc = document.getElementById('section-compare-accords');
+  const brut = donnees.accords_variantes || {};
+  const noms = Object.keys(brut).filter(n => Array.isArray(brut[n]) && brut[n].length);
+  variantesAccords = {}; varianteAccordsActive = null;
+  if (noms.length < 2){ bloc.hidden = true; return; }
+  noms.forEach(n => { variantesAccords[n] = segmentsAccordsDepuisJson(brut[n]); });
+  const demande = donnees.analyse && donnees.analyse.moteur_accords;
+  varianteAccordsActive = noms.includes(demande) ? demande : noms[0];
+  accordSegments = variantesAccords[varianteAccordsActive];
+  bloc.hidden = false;
+  rendreChoixAccords();
+  ['cmpa-a','cmpa-b'].forEach((id, k) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = noms.map(n => `<option value="${n}">${NOMS_MOTEURS_ACC[n] || n}</option>`).join('');
+    sel.selectedIndex = Math.min(k, noms.length - 1);
+    sel.onchange = rendreDesaccords;
+  });
+  document.getElementById('cmpa-mode').onchange = rendreDesaccords;
+  document.getElementById('cmpa-duree').onchange = rendreDesaccords;
+  document.getElementById('cmpa-legende').innerHTML = noms.map(n => `<span style="color:${COULEURS_ACC[n] || '#ccc'}">■</span> ${NOMS_MOTEURS_ACC[n] || n}`).join(' &nbsp; ') + ' &nbsp; (accords autour de la tête de lecture)';
+  rendreStatsAccords();
+  rendreDesaccords();
+  majComparaisonAccords(0);
+}
+
+function rendreChoixAccords(){
+  const el = document.getElementById('cmpa-choix');
+  el.innerHTML = '<span>Version affichée :</span>';
+  Object.keys(variantesAccords).forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cmp-btn' + (n === varianteAccordsActive ? ' actif' : '');
+    b.textContent = NOMS_MOTEURS_ACC[n] || n;
+    b.addEventListener('click', () => changerVarianteAccords(n));
+    el.appendChild(b);
+  });
+}
+function changerVarianteAccords(n){
+  if (n === varianteAccordsActive) return;
+  variantesAccords[varianteAccordsActive] = accordSegments;  // garde les retouches
+  varianteAccordsActive = n;
+  accordSegments = variantesAccords[n];
+  rendreChoixAccords();
+  rendreListeAccords();
+  vueAccords.render();
+  laneAccords.render();
+}
+
+function dureeMaxAccords(){
+  return Math.max(...Object.values(variantesAccords).map(v => v.length ? v[v.length-1].end : 0), 0);
+}
+function nbChangements(segs){ let n = 0; for (let i = 1; i < segs.length; i++) if (exactAccord(segs[i].value) !== exactAccord(segs[i-1].value)) n++; return n; }
+
+function rendreStatsAccords(){
+  const noms = Object.keys(variantesAccords), pas = 0.05;
+  const n = Math.ceil(dureeMaxAccords() / pas);
+  const E = {}, R = {};
+  noms.forEach(k => { E[k] = echantillonnerAccords(variantesAccords[k], pas, n, exactAccord); R[k] = echantillonnerAccords(variantesAccords[k], pas, n, reduireAccord); });
+  const duree = dureeMaxAccords() / 60 || 1;
+  let html = '<table class="cmp-table"><tr><th>Moteur</th><th>accords</th><th>changements / min</th></tr>';
+  noms.forEach(k => { html += `<tr><td>${NOMS_MOTEURS_ACC[k] || k}</td><td>${variantesAccords[k].length}</td><td>${(nbChangements(variantesAccords[k]) / duree).toFixed(1)}</td></tr>`; });
+  html += '</table><table class="cmp-table" style="margin-top:10px;"><tr><th>Paire</th><th>accord identique</th><th>racine + maj/min identiques</th></tr>';
+  for (let i = 0; i < noms.length; i++) for (let j = i+1; j < noms.length; j++){
+    let e = 0, r = 0;
+    for (let x = 0; x < n; x++){ if (E[noms[i]][x] === E[noms[j]][x]) e++; if (R[noms[i]][x] === R[noms[j]][x]) r++; }
+    html += `<tr><td>${NOMS_MOTEURS_ACC[noms[i]]||noms[i]} / ${NOMS_MOTEURS_ACC[noms[j]]||noms[j]}</td><td>${Math.round(100*e/n)} %</td><td>${Math.round(100*r/n)} %</td></tr>`;
+  }
+  document.getElementById('cmpa-stats').innerHTML = html + '</table>';
+}
+
+function rendreDesaccords(){
+  const a = document.getElementById('cmpa-a').value, b = document.getElementById('cmpa-b').value;
+  const norm = document.getElementById('cmpa-mode').value === 'exact' ? exactAccord : reduireAccord;
+  const minDuree = +document.getElementById('cmpa-duree').value;
+  const cont = document.getElementById('cmpa-liste');
+  if (a === b){ cont.innerHTML = '<div class="cards-vide">Choisissez deux moteurs différents.</div>'; return; }
+  const pas = 0.05, n = Math.ceil(dureeMaxAccords() / pas);
+  const A = echantillonnerAccords(variantesAccords[a], pas, n, norm), B = echantillonnerAccords(variantesAccords[b], pas, n, norm);
+  const runs = []; let debut = -1;
+  for (let i = 0; i <= n; i++){
+    const diff = i < n && A[i] !== B[i];
+    if (diff && debut < 0) debut = i;
+    if (!diff && debut >= 0){ if ((i - debut) * pas >= minDuree) runs.push([debut, i]); debut = -1; }
+  }
+  if (!runs.length){ cont.innerHTML = '<div class="cards-vide">Aucun désaccord à ce seuil.</div>'; return; }
+  cont.innerHTML = '';
+  runs.slice(0, 300).forEach(([d, f]) => {
+    const mid = (d + f) >> 1, el = document.createElement('div');
+    el.className = 'cmp-item';
+    el.innerHTML = `<span class="t">${formatTemps(d*pas)}</span><span>${escapeHtml(A[mid])} <span style="color:var(--text-muted)">vs</span> ${escapeHtml(B[mid])}</span><span class="d">${((f-d)*pas).toFixed(1)} s</span>`;
+    el.addEventListener('click', () => seekTo(Math.max(0, d*pas - 0.5)));
+    cont.appendChild(el);
+  });
+  if (runs.length > 300) cont.insertAdjacentHTML('beforeend', `<div class="cards-vide">… ${runs.length - 300} autres</div>`);
+}
+
+function majComparaisonAccords(t){
+  const cv = document.getElementById('cmpa-canvas');
+  if (!cv || cv.offsetParent === null) return;
+  const noms = Object.keys(variantesAccords);
+  if (!noms.length) return;
+  const w = cv.clientWidth, h = 110, dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w*dpr)){ cv.width = Math.round(w*dpr); cv.height = h*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const fen = +document.getElementById('cmpa-fen').value, x = tt => (tt - (t - fen)) / (2*fen) * w, haut = 14, ligne = (h - haut) / noms.length;
+  dessinerTempsCompare(g, x, t, fen, w, h);
+  g.font = '12px sans-serif'; g.textBaseline = 'middle';
+  noms.forEach((n, i) => {
+    const y0 = haut + i * ligne, c = COULEURS_ACC[n] || '#ccc';
+    const segs = n === varianteAccordsActive ? accordSegments : variantesAccords[n];
+    segs.forEach(sg => {
+      if (sg.end < t - fen || sg.start > t + fen) return;
+      const x1 = x(sg.start), x2 = x(sg.end);
+      g.fillStyle = c; g.globalAlpha = 0.3; g.fillRect(x1 + 1, y0 + 4, Math.max(1, x2 - x1 - 2), ligne - 8);
+      g.globalAlpha = 1; g.fillRect(x1, y0 + 4, 2, ligne - 8);
+      if (x2 - x1 > 22){ g.fillStyle = '#EDE4D3'; g.fillText(accordAffichage(sg.value), Math.max(x1, 0) + 5, y0 + ligne/2, x2 - Math.max(x1, 0) - 6); }
+    });
+  });
+  g.strokeStyle = '#EDE4D3'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(w/2, 0); g.lineTo(w/2, h); g.stroke();
+}
+
+// ============================================================
+// Quantification sur les temps / les mesures (structure et accords)
+// ============================================================
+const quantif = { structure: 'aucun', accords: 'aucun', marqueurs: 'aucun' };
+function grilleTemps(mode){
+  const sb = (donnees && donnees.structure) || {};
+  const a = mode === 'mesures' ? sb.downbeats : sb.beats;
+  return Array.isArray(a) ? a : [];
+}
+function indexProche(grille, t){
+  let lo = 0, hi = grille.length - 1;
+  while (lo < hi){ const m = (lo + hi) >> 1; if (grille[m] < t) lo = m + 1; else hi = m; }
+  return (lo > 0 && Math.abs(grille[lo-1] - t) <= Math.abs(grille[lo] - t)) ? lo - 1 : lo;
+}
+function aimanter(cle, t){
+  const mode = cle ? quantif[cle] : 'aucun';
+  if (!mode || mode === 'aucun') return t;
+  const g = grilleTemps(mode);
+  return g.length ? g[indexProche(g, t)] : t;
+}
+function calerCartes(cle){
+  if (cle === 'marqueurs') return calerMarqueurs();
+  const mode = quantif[cle], g = grilleTemps(mode);
+  const msg = document.querySelector(`.quant-bar[data-cle="${cle}"] .quant-msg`);
+  if (mode === 'aucun'){ msg.textContent = 'Choisissez d\'abord « Les temps » ou « Les mesures ».'; return; }
+  if (!g.length){ msg.textContent = 'Pas de grille de ' + (mode === 'mesures' ? 'mesures' : 'temps') + ' dans ce fichier.'; return; }
+  const segs = LANES_CFG[cle].get();
+  if (!segs.length) return;
+  trierSegments(segs);
+  const n = segs.length;
+  segs.forEach((sg, i) => {   // le tout premier debut et la toute derniere fin ne bougent pas
+    if (i > 0) sg.start = g[indexProche(g, sg.start)];
+    if (i < n - 1) sg.end = g[indexProche(g, sg.end)];
+  });
+  let supprimees = 0;
+  for (let i = 0; i < segs.length; i++){
+    const sg = segs[i];
+    if (sg.end - sg.start >= MIN_GAP) continue;
+    const suivante = segs[i+1];
+    const k = g.findIndex(x => x > sg.start + MIN_GAP);
+    if (suivante && k >= 0 && g[k] < suivante.end - MIN_GAP){
+      if (Math.abs(suivante.start - sg.end) <= JOINT_EPS) suivante.start = g[k];
+      sg.end = g[k];
+    } else { segs.splice(i, 1); i--; supprimees++; }
+  }
+  LANES_CFG[cle].rendre();
+  msg.textContent = 'Calé sur ' + (mode === 'mesures' ? 'les mesures' : 'les temps') + (supprimees ? ` (${supprimees} carte(s) trop courte(s) supprimée(s))` : '') + '.';
+}
+document.querySelectorAll('.quant-bar').forEach(bar => {
+  const cle = bar.dataset.cle;
+  bar.querySelector('.quant-mode').addEventListener('change', (e) => { quantif[cle] = e.target.value; bar.querySelector('.quant-msg').textContent = ''; });
+  bar.querySelector('.quant-go').addEventListener('click', () => calerCartes(cle));
+});
+
+// ============================================================
+// Plein ecran : forme d'onde + cartes
+// ============================================================
+const stageEl = document.getElementById('stage');
+function elementPlein(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function majApresPlein(){
+  const plein = elementPlein() === stageEl || stageEl.classList.contains('pseudo-plein');
+  stageEl.classList.toggle('en-plein', plein);
+  stageEl.classList.toggle('epingle', plein && document.getElementById('chk-epingle').checked);
+  document.getElementById('btn-plein').textContent = plein ? '✕ Quitter' : '⛶ Plein écran';
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 120);
+}
+async function basculerPlein(){
+  if (stageEl.classList.contains('en-plein')){
+    stageEl.classList.remove('pseudo-plein');
+    if (elementPlein()){ try { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch(e){} }
+    majApresPlein();
+    return;
+  }
+  const req = stageEl.requestFullscreen || stageEl.webkitRequestFullscreen;
+  try {
+    if (!req) throw new Error('indisponible');
+    await req.call(stageEl);
+  } catch(e){
+    stageEl.classList.add('pseudo-plein');   // repli : plein cadre dans la page
+  }
+  majApresPlein();
+}
+document.getElementById('btn-plein').addEventListener('click', basculerPlein);
+document.getElementById('chk-epingle').addEventListener('change', majApresPlein);
+document.addEventListener('fullscreenchange', majApresPlein);
+document.addEventListener('webkitfullscreenchange', majApresPlein);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && stageEl.classList.contains('pseudo-plein')) basculerPlein(); });
+
+// ============================================================
+// Carte des temps dans les comparateurs + clic pour aller au point
+// ============================================================
+function dessinerTempsCompare(g, x, t, fen, w, h){
+  const sb = (donnees && donnees.structure) || {};
+  const beats = sb.beats || [], pos = sb.beat_positions || [];
+  g.save();
+  g.textBaseline = 'top'; g.font = '10px "IBM Plex Mono", monospace';
+  const largeurTemps = beats.length > 1 ? Math.abs(x(beats[1]) - x(beats[0])) : 0;
+  beats.forEach((b, i) => {
+    if (b < t - fen || b > t + fen) return;
+    const px = x(b);
+    g.strokeStyle = 'rgba(192,153,106,0.22)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(px, 14); g.lineTo(px, h); g.stroke();
+    if (largeurTemps > 26 && pos[i] && pos[i] > 1){ g.fillStyle = 'rgba(192,153,106,0.7)'; g.fillText(String(pos[i]), px + 3, 2); }
+  });
+  (sb.downbeats || []).forEach((b, i) => {
+    if (b < t - fen || b > t + fen) return;
+    const px = x(b);
+    g.strokeStyle = 'rgba(224,178,90,0.65)'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(px, 0); g.lineTo(px, h); g.stroke();
+    g.fillStyle = 'rgba(224,178,90,1)'; g.fillText('♩' + (i + 1), px + 3, 2);
+  });
+  g.restore();
+}
+function brancherSeekCanvas(canvasId, selectId){
+  document.getElementById(canvasId).addEventListener('pointerdown', (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const fen = +document.getElementById(selectId).value;
+    seekTo(getTempsActuel() + ((e.clientX - r.left) / r.width - 0.5) * 2 * fen);
+  });
+}
+brancherSeekCanvas('cmp-canvas', 'cmp-fen');
+brancherSeekCanvas('cmpa-canvas', 'cmpa-fen');
+brancherSeekCanvas('cmpm-canvas', 'cmpm-fen');
+
+// ============================================================
+// Piano roll dans le menu Melodie
+// ============================================================
+let prGeo = null;
+function majPianoRollPanneau(t){
+  const cv = document.getElementById('pr-canvas');
+  if (!cv || cv.offsetParent === null || !duration) return;
+  const w = cv.clientWidth, h = 240, dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w*dpr)){ cv.width = Math.round(w*dpr); cv.height = h*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const fen = +document.getElementById('pr-fen').value;
+  const t0 = fen ? t - fen/2 : 0, t1 = fen ? t + fen/2 : duration;
+  let minM = 48, maxM = 72;
+  if (melodieNotes.length){ minM = Math.min(...melodieNotes.map(n => n.midi)) - 1; maxM = Math.max(...melodieNotes.map(n => n.midi)) + 1; }
+  while (maxM - minM < 12){ maxM++; minM--; }
+  const kb = 46, px = w - kb, hL = h / (maxM - minM + 1);
+  const x = tt => kb + (tt - t0) / (t1 - t0) * px;
+  const y = m => (maxM - m) * hL;
+  prGeo = { t0, t1, kb, px };
+
+  g.save(); g.beginPath(); g.rect(kb, 0, px, h); g.clip();
+  for (let m = minM; m <= maxM; m++){
+    g.fillStyle = NOTES_NOIRES.has(((m%12)+12)%12) ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.025)';
+    g.fillRect(kb, y(m), px, hL);
+    if (((m%12)+12)%12 === 0){ g.strokeStyle = 'rgba(192,153,106,0.25)'; g.beginPath(); g.moveTo(kb, y(m)+hL); g.lineTo(w, y(m)+hL); g.stroke(); }
+  }
+  const sb = (donnees && donnees.structure) || {};
+  (sb.beats || []).forEach(b => { if (b < t0 || b > t1) return; g.strokeStyle = 'rgba(192,153,106,0.15)'; g.beginPath(); g.moveTo(x(b), 0); g.lineTo(x(b), h); g.stroke(); });
+  (sb.downbeats || []).forEach(b => { if (b < t0 || b > t1) return; g.strokeStyle = 'rgba(224,178,90,0.55)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x(b), 0); g.lineTo(x(b), h); g.stroke(); g.lineWidth = 1; });
+  g.font = '10px "IBM Plex Mono", monospace'; g.textBaseline = 'middle';
+  melodieNotes.forEach(n => {
+    if (n.end < t0 || n.start > t1) return;
+    const x1 = x(n.start), x2 = Math.max(x1 + 2, x(n.end));
+    const actif = t >= n.start && t < n.end;
+    g.fillStyle = actif ? '#BFE0F5' : '#7FA8C9';
+    g.fillRect(x1, y(n.midi) + 1, x2 - x1, hL - 2);
+    if (x2 - x1 > 30 && hL > 9){ g.fillStyle = '#1C1712'; g.fillText(midiToName(n.midi), x1 + 3, y(n.midi) + hL/2); }
+  });
+  g.strokeStyle = '#EDE4D3'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(x(t), 0); g.lineTo(x(t), h); g.stroke();
+  g.restore();
+
+  // clavier a gauche
+  g.fillStyle = '#2A231C'; g.fillRect(0, 0, kb, h);
+  for (let m = minM; m <= maxM; m++){
+    const noire = NOTES_NOIRES.has(((m%12)+12)%12);
+    g.fillStyle = noire ? '#1C1712' : '#E9DFCB';
+    g.fillRect(noire ? 0 : 0, y(m) + 0.5, noire ? kb * 0.62 : kb - 1, hL - 1);
+    if (((m%12)+12)%12 === 0){ g.fillStyle = '#5a4b38'; g.font = '9px "IBM Plex Mono", monospace'; g.textBaseline = 'middle'; g.fillText(midiToName(m), kb - 24, y(m) + hL/2); }
+  }
+}
+document.getElementById('pr-canvas').addEventListener('pointerdown', (e) => {
+  if (!prGeo) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const xx = e.clientX - r.left;
+  if (xx < prGeo.kb) return;
+  seekTo(prGeo.t0 + (xx - prGeo.kb) / prGeo.px * (prGeo.t1 - prGeo.t0));
+});
+
+// ============================================================
+// Comparaison des detecteurs de melodie (uniquement si >= 2 versions dans le JSON)
+// ============================================================
+const NOMS_MOTEURS_MEL = { rmvpe: 'RMVPE', swiftf0: 'SwiftF0', crepe: 'CREPE', fcpe: 'FCPE', melodia: 'Melodia', basicpitch: 'Basic Pitch', pyin: 'pYIN' };
+const COULEURS_MEL = { rmvpe: '#7FA8C9', swiftf0: '#E0A84F', crepe: '#7FB8A4', fcpe: '#C98F8F', melodia: '#D9A0C8', basicpitch: '#B5C96E', pyin: '#A99BD0' };
+let variantesMelodie = {}, varianteMelodieActive = null;
+
+function notesDepuisJson(liste){
+  return (liste || []).map(n => ({ id: nextId++, start: n.start, end: n.end, midi: n.midi })).sort((a, b) => a.start - b.start);
+}
+// Hauteur MIDI de chaque pas de 20 ms (NaN = pas de note)
+function echantillonnerNotes(notes, pas, n){
+  const out = new Float32Array(n).fill(NaN); let k = 0;
+  for (let i = 0; i < n; i++){
+    const t = i * pas;
+    while (k < notes.length && notes[k].end <= t) k++;
+    if (k < notes.length && notes[k].start <= t) out[i] = notes[k].midi;
+  }
+  return out;
+}
+function dureeMaxMelodie(){
+  return Math.max(...Object.values(variantesMelodie).map(v => v.reduce((m, n) => Math.max(m, n.end), 0)), 0);
+}
+
+function initComparaisonMelodie(){
+  const bloc = document.getElementById('section-compare-melodie');
+  const brut = donnees.melodie_variantes || {};
+  const noms = Object.keys(brut).filter(n => Array.isArray(brut[n]) && brut[n].length);
+  variantesMelodie = {}; varianteMelodieActive = null;
+  if (noms.length < 2){ bloc.hidden = true; return; }
+  noms.forEach(n => { variantesMelodie[n] = notesDepuisJson(brut[n]); });
+  const demande = donnees.analyse && donnees.analyse.moteur_melodie;
+  varianteMelodieActive = noms.includes(demande) ? demande : noms[0];
+  melodieNotes = variantesMelodie[varianteMelodieActive];
+  bloc.hidden = false;
+  rendreChoixMelodie();
+  ['cmpm-a','cmpm-b'].forEach((id, k) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = noms.map(n => `<option value="${n}">${NOMS_MOTEURS_MEL[n] || n}</option>`).join('');
+    sel.selectedIndex = Math.min(k, noms.length - 1);
+    sel.onchange = rendreDesaccordsMelodie;
+  });
+  document.getElementById('cmpm-mode').onchange = rendreDesaccordsMelodie;
+  document.getElementById('cmpm-duree').onchange = rendreDesaccordsMelodie;
+  document.getElementById('cmpm-legende').innerHTML = noms.map(n => `<span style="color:${COULEURS_MEL[n] || '#ccc'}">■</span> ${NOMS_MOTEURS_MEL[n] || n}`).join(' &nbsp; ');
+  rendreStatsMelodie();
+  rendreDesaccordsMelodie();
+  majComparaisonMelodie(0);
+}
+
+function rendreChoixMelodie(){
+  const el = document.getElementById('cmpm-choix');
+  el.innerHTML = '<span>Version affichée :</span>';
+  Object.keys(variantesMelodie).forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cmp-btn' + (n === varianteMelodieActive ? ' actif' : '');
+    b.textContent = NOMS_MOTEURS_MEL[n] || n;
+    b.addEventListener('click', () => changerVarianteMelodie(n));
+    el.appendChild(b);
+  });
+}
+function changerVarianteMelodie(n){
+  if (n === varianteMelodieActive) return;
+  variantesMelodie[varianteMelodieActive] = melodieNotes;  // garde les retouches
+  varianteMelodieActive = n;
+  melodieNotes = variantesMelodie[n];
+  rendreChoixMelodie();
+  rendreListeMelodie();
+  rendreLaneMelodie();
+}
+
+function rendreStatsMelodie(){
+  const noms = Object.keys(variantesMelodie), pas = 0.02;
+  const n = Math.ceil(dureeMaxMelodie() / pas);
+  const S = {}; noms.forEach(k => { S[k] = echantillonnerNotes(variantesMelodie[k], pas, n); });
+  const minutes = dureeMaxMelodie() / 60 || 1;
+  let html = '<table class="cmp-table"><tr><th>Détecteur</th><th>notes</th><th>notes / min</th><th>durée médiane</th><th>temps couvert</th></tr>';
+  noms.forEach(k => {
+    const v = variantesMelodie[k], durs = v.map(x => x.end - x.start);
+    let couvert = 0; for (let i = 0; i < n; i++) if (!isNaN(S[k][i])) couvert++;
+    html += `<tr><td>${NOMS_MOTEURS_MEL[k] || k}</td><td>${v.length}</td><td>${(v.length / minutes).toFixed(0)}</td><td>${Math.round(mediane(durs) * 1000)} ms</td><td>${(couvert * pas).toFixed(1)} s</td></tr>`;
+  });
+  html += '</table><table class="cmp-table" style="margin-top:10px;"><tr><th>Paire</th><th>voisés ensemble</th><th>même note</th><th>à ±1 demi-ton</th><th>erreurs d\'octave</th><th>présent d\'un seul côté</th></tr>';
+  for (let i = 0; i < noms.length; i++) for (let j = i+1; j < noms.length; j++){
+    const A = S[noms[i]], B = S[noms[j]];
+    let deux = 0, egal = 0, proche = 0, octave = 0, seul = 0;
+    for (let x = 0; x < n; x++){
+      const a = A[x], b = B[x], na = isNaN(a), nb = isNaN(b);
+      if (na && nb) continue;
+      if (na !== nb){ seul++; continue; }
+      deux++;
+      const d = Math.abs(a - b);
+      if (d === 0) egal++;
+      if (d <= 1) proche++;
+      const mod = Math.abs(d - 12), mod2 = Math.abs(d - 24);
+      if (mod <= 1 || mod2 <= 1) octave++;
+    }
+    const tot = deux + seul || 1, p = v => deux ? Math.round(100 * v / deux) + ' %' : '–';
+    html += `<tr><td>${NOMS_MOTEURS_MEL[noms[i]]||noms[i]} / ${NOMS_MOTEURS_MEL[noms[j]]||noms[j]}</td><td>${(deux*pas).toFixed(1)} s</td><td>${p(egal)}</td><td>${p(proche)}</td><td>${p(octave)}</td><td>${Math.round(100*seul/tot)} %</td></tr>`;
+  }
+  document.getElementById('cmpm-stats').innerHTML = html + '</table>';
+}
+
+function rendreDesaccordsMelodie(){
+  const a = document.getElementById('cmpm-a').value, b = document.getElementById('cmpm-b').value;
+  const mode = document.getElementById('cmpm-mode').value;
+  const minDuree = +document.getElementById('cmpm-duree').value;
+  const cont = document.getElementById('cmpm-liste');
+  if (a === b){ cont.innerHTML = '<div class="cards-vide">Choisissez deux détecteurs différents.</div>'; return; }
+  const pas = 0.02, n = Math.ceil(dureeMaxMelodie() / pas);
+  const A = echantillonnerNotes(variantesMelodie[a], pas, n), B = echantillonnerNotes(variantesMelodie[b], pas, n);
+  const diff = i => {
+    const x = A[i], y = B[i], nx = isNaN(x), ny = isNaN(y);
+    if (nx && ny) return false;
+    if (mode === 'octave'){ if (nx || ny) return false; const d = Math.abs(x - y); return Math.abs(d - 12) <= 1 || Math.abs(d - 24) <= 1; }
+    return nx !== ny || Math.abs(x - y) >= 1;
+  };
+  const runs = []; let debut = -1;
+  for (let i = 0; i <= n; i++){
+    const d = i < n && diff(i);
+    if (d && debut < 0) debut = i;
+    if (!d && debut >= 0){ if ((i - debut) * pas >= minDuree) runs.push([debut, i]); debut = -1; }
+  }
+  if (!runs.length){ cont.innerHTML = '<div class="cards-vide">Aucun désaccord à ce seuil.</div>'; return; }
+  const nom = v => isNaN(v) ? '—' : midiToName(Math.round(v));
+  cont.innerHTML = '';
+  runs.slice(0, 300).forEach(([d, f]) => {
+    const mid = (d + f) >> 1, el = document.createElement('div');
+    el.className = 'cmp-item';
+    el.innerHTML = `<span class="t">${formatTemps(d*pas)}</span><span>${nom(A[mid])} <span style="color:var(--text-muted)">vs</span> ${nom(B[mid])}</span><span class="d">${((f-d)*pas).toFixed(2)} s</span>`;
+    el.addEventListener('click', () => seekTo(Math.max(0, d*pas - 0.5)));
+    cont.appendChild(el);
+  });
+  if (runs.length > 300) cont.insertAdjacentHTML('beforeend', `<div class="cards-vide">… ${runs.length - 300} autres</div>`);
+}
+
+function majComparaisonMelodie(t){
+  const cv = document.getElementById('cmpm-canvas');
+  if (!cv || cv.offsetParent === null) return;
+  const noms = Object.keys(variantesMelodie);
+  if (!noms.length) return;
+  const w = cv.clientWidth, h = 260, dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w*dpr)){ cv.width = Math.round(w*dpr); cv.height = h*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const fen = +document.getElementById('cmpm-fen').value;
+  const x = tt => (tt - (t - fen)) / (2*fen) * w;
+  const haut = 14, ligne = (h - haut) / noms.length;
+  dessinerTempsCompare(g, x, t, fen, w, h);
+  // echelle de hauteur commune a tous les detecteurs
+  let minM = 127, maxM = 0;
+  noms.forEach(n => (n === varianteMelodieActive ? melodieNotes : variantesMelodie[n]).forEach(no => { if (no.midi < minM) minM = no.midi; if (no.midi > maxM) maxM = no.midi; }));
+  if (minM > maxM){ minM = 48; maxM = 72; }
+  minM -= 1; maxM += 1; while (maxM - minM < 12){ maxM++; minM--; }
+  g.font = '10px "IBM Plex Mono", monospace'; g.textBaseline = 'middle';
+  noms.forEach((n, i) => {
+    const y0 = haut + i * ligne, c = COULEURS_MEL[n] || '#ccc', hn = Math.max(3, Math.min(10, ligne / (maxM - minM + 1)));
+    const yM = m => y0 + 2 + (maxM - m) / (maxM - minM) * (ligne - 4 - hn);
+    g.fillStyle = 'rgba(255,255,255,0.03)'; g.fillRect(0, y0 + 1, w, ligne - 2);
+    g.fillStyle = c; g.globalAlpha = 0.9;
+    const notes = n === varianteMelodieActive ? melodieNotes : variantesMelodie[n];
+    notes.forEach(no => {
+      if (no.end < t - fen || no.start > t + fen) return;
+      const x1 = x(no.start), x2 = Math.max(x1 + 2, x(no.end));
+      g.fillRect(x1, yM(no.midi), x2 - x1, hn);
+      if (x2 - x1 > 30 && hn >= 7){ g.fillStyle = '#1C1712'; g.fillText(midiToName(no.midi), x1 + 3, yM(no.midi) + hn/2); g.fillStyle = c; }
+    });
+    g.globalAlpha = 1;
+    g.fillStyle = c; g.fillText(NOMS_MOTEURS_MEL[n] || n, 4, y0 + 8);
+  });
+  g.strokeStyle = '#EDE4D3'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(w/2, 0); g.lineTo(w/2, h); g.stroke();
+}
+
+// ============================================================
+// Export partition : MusicXML ou ABC (melodie quantisee sur la grille des temps)
+// ============================================================
+const FIFTHS_MAJ = { 'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7 };
+const FIFTHS_MIN = { 'A':0,'E':1,'B':2,'F#':3,'C#':4,'G#':5,'D#':6,'A#':7,'D':-1,'G':-2,'C':-3,'F':-4,'Bb':-5,'Eb':-6,'Ab':-7 };
+const NOMS_ARMURES = ['Do♭ maj / La♭ min (7♭)','Sol♭ maj / Mi♭ min (6♭)','Ré♭ maj / Si♭ min (5♭)','La♭ maj / Fa min (4♭)','Mi♭ maj / Do min (3♭)','Si♭ maj / Sol min (2♭)','Fa maj / Ré min (1♭)','Do maj / La min (0)','Sol maj / Mi min (1♯)','Ré maj / Si min (2♯)','La maj / Fa♯ min (3♯)','Mi maj / Do♯ min (4♯)','Si maj / Sol♯ min (5♯)','Fa♯ maj / Ré♯ min (6♯)','Do♯ maj / La♯ min (7♯)'];
+const NOMS_SOLFEGE = { do:'C', 're':'D', 'ré':'D', mi:'E', fa:'F', sol:'G', la:'A', si:'B' };
+
+function lireTonalite(txt){
+  const t = String(txt || '').trim();
+  if (!t) return null;
+  let m = t.match(/^(do|re|ré|mi|fa|sol|la|si)\s*([#b♯♭]?)\s*(m\b|min|minor|mineur)?/i);
+  let note, alt, mineur;
+  if (m){ note = NOMS_SOLFEGE[m[1].toLowerCase()]; alt = m[2]; mineur = !!m[3]; }
+  else {
+    m = t.match(/^([A-Ga-g])\s*([#b♯♭]?)\s*(m(?!aj)|min|minor|mineur)?/);
+    if (!m) return null;
+    note = m[1].toUpperCase(); alt = m[2]; mineur = !!m[3];
+  }
+  alt = alt === '♯' ? '#' : (alt === '♭' ? 'b' : alt);
+  const nom = note + alt;
+  const f = (mineur ? FIFTHS_MIN : FIFTHS_MAJ)[nom];
+  return f === undefined ? null : { fifths: f, mode: mineur ? 'minor' : 'major' };
+}
+
+const ETAPES_DIESES = [['C',0],['C',1],['D',0],['D',1],['E',0],['F',0],['F',1],['G',0],['G',1],['A',0],['A',1],['B',0]];
+const ETAPES_BEMOLS = [['C',0],['D',-1],['D',0],['E',-1],['E',0],['F',0],['G',-1],['G',0],['A',-1],['A',0],['B',-1],['B',0]];
+const ORDRE_DIESES = ['F','C','G','D','A','E','B'];
+const ORDRE_BEMOLS = ['B','E','A','D','G','C','F'];
+function alterationArmure(fifths){
+  const alt = { C:0, D:0, E:0, F:0, G:0, A:0, B:0 };
+  if (fifths > 0) for (let i = 0; i < fifths; i++) alt[ORDRE_DIESES[i]] = 1;
+  if (fifths < 0) for (let i = 0; i < -fifths; i++) alt[ORDRE_BEMOLS[i]] = -1;
+  return alt;
+}
+function epeler(midi, fifths){
+  const [step, alter] = (fifths < 0 ? ETAPES_BEMOLS : ETAPES_DIESES)[((midi % 12) + 12) % 12];
+  return { step, alter, octave: Math.floor(midi / 12) - 1 };
+}
+
+// Durees autorisees (en pas de grille) : [pas, type MusicXML, nb de points]
+function dureesPossibles(Q){
+  const types = ['whole','half','quarter','eighth','16th'];
+  const liste = [];
+  types.forEach((type, k) => {
+    const b = 4 * Q / Math.pow(2, k);
+    if (b >= 1 && Number.isInteger(b)){
+      liste.push({ pas: b, type, pts: 0, unite: b });
+      if (Number.isInteger(b * 1.5)) liste.push({ pas: b * 1.5, type, pts: 1, unite: b });
+    }
+  });
+  return liste.sort((a, b) => b.pas - a.pas);
+}
+function decouperDuree(offset, longueur, Q, liste){
+  const pieces = [];
+  let o = offset, reste = longueur;
+  while (reste > 0){
+    const aBord = (o % Q) !== 0;                 // depart entre deux temps : ne pas enjamber le temps suivant
+    const plafond = aBord ? Q - (o % Q) : Infinity;
+    const d = liste.find(x => x.pas <= reste && x.pas <= plafond && (o % x.unite) === 0) || liste[liste.length - 1];
+    pieces.push({ o, ...d });
+    o += d.pas; reste -= d.pas;
+  }
+  return pieces;
+}
+
+const KIND_MUSICXML = { '': 'major', maj: 'major', min: 'minor', m: 'minor', '7': 'dominant', maj7: 'major-seventh', min7: 'minor-seventh', m7: 'minor-seventh', dim: 'diminished', dim7: 'diminished-seventh', hdim7: 'half-diminished', aug: 'augmented', sus2: 'suspended-second', sus4: 'suspended-fourth', '6': 'major-sixth', maj6: 'major-sixth', min6: 'minor-sixth', '9': 'dominant-ninth', maj9: 'major-ninth', min9: 'minor-ninth' };
+function analyserAccord(c){
+  c = String(c || '').trim();
+  if (!c || c === 'N' || c === 'X') return null;
+  const m = c.match(/^([A-G])([#b]?)(?::([^/]*))?(?:\/([A-G][#b]?))?$/);
+  if (!m) return null;
+  const q = m[3] == null ? '' : m[3];
+  return { step: m[1], alter: m[2] === '#' ? 1 : (m[2] === 'b' ? -1 : 0), qual: q, kind: KIND_MUSICXML[q] || 'other',
+           bass: m[4] || null, texte: accordAffichage(c) };
+}
+
+function plusProcheIndex(tab, t){
+  let lo = 0, hi = tab.length - 1;
+  while (lo < hi){ const m = (lo + hi) >> 1; if (tab[m] < t) lo = m + 1; else hi = m; }
+  return (lo > 0 && Math.abs(tab[lo-1] - t) <= Math.abs(tab[lo] - t)) ? lo - 1 : lo;
+}
+
+function versionsPartition(opts){
+  const melos = [];
+  const noms = Object.keys(variantesMelodie);
+  if (opts.portees && noms.length >= 2){
+    noms.sort((a, b) => (a === varianteMelodieActive ? -1 : 0) - (b === varianteMelodieActive ? -1 : 0));
+    noms.forEach(n => melos.push({ nom: 'Mélodie — ' + (NOMS_MOTEURS_MEL[n] || n), notes: n === varianteMelodieActive ? melodieNotes : variantesMelodie[n] }));
+  } else {
+    melos.push({ nom: 'Mélodie' + (varianteMelodieActive ? ' — ' + (NOMS_MOTEURS_MEL[varianteMelodieActive] || varianteMelodieActive) : ''), notes: melodieNotes });
+  }
+  const accs = [];
+  const nomsA = Object.keys(variantesAccords);
+  if (opts.porteesAccords && nomsA.length >= 2){
+    nomsA.sort((a, b) => (a === varianteAccordsActive ? -1 : 0) - (b === varianteAccordsActive ? -1 : 0));
+    nomsA.forEach(n => accs.push({ nom: 'Accords — ' + (NOMS_MOTEURS_ACC[n] || n), segments: n === varianteAccordsActive ? accordSegments : variantesAccords[n] }));
+  }
+  return { melos, accs };
+}
+
+function construirePartition(opts){
+  const sb = donnees.structure || {};
+  const beats = (sb.beats || []).filter(Number.isFinite).slice().sort((a, b) => a - b);
+  if (beats.length < 4) throw new Error('Ce fichier ne contient pas assez de temps détectés pour construire une grille.');
+  const { melos, accs } = versionsPartition(opts);
+  if (!melos.some(v => v.notes.length)) throw new Error('Il n\'y a aucune note de mélodie à exporter.');
+  const Q = opts.Q;
+  const posBrut = sb.beat_positions || [];
+  const N = opts.N || Math.max(2, Math.min(7, Math.max(0, ...posBrut) || 4));
+  const bpm = Math.round(sb.bpm || 60 * (beats.length - 1) / (beats[beats.length-1] - beats[0]));
+
+  // --- grille de temps etendue avant le premier temps et apres le dernier ---
+  const spD = Math.max(0.2, mediane(beats.slice(1, 9).map((b, i) => b - beats[i])));
+  const finB = beats.slice(-9);
+  const spF = Math.max(0.2, mediane(finB.slice(1).map((b, i) => b - finB[i])) || spD);
+  const nPre = Math.ceil(beats[0] / spD);
+  const nPost = Math.ceil(Math.max(0, duration - beats[beats.length-1]) / spF) + N;
+  const tous = [];
+  for (let k = nPre; k >= 1; k--) tous.push(beats[0] - k * spD);
+  beats.forEach(b => tous.push(b));
+  for (let k = 1; k <= nPost; k++) tous.push(beats[beats.length-1] + k * spF);
+  const norm = p => ((p - 1) % N + N) % N + 1;
+  const p0 = norm(posBrut[0] || 1);
+  const pos = tous.map((_, i) => {
+    if (i < nPre) return norm(p0 - (nPre - i));
+    const j = i - nPre;
+    if (j < beats.length) return posBrut[j] ? norm(posBrut[j]) : norm(p0 + j);
+    return norm(norm(posBrut[beats.length-1] || p0 + beats.length - 1) + (j - beats.length + 1));
+  });
+  const ancre = pos.findIndex(p => p === 1);
+  const slotT = [];
+  for (let j = 0; j < tous.length - 1; j++) for (let k = 0; k < Q; k++) slotT.push(tous[j] + (tous[j+1] - tous[j]) * k / Q);
+  slotT.push(tous[tous.length-1]);
+  const qslot = t => plusProcheIndex(slotT, t);
+  const ancreSlot = ancre * Q, barLen = N * Q;
+  const barOf = s => Math.floor((s - ancreSlot) / barLen);
+  const barStart = b => ancreSlot + b * barLen;
+
+  // --- notes quantisees de chaque version (monophonique : une note par pas au plus) ---
+  function quantiser(src){
+    const notes = []; let ecartees = 0, finPrec = -1;
+    src.slice().sort((a, b) => a.start - b.start).forEach(n => {
+      let s = qslot(n.start), e = qslot(n.end);
+      if (e <= s) e = s + 1;
+      if (s < finPrec) s = finPrec;
+      if (e <= s){ ecartees++; return; }
+      notes.push({ s, e, midi: n.midi, t: n.start });
+      finPrec = e;
+    });
+    return { notes, ecartees };
+  }
+  const quant = melos.map(v => quantiser(v.notes));
+  const avec = quant.filter(q => q.notes.length);
+  if (!avec.length) throw new Error('Aucune note exploitable après quantification.');
+  const premier = Math.min(...avec.map(q => q.notes[0].s));
+  const dernier = Math.max(...avec.map(q => q.notes[q.notes.length-1].e));
+  const debutSlot = opts.debut === 'debut' ? barStart(barOf(qslot(0))) : Math.floor(premier / Q) * Q;
+  const finSlot = barStart(barOf(dernier - 1) + 1);
+  const L = finSlot - debutSlot;
+
+  // --- paroles de la melodie principale : un mot par note, au plus proche (<= 350 ms) ---
+  const lyric = new Array(L).fill(null);
+  let motsTotal = 0, motsPlaces = 0;
+  if (opts.paroles && quant[0].notes.length){
+    const mots = [];
+    parolesSegments.forEach(seg => motsDe(seg).forEach(m => { const txt = String(m.texte || '').replace(/^[^\p{L}\p{N}']+|[^\p{L}\p{N}']+$/gu, ''); if (txt) mots.push({ t: m.start, txt }); }));
+    motsTotal = mots.length;
+    const notes = quant[0].notes, paires = [];
+    const tn = notes.map(n => n.t);
+    mots.forEach((w, wi) => { const i = plusProcheIndex(tn, w.t); const d = Math.abs(tn[i] - w.t); if (d <= 0.35) paires.push({ i, wi, d }); });
+    paires.sort((a, b) => a.d - b.d);
+    const nu = new Set(), wu = new Set();
+    paires.forEach(p => {
+      if (nu.has(p.i) || wu.has(p.wi)) return;
+      nu.add(p.i); wu.add(p.wi);
+      const n = notes[p.i];
+      if (n.s >= debutSlot && n.s < finSlot){ lyric[n.s - debutSlot] = mots[p.wi].txt; motsPlaces++; }
+    });
+  }
+
+  // --- accords (calés sur les temps) ---
+  function tableauAccords(segments){
+    const arr = new Array(L).fill(null); let n = 0, prec = null;
+    segments.slice().sort((a, b) => a.start - b.start).forEach(a => {
+      const an = analyserAccord(a.value);
+      if (!an){ prec = null; return; }
+      if (a.value === prec) return;
+      prec = a.value;
+      const s = Math.round(qslot(a.start) / Q) * Q - debutSlot;
+      if (s >= 0 && s < L){ arr[s] = an; n++; }
+    });
+    return { arr, n };
+  }
+  const accordPrincipal = opts.accords ? tableauAccords(accordSegments) : { arr: new Array(L).fill(null), n: 0 };
+
+  // --- reperes de structure, poses sur le debut de mesure le plus proche ---
+  const sectionBar = {};
+  if (opts.structure){
+    structureSegments.slice().sort((a, b) => a.start - b.start).forEach(sg => {
+      let b = barOf(qslot(sg.start));
+      const b0 = barOf(debutSlot), b1 = barOf(finSlot - 1);
+      if (b < b0) b = b0;
+      if (b > b1) return;
+      if (!sectionBar[b]) sectionBar[b] = sg.value;
+    });
+  }
+
+  // --- mesures, evenements, pieces ---
+  const liste = dureesPossibles(Q);
+  function construireMesures(notes, accord, lyr, sections){
+    const hauteur = new Array(L).fill(null), onset = new Array(L).fill(false);
+    notes.forEach(n => {
+      for (let s = Math.max(n.s, debutSlot); s < Math.min(n.e, finSlot); s++) hauteur[s - debutSlot] = n.midi;
+      if (n.s >= debutSlot && n.s < finSlot) onset[n.s - debutSlot] = true;
+    });
+    const mesures = [];
+    for (let b = barOf(debutSlot); b <= barOf(finSlot - 1); b++){
+      const mDeb = Math.max(debutSlot, barStart(b)), mFin = Math.min(finSlot, barStart(b + 1));
+      const m = { num: mesures.length + 1, pieces: [], section: sections[b] || null, partielle: (mFin - mDeb) < barLen };
+      let s = mDeb;
+      while (s < mFin){
+        const i = s - debutSlot, h = hauteur[i];
+        let e = s + 1;
+        while (e < mFin){
+          const j = e - debutSlot;
+          if (hauteur[j] !== h || onset[j] || accord[j]) break;
+          e++;
+        }
+        const cont = h !== null && !onset[i];
+        decouperDuree(s - barStart(b), e - s, Q, liste).forEach((p, k) => {
+          m.pieces.push({ o: p.o, pas: p.pas, type: p.type, pts: p.pts, midi: h,
+            tieStop: h !== null && (k > 0 || cont), tieStart: false,
+            accord: k === 0 ? accord[i] : null, paroles: (k === 0 && h !== null && onset[i] && lyr) ? lyr[i] : null });
+        });
+        s = e;
+      }
+      m.restePlein = !m.partielle && m.pieces.length === 1 && m.pieces[0].midi === null && m.pieces[0].pas === barLen;
+      mesures.push(m);
+    }
+    const plat = mesures.flatMap(m => m.pieces);
+    plat.forEach((p, i) => { if (p.midi !== null && plat[i+1] && plat[i+1].tieStop) p.tieStart = true; });
+    return mesures;
+  }
+  const vide = new Array(L).fill(null);
+  const parts = [];
+  melos.forEach((v, k) => {
+    if (!quant[k].notes.length) return;
+    parts.push({ nom: v.nom, mesures: construireMesures(quant[k].notes, k === 0 ? accordPrincipal.arr : vide, k === 0 ? lyric : null, k === 0 ? sectionBar : {}) });
+  });
+  accs.forEach(v => {
+    const t = tableauAccords(v.segments);
+    parts.push({ nom: v.nom, mesures: construireMesures([], t.arr, null, {}) });
+  });
+
+  // --- armure ---
+  let armure = opts.armure;
+  if (armure === 'auto' || armure == null){
+    armure = lireTonalite((donnees.metadata || {}).tonalite) || { fifths: 0, mode: 'major' };
+  } else armure = { fifths: Number(armure), mode: 'major' };
+
+  return { parts, mesures: parts[0].mesures, N, Q, bpm, armure,
+    stats: { mesures: parts[0].mesures.length, notes: quant[0].notes.length, ecartees: quant.reduce((a, q) => a + q.ecartees, 0),
+             motsTotal, motsPlaces, accords: accordPrincipal.n, portees: parts.length } };
+}
+
+function echapperXml(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function ecrireMusicXML(P, titre, artiste){
+  const { parts, N, Q, bpm, armure } = P;
+  const mapAlt = { 1: 'sharp', '-1': 'flat', 0: 'natural' };
+  const L = [];
+  L.push('<?xml version="1.0" encoding="UTF-8"?>');
+  L.push('<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">');
+  L.push('<score-partwise version="4.0">');
+  L.push(`  <work><work-title>${echapperXml(titre || 'Mélodie')}</work-title></work>`);
+  L.push('  <identification>' + (artiste ? `<creator type="composer">${echapperXml(artiste)}</creator>` : '') + '<encoding><software>Bandes</software></encoding></identification>');
+  L.push('  <part-list>' + parts.map((pt, k) => `<score-part id="P${k+1}"><part-name>${echapperXml(pt.nom)}</part-name></score-part>`).join('') + '</part-list>');
+  parts.forEach((pt, k) => {
+    const mesures = pt.mesures;
+    L.push(`  <part id="P${k+1}">`);
+    mesures.forEach((m, mi) => {
+      const etat = alterationArmure(armure.fifths);   // alterations en vigueur dans la mesure
+      const vues = {};
+      L.push(`    <measure number="${mi === 0 && m.partielle ? 0 : m.num - (mesures[0].partielle ? 1 : 0)}"${mi === 0 && m.partielle ? ' implicit="yes"' : ''}>`);
+      if (mi === 0){
+        L.push(`      <attributes><divisions>${Q}</divisions><key><fifths>${armure.fifths}</fifths><mode>${armure.mode}</mode></key><time><beats>${N}</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`);
+        if (k === 0) L.push(`      <direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`);
+      }
+      if (m.section) L.push(`      <direction placement="above"><direction-type><rehearsal>${echapperXml(m.section)}</rehearsal></direction-type></direction>`);
+      m.pieces.forEach(p => {
+        if (p.accord){
+          const a = p.accord;
+          L.push(`      <harmony><root><root-step>${a.step}</root-step>${a.alter ? `<root-alter>${a.alter}</root-alter>` : ''}</root><kind text="${echapperXml(a.texte.replace(/^[A-G][#b]?/, ''))}">${a.kind}</kind>` +
+            (a.bass ? `<bass><bass-step>${a.bass[0]}</bass-step>${a.bass[1] ? `<bass-alter>${a.bass[1] === '#' ? 1 : -1}</bass-alter>` : ''}</bass>` : '') + '</harmony>');
+        }
+        const dur = p.pas;
+        let x = '      <note>';
+        if (p.midi === null){
+          x += m.restePlein ? '<rest measure="yes"/>' : '<rest/>';
+          x += `<duration>${m.restePlein ? N * Q : dur}</duration><voice>1</voice>` + (m.restePlein ? '' : `<type>${p.type}</type>${p.pts ? '<dot/>' : ''}`);
+        } else {
+          const sp = epeler(p.midi, armure.fifths);
+          x += `<pitch><step>${sp.step}</step>${sp.alter ? `<alter>${sp.alter}</alter>` : ''}<octave>${sp.octave}</octave></pitch><duration>${dur}</duration>`;
+          if (p.tieStop) x += '<tie type="stop"/>';
+          if (p.tieStart) x += '<tie type="start"/>';
+          x += `<voice>1</voice><type>${p.type}</type>${p.pts ? '<dot/>' : ''}`;
+          const cle = sp.step + sp.octave;
+          const courant = (cle in vues) ? vues[cle] : etat[sp.step];
+          if (!p.tieStop && courant !== sp.alter) x += `<accidental>${mapAlt[sp.alter]}</accidental>`;
+          vues[cle] = sp.alter;
+          if (p.tieStop || p.tieStart) x += '<notations>' + (p.tieStop ? '<tied type="stop"/>' : '') + (p.tieStart ? '<tied type="start"/>' : '') + '</notations>';
+          if (p.paroles) x += `<lyric number="1"><syllabic>single</syllabic><text>${echapperXml(p.paroles)}</text></lyric>`;
+        }
+        L.push(x + '</note>');
+      });
+      L.push('    </measure>');
+    });
+    L.push('  </part>');
+  });
+  L.push('</score-partwise>');
+  return L.join('\n');
+}
+
+function ecrireABC(P, titre, artiste){
+  const { N, Q, bpm, armure } = P;
+  const mesures = P.mesures;
+  const majNoms = ['Cb','Gb','Db','Ab','Eb','Bb','F','C','G','D','A','E','B','F#','C#'];
+  const minNoms = ['Abm','Ebm','Bbm','Fm','Cm','Gm','Dm','Am','Em','Bm','F#m','C#m','G#m','D#m','A#m'];
+  const cleABC = (armure.mode === 'minor' ? minNoms : majNoms)[armure.fifths + 7];
+  const H = ['X:1', `T:${(titre || 'Mélodie').replace(/\n/g, ' ')}`];
+  if (artiste) H.push(`C:${artiste.replace(/\n/g, ' ')}`);
+  H.push(`M:${N}/4`, `L:1/${Q === 4 ? 16 : 8}`, `Q:1/4=${bpm}`, `K:${cleABC}`);
+  const lignes = [], paroles = [];
+  let ligne = '', ligneW = [], nbMes = 0, tokensMesure = [];
+  const lettres = ['C','D','E','F','G','A','B'];
+  mesures.forEach((m, mi) => {
+    const etat = alterationArmure(armure.fifths), vues = {};
+    let txt = ''; tokensMesure = [];
+    if (m.section) txt += `"^${m.section.replace(/"/g, "'")}"`;
+    m.pieces.forEach(p => {
+      if (p.accord) txt += `"${p.accord.texte.replace(/"/g, "'")}"`;
+      if (p.midi === null){
+        txt += `z${p.pas}`;
+      } else {
+        const sp = epeler(p.midi, armure.fifths);
+        const cle = sp.step + sp.octave;
+        const courant = (cle in vues) ? vues[cle] : etat[sp.step];
+        let pref = '';
+        if (!p.tieStop && courant !== sp.alter) pref = sp.alter === 1 ? '^' : (sp.alter === -1 ? '_' : '=');
+        vues[cle] = sp.alter;
+        let lettre = sp.step;
+        let suf = '';
+        if (sp.octave >= 5){ lettre = lettre.toLowerCase(); suf = "'".repeat(sp.octave - 5); }
+        else suf = ','.repeat(4 - sp.octave);
+        txt += pref + lettre + suf + p.pas + (p.tieStart ? '-' : '');
+        tokensMesure.push(p.tieStop ? '*' : (p.paroles ? p.paroles.replace(/[\s-]/g, '_') : '*'));
+      }
+      if ((p.o + p.pas) % Q === 0) txt += ' ';
+    });
+    ligne += (ligne ? ' ' : '') + txt.trim() + (mi === mesures.length - 1 ? ' |]' : ' |');
+    ligneW.push(tokensMesure.join(' '));   // une liste par mesure, separees par | : un decalage ne se propage pas
+    nbMes++;
+    if (nbMes === 4 || mi === mesures.length - 1){
+      lignes.push(ligne);
+      paroles.push(ligneW.some(w => w.split(' ').some(t => t && t !== '*')) ? 'w: ' + ligneW.join(' | ') : '');
+      ligne = ''; ligneW = []; nbMes = 0;
+    }
+  });
+  const corps = [];
+  lignes.forEach((l, i) => { corps.push(l); if (paroles[i]) corps.push(paroles[i]); });
+  return H.join('\n') + '\n' + corps.join('\n') + '\n';
+}
+
+(function initExportPartition(){
+  const sel = document.getElementById('part-armure');
+  sel.innerHTML = '<option value="auto">Automatique (tonalité des métadonnées, sinon Do)</option>' +
+    NOMS_ARMURES.map((n, i) => `<option value="${i - 7}">${n}</option>`).join('');
+  function options(){
+    return {
+      Q: Number(document.getElementById('part-quant').value),
+      N: Number(document.getElementById('part-mesure').value) || 0,
+      armure: document.getElementById('part-armure').value,
+      debut: document.getElementById('part-debut').value,
+      accords: document.getElementById('part-accords').checked,
+      paroles: document.getElementById('part-paroles').checked,
+      structure: document.getElementById('part-structure').checked,
+      portees: document.getElementById('part-portees').checked,
+      porteesAccords: document.getElementById('part-portees-acc').checked,
+    };
+  }
+  function exporter(format){
+    const msg = document.getElementById('partition-msg');
+    try {
+      const P = construirePartition(options());
+      const meta = donnees.metadata || {};
+      const titre = meta.morceau || (nomFichierZip || 'Mélodie').replace(/\.zip$/i, '');
+      const contenu = format === 'xml' ? ecrireMusicXML(P, titre, meta.artiste) : ecrireABC(P, titre, meta.artiste);
+      const base = (titre || 'melodie').replace(/[^\p{L}\p{N}_-]+/gu, '_');
+      telechargerBlob(new Blob([contenu], { type: format === 'xml' ? 'application/vnd.recordare.musicxml+xml' : 'text/vnd.abc' }), base + (format === 'xml' ? '.musicxml' : '.abc'));
+      const s = P.stats;
+      msg.textContent = `${s.mesures} mesures en ${P.N}/4, ${P.bpm} à la noire, ${s.notes} notes` +
+        (s.ecartees ? ` (${s.ecartees} trop brèves, écartées)` : '') +
+        (format === 'xml' ? `, ${s.portees} portée(s)` : (s.portees > 1 ? ' ; ABC : version affichée seulement' : '')) +
+        (options().paroles ? `, ${s.motsPlaces}/${s.motsTotal} mots placés` : '') +
+        (options().accords ? `, ${s.accords} accords` : '') + '.';
+    } catch(e){ msg.textContent = 'Export impossible : ' + e.message; }
+  }
+  document.getElementById('part-xml').addEventListener('click', () => exporter('xml'));
+  document.getElementById('part-abc').addEventListener('click', () => exporter('abc'));
+  window.construirePartition = construirePartition; window.ecrireMusicXML = ecrireMusicXML; window.ecrireABC = ecrireABC;
+})();
+
+// ============================================================
+// Volume general
+// ============================================================
+(function(){
+  const r = document.getElementById('vol-global'), pct = document.getElementById('vol-global-pct');
+  r.addEventListener('input', () => {
+    pct.textContent = r.value;
+    if (masterGain) masterGain.gain.setTargetAtTime(Number(r.value) / 100, audioCtx.currentTime, 0.015);
+  });
+  r.addEventListener('dblclick', () => { r.value = 100; r.dispatchEvent(new Event('input')); });
+})();
+
+// ============================================================
+// Marqueurs personnels : types libres, "point" ou "duree" (attaque + duree)
+// ============================================================
+const TYPES_MARQ_DEFAUT = [
+  { id: 'releve', nom: 'Relevé', couleur: '#C9A0DC', mode: 'duree' },
+  { id: 'repere', nom: 'Repère', couleur: '#E0B25A', mode: 'point' },
+];
+const PALETTE_MARQ = ['#C9A0DC','#E0B25A','#7FB8A4','#C98F8F','#7FA8C9','#B5C96E','#E08FB0','#8FC9C9'];
+let typesMarq = [], marqueurs = [];
+const ROW_MQ = 24;
+
+function dureeParDefautMarq(){
+  const b = (donnees && donnees.structure && donnees.structure.beats) || [];
+  if (b.length > 2) return Math.max(0.2, mediane(b.slice(1, 9).map((x, i) => x - b[i])));
+  return 1;
+}
+function initMarqueurs(){
+  const mp = (donnees && donnees.marqueurs_perso) || {};
+  typesMarq = (Array.isArray(mp.types) && mp.types.length ? mp.types : TYPES_MARQ_DEFAUT)
+    .map(t => ({ id: String(t.id), nom: t.nom || '', couleur: t.couleur || '#C9A0DC', mode: t.mode === 'duree' ? 'duree' : 'point' }));
+  marqueurs = (mp.items || []).filter(it => typesMarq.some(t => t.id === it.type)).map(it => ({
+    id: nextId++, type: it.type, start: it.start, end: (it.end != null ? it.end : it.start), texte: it.texte || '' }));
+  const rel = (donnees && donnees.releves) || [];
+  document.getElementById('import-releves').style.display = rel.some(i => (i.marqueurs || []).length) ? '' : 'none';
+  rendreMarqueurs();
+}
+function typeMarq(id){ return typesMarq.find(t => t.id === id); }
+function nouvelIdType(){ let n = typesMarq.length + 1; while (typesMarq.some(t => t.id === 'type' + n)) n++; return 'type' + n; }
+
+function rendreTypesMarqueurs(){
+  const cont = document.getElementById('types-marqueurs');
+  cont.innerHTML = '';
+  typesMarq.forEach(t => {
+    const n = marqueurs.filter(m => m.type === t.id).length;
+    const row = document.createElement('div');
+    row.className = 'edit-row type-row';
+    row.dataset.tid = t.id;
+    row.innerHTML = `<input type="color" data-f="couleur" value="${t.couleur}">
+      <input type="text" class="value-field" data-f="nom" value="${escapeHtml(t.nom)}" placeholder="Nom du type">
+      <select data-f="mode"><option value="point"${t.mode === 'point' ? ' selected' : ''}>Point</option><option value="duree"${t.mode === 'duree' ? ' selected' : ''}>Attaque + durée</option></select>
+      <span class="type-count">${n} marq.</span>
+      <button type="button" class="mini-btn" data-act="ajout" title="Ajouter un marqueur de ce type à la position de lecture">＋ au curseur</button>
+      <button type="button" class="del-btn" data-act="suppr" title="Supprimer ce type et ses marqueurs">✕</button>`;
+    cont.appendChild(row);
+  });
+  document.getElementById('count-marqueurs').textContent = marqueurs.length;
+}
+
+function rendreLaneMarqueurs(){
+  const lane = document.getElementById('lane-marqueurs');
+  if (!lane) return;
+  lane.querySelectorAll('.mq-item, .mq-vide').forEach(e => e.remove());
+  const lignes = typesMarq.filter(t => marqueurs.some(m => m.type === t.id));
+  const hauteur = Math.max(34, lignes.length * ROW_MQ + 8);
+  const change = lane.style.height !== hauteur + 'px';
+  lane.style.height = hauteur + 'px';
+  if (!lignes.length){
+    const v = document.createElement('div'); v.className = 'mq-vide';
+    v.style.cssText = 'position:absolute;left:90px;top:9px;font-size:0.72rem;color:var(--text-muted);';
+    v.textContent = 'Aucun marqueur — ajoutez-en depuis « Marqueurs personnels » ci-dessous.';
+    lane.appendChild(v);
+  }
+  lignes.forEach((t, r) => {
+    marqueurs.filter(m => m.type === t.id).forEach(m => {
+      const el = document.createElement('div');
+      const duree = t.mode === 'duree' && m.end > m.start;
+      el.className = 'mq-item ' + (duree ? 'mq-bloc' : 'mq-point');
+      el.dataset.id = m.id;
+      el.style.setProperty('--c', t.couleur);
+      el.style.top = (4 + r * ROW_MQ) + 'px';
+      el.style.left = (m.start / duration * 100) + '%';
+      if (duree) el.style.width = ((m.end - m.start) / duration * 100) + '%';
+      el.title = `${t.nom} — ${formatTemps(m.start)}${duree ? ' → ' + formatTemps(m.end) : ''}${m.texte ? ' — ' + m.texte : ''}`;
+      el.innerHTML = (duree ? '<span class="mq-h" data-edge="start"></span><span class="mq-h" data-edge="end"></span>' : '') +
+        `<span class="mq-txt">${escapeHtml(m.texte || t.nom)}</span>`;
+      lane.appendChild(el);
+    });
+  });
+  if (change && duration){ dessinerGrilleRythmique(); dessinerPlayhead(); }
+}
+
+function rendreListeMarqueurs(){
+  const list = document.getElementById('list-marqueurs');
+  list.innerHTML = '';
+  marqueurs.slice().sort((a, b) => a.start - b.start).forEach(m => {
+    const t = typeMarq(m.type), duree = t && t.mode === 'duree';
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `<select data-id="${m.id}" data-f="type">${typesMarq.map(x => `<option value="${x.id}"${x.id === m.type ? ' selected' : ''}>${escapeHtml(x.nom || x.id)}</option>`).join('')}</select>
+      <input type="text" class="time-field" data-id="${m.id}" data-f="start" value="${formatTemps(m.start)}" title="Point d'attaque">
+      <input type="text" class="time-field" data-id="${m.id}" data-f="end" value="${duree ? formatTemps(m.end) : ''}"${duree ? '' : ' disabled'} title="Fin (durée)" placeholder="${duree ? '' : '—'}">
+      <input type="text" class="value-field" data-id="${m.id}" data-f="texte" value="${escapeHtml(m.texte)}" placeholder="Texte / note">
+      <button class="del-btn" data-id="${m.id}" data-act="suppr">✕</button>`;
+    list.appendChild(row);
+  });
+  document.getElementById('count-marqueurs').textContent = marqueurs.length;
+}
+function rendreMarqueurs(){ rendreTypesMarqueurs(); rendreListeMarqueurs(); rendreLaneMarqueurs(); }
+
+function ajouterMarqueur(typeId, t){
+  const ty = typeMarq(typeId); if (!ty) return;
+  const start = Math.max(0, Math.min(duration - 0.05, aimanter('marqueurs', t)));
+  const fin = ty.mode === 'duree' ? Math.min(duration, start + dureeParDefautMarq()) : start;
+  marqueurs.push({ id: nextId++, type: typeId, start, end: fin, texte: '' });
+  rendreMarqueurs();
+}
+
+// --- types ---
+document.getElementById('types-marqueurs').addEventListener('change', (e) => {
+  const row = e.target.closest('.type-row'); if (!row) return;
+  const t = typeMarq(row.dataset.tid); if (!t) return;
+  const f = e.target.dataset.f;
+  if (f === 'couleur') t.couleur = e.target.value;
+  else if (f === 'nom') t.nom = e.target.value;
+  else if (f === 'mode'){
+    t.mode = e.target.value;
+    marqueurs.filter(m => m.type === t.id).forEach(m => { m.end = t.mode === 'duree' ? Math.min(duration, m.start + dureeParDefautMarq()) : m.start; });
+  }
+  rendreMarqueurs();
+});
+document.getElementById('types-marqueurs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]'); if (!btn) return;
+  const row = btn.closest('.type-row'), t = typeMarq(row.dataset.tid); if (!t) return;
+  if (btn.dataset.act === 'ajout') ajouterMarqueur(t.id, getTempsActuel());
+  else if (btn.dataset.act === 'suppr'){
+    if (btn.dataset.confirm !== '1'){
+      btn.dataset.confirm = '1'; btn.textContent = 'Confirmer ?';
+      setTimeout(() => { if (btn.isConnected){ btn.dataset.confirm = ''; btn.textContent = '✕'; } }, 3000);
+      return;
+    }
+    typesMarq = typesMarq.filter(x => x.id !== t.id);
+    marqueurs = marqueurs.filter(m => m.type !== t.id);
+    rendreMarqueurs();
+  }
+});
+document.getElementById('add-type-marqueur').addEventListener('click', () => {
+  typesMarq.push({ id: nouvelIdType(), nom: 'Nouveau type', couleur: PALETTE_MARQ[typesMarq.length % PALETTE_MARQ.length], mode: 'duree' });
+  rendreMarqueurs();
+});
+document.getElementById('import-releves').addEventListener('click', () => {
+  ((donnees && donnees.releves) || []).forEach(instr => {
+    const items = (instr.marqueurs || []).filter(m => m.temps !== '' && m.temps != null);
+    if (!items.length) return;
+    const t = { id: nouvelIdType(), nom: 'Relevé — ' + (instr.instrument || 'instrument') + (instr.sousTitre ? ' (' + instr.sousTitre + ')' : ''),
+                couleur: PALETTE_MARQ[typesMarq.length % PALETTE_MARQ.length], mode: 'point' };
+    typesMarq.push(t);
+    items.forEach(m => { const st = Math.min(duration, parseTemps(String(m.temps))); marqueurs.push({ id: nextId++, type: t.id, start: st, end: st, texte: m.texte || '' }); });
+  });
+  document.getElementById('import-releves').style.display = 'none';
+  rendreMarqueurs();
+});
+
+// --- liste ---
+document.getElementById('list-marqueurs').addEventListener('change', (e) => {
+  const el = e.target; const id = Number(el.dataset.id);
+  const m = marqueurs.find(x => x.id === id); if (!m) return;
+  const t = typeMarq(m.type), f = el.dataset.f;
+  if (f === 'type'){
+    m.type = el.value; const nt = typeMarq(m.type);
+    m.end = nt.mode === 'duree' ? Math.min(duration, m.start + Math.max(0.05, m.end - m.start || dureeParDefautMarq())) : m.start;
+  } else if (f === 'start'){
+    const dur = m.end - m.start;
+    m.start = Math.max(0, Math.min(duration, parseTemps(el.value)));
+    m.end = t.mode === 'duree' ? Math.min(duration, m.start + dur) : m.start;
+  } else if (f === 'end'){
+    m.end = Math.min(duration, Math.max(m.start + MIN_GAP, parseTemps(el.value)));
+  } else if (f === 'texte') m.texte = el.value;
+  rendreMarqueurs();
+});
+document.getElementById('list-marqueurs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act=suppr]'); if (!btn) return;
+  marqueurs = marqueurs.filter(x => x.id !== Number(btn.dataset.id));
+  rendreMarqueurs();
+});
+
+// --- glisser dans la forme d'onde ---
+(function(){
+  const lane = document.getElementById('lane-marqueurs');
+  let drag = null;
+  const temps = (e) => { const r = lane.getBoundingClientRect(); return Math.max(0, Math.min(duration, (e.clientX - r.left) / r.width * duration)); };
+  function onMove(e){
+    if (!drag) return;
+    const t = temps(e), m = drag.m;
+    if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
+    if (!drag.moved) return;
+    if (drag.mode === 'move'){
+      const dur = drag.e0 - drag.s0;
+      const ns = Math.max(0, Math.min(duration - dur, aimanter('marqueurs', drag.s0 + (t - drag.t0))));
+      m.start = ns; m.end = ns + dur;
+    } else if (drag.mode === 'start'){
+      m.start = Math.max(0, Math.min(aimanter('marqueurs', t), m.end - MIN_GAP));
+    } else {
+      m.end = Math.min(duration, Math.max(aimanter('marqueurs', t), m.start + MIN_GAP));
+    }
+    rendreLaneMarqueurs();
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (d.moved) rendreListeMarqueurs(); else seekTo(d.m.start);
+  }
+  lane.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('.mq-item'); if (!el || !duration) return;
+    const m = marqueurs.find(x => x.id === Number(el.dataset.id)); if (!m) return;
+    const h = e.target.closest('.mq-h');
+    e.preventDefault();
+    drag = { m, mode: h ? h.dataset.edge : 'move', t0: temps(e), x0: e.clientX, s0: m.start, e0: m.end, moved: false };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+  });
+})();
+
+function calerMarqueurs(){
+  const mode = quantif.marqueurs, g = grilleTemps(mode);
+  const msg = document.querySelector('.quant-bar[data-cle="marqueurs"] .quant-msg');
+  if (mode === 'aucun'){ msg.textContent = 'Choisissez d\'abord « Les temps » ou « Les mesures ».'; return; }
+  if (!g.length){ msg.textContent = 'Pas de grille de ' + (mode === 'mesures' ? 'mesures' : 'temps') + ' dans ce fichier.'; return; }
+  marqueurs.forEach(m => {
+    const t = typeMarq(m.type), dur = m.end - m.start;
+    m.start = g[indexProche(g, m.start)];
+    if (t && t.mode === 'duree'){
+      let e = g[indexProche(g, m.start + dur)];
+      if (e <= m.start + MIN_GAP){ const k = g.findIndex(x => x > m.start + MIN_GAP); e = k >= 0 ? g[k] : Math.min(duration, m.start + dur); }
+      m.end = e;
+    } else m.end = m.start;
+  });
+  rendreMarqueurs();
+  msg.textContent = 'Calé sur ' + (mode === 'mesures' ? 'les mesures' : 'les temps') + '.';
+}
+
+function majVues(t){
+  laneStructure.maj(t); laneAccords.maj(t); laneParoles.maj(t);
+  vueStructure.maj(t); vueAccords.maj(t); vueParoles.maj(t); majComparaison(t); majComparaisonAccords(t); majComparaisonMelodie(t); majPianoRollPanneau(t);
+}
 
 // ============================================================
 // Lane melodie (lecture seule pour l'instant, cf. hint dans l'UI)
@@ -1270,10 +3325,12 @@ function rendreListeStructure(){
       <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
       <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
       <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="split-btn" data-id="${seg.id}" title="Scinder (au curseur de lecture s'il est dans la carte, sinon au milieu)">✂</button>
       <button class="del-btn" data-id="${seg.id}">✕</button>
     `));
   });
   laneStructure.render();
+  vueStructure.render();
 }
 function rendreListeAccords(){
   const list = document.getElementById('list-accords');
@@ -1284,10 +3341,12 @@ function rendreListeAccords(){
       <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
       <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
       <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="split-btn" data-id="${seg.id}" title="Scinder (au curseur de lecture s'il est dans la carte, sinon au milieu)">✂</button>
       <button class="del-btn" data-id="${seg.id}">✕</button>
     `));
   });
   laneAccords.render();
+  vueAccords.render();
 }
 function rendreListeParoles(){
   const list = document.getElementById('list-paroles');
@@ -1298,10 +3357,12 @@ function rendreListeParoles(){
       <input type="text" class="time-field" data-id="${seg.id}" data-field="start" value="${formatTemps(seg.start)}">
       <input type="text" class="time-field" data-id="${seg.id}" data-field="end" value="${formatTemps(seg.end)}">
       <input type="text" class="value-field" data-id="${seg.id}" data-field="value" value="${escapeHtml(seg.value)}">
+      <button class="split-btn" data-id="${seg.id}" title="Scinder (au curseur de lecture s'il est dans la carte, sinon au milieu)">✂</button>
       <button class="del-btn" data-id="${seg.id}">✕</button>
     `));
   });
   laneParoles.render();
+  vueParoles.render();
 }
 function rendreListeMelodie(){
   const list = document.getElementById('list-melodie');
@@ -1322,6 +3383,7 @@ function rendreListeMelodie(){
 }
 
 function rendreTout(){
+  if (typeof rendreMarqueurs === 'function') rendreMarqueurs();
   rendreListeStructure();
   rendreListeAccords();
   rendreListeMelodie();
@@ -1338,30 +3400,59 @@ function nomVersMidi(str, fallback){
   return base + sharp + (octave+1)*12;
 }
 
-function attacherListeEditable(listId, segments, apresChange){
+function attacherListeEditable(listId, getSegments, apresChange, lier){
   const list = document.getElementById(listId);
   list.addEventListener('change', (e) => {
     const input = e.target.closest('input'); if (!input) return;
-    const seg = segments.find(s => s.id === Number(input.dataset.id));
+    const segments = getSegments();
+    const seg = segments.find(sg => sg.id === Number(input.dataset.id));
     if (!seg) return;
-    if (input.dataset.field === 'start') seg.start = Math.max(0, Math.min(seg.end-0.01, parseTemps(input.value)));
-    else if (input.dataset.field === 'end') seg.end = Math.min(duration, Math.max(seg.start+0.01, parseTemps(input.value)));
+    const idx = segments.indexOf(seg);
+    const prev = segments[idx-1], next = segments[idx+1];
+    if (input.dataset.field === 'start'){
+      const ancien = seg.start;
+      const lie = lier && prev && Math.abs(prev.end - ancien) <= JOINT_EPS;
+      const minB = lie ? prev.start + 0.01 : 0;
+      seg.start = Math.max(minB, Math.min(seg.end-0.01, parseTemps(input.value)));
+      if (lie) prev.end = seg.start; // cartes jointes : la coupure bouge pour les deux
+    } else if (input.dataset.field === 'end'){
+      const ancien = seg.end;
+      const lie = lier && next && Math.abs(next.start - ancien) <= JOINT_EPS;
+      const maxB = lie ? next.end - 0.01 : duration;
+      seg.end = Math.min(maxB, Math.max(seg.start+0.01, parseTemps(input.value)));
+      if (lie) next.start = seg.end;
+    }
     else if (input.dataset.field === 'midi') seg.midi = nomVersMidi(input.value, seg.midi);
-    else seg.value = input.value;
+    else {
+      if (input.value !== seg.value && 'mots' in seg) seg.mots = null;
+      seg.value = input.value;
+    }
     trierSegments(segments);
     apresChange();
   });
   list.addEventListener('click', (e) => {
+    const segments = getSegments();
+    const split = e.target.closest('.split-btn');
+    if (split){
+      const seg = segments.find(sg => sg.id === Number(split.dataset.id));
+      if (!seg) return;
+      const t = getTempsActuel();
+      const tc = (t > seg.start + MIN_GAP && t < seg.end - MIN_GAP) ? t : (seg.start + seg.end) / 2;
+      scinderSegment(segments, seg, tc);
+      apresChange();
+      return;
+    }
     const btn = e.target.closest('.del-btn'); if (!btn) return;
-    const idx = segments.findIndex(s => s.id === Number(btn.dataset.id));
+    const idx = segments.findIndex(sg => sg.id === Number(btn.dataset.id));
     if (idx>-1) segments.splice(idx,1);
     apresChange();
   });
 }
-attacherListeEditable('list-structure', structureSegments, rendreListeStructure);
-attacherListeEditable('list-accords', accordSegments, rendreListeAccords);
-attacherListeEditable('list-paroles', parolesSegments, rendreListeParoles);
-attacherListeEditable('list-melodie', melodieNotes, rendreListeMelodie);
+// Les tableaux sont reassignes au chargement d'un zip : on passe donc des getters, pas les tableaux.
+attacherListeEditable('list-structure', () => structureSegments, rendreListeStructure, true);
+attacherListeEditable('list-accords', () => accordSegments, rendreListeAccords, true);
+attacherListeEditable('list-paroles', () => parolesSegments, rendreListeParoles, false);
+attacherListeEditable('list-melodie', () => melodieNotes, rendreListeMelodie, false);
 
 document.getElementById('add-structure').addEventListener('click', () => {
   if (!duration) return;
@@ -1378,7 +3469,7 @@ document.getElementById('add-accord').addEventListener('click', () => {
 document.getElementById('add-parole').addEventListener('click', () => {
   if (!duration) return;
   const debut = parolesSegments.length ? parolesSegments[parolesSegments.length-1].end : 0;
-  parolesSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: '' });
+  parolesSegments.push({ id: nextId++, start: Math.min(debut, duration-1), end: duration, value: '', mots: null });
   trierSegments(parolesSegments); rendreListeParoles();
 });
 document.getElementById('add-melodie').addEventListener('click', () => {
@@ -1449,6 +3540,7 @@ document.getElementById('modal-save').addEventListener('click', () => {
 document.getElementById('export-json').addEventListener('click', () => {
   const structureBase = donnees.structure || {};
   const sortie = {
+    ...donnees, // conserve les champs que l'editeur ne modifie pas (ex. "analyse")
     pistes: donnees.pistes || [],
     structure: {
       bpm: structureBase.bpm,
@@ -1459,10 +3551,31 @@ document.getElementById('export-json').addEventListener('click', () => {
     },
     accords: accordSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, chord: s.value })),
     melodie: melodieNotes.map(n => ({ start: Math.round(n.start*1000)/1000, end: Math.round(n.end*1000)/1000, midi: n.midi })),
-    paroles: parolesSegments.map(s => ({ start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, texte: s.value })),
+    paroles: parolesSegments.map(s => {
+      const o = { start: Math.round(s.start*1000)/1000, end: Math.round(s.end*1000)/1000, texte: s.value };
+      if (Array.isArray(s.mots) && s.mots.length) o.mots = s.mots.map(m => { const o2 = { start: Math.round(m.start*1000)/1000, end: Math.round(m.end*1000)/1000, texte: m.texte }; if (m.score != null) o2.score = m.score; return o2; });
+      return o;
+    }),
     metadata: donnees.metadata || {},
     releves: donnees.releves || [],
+    marqueurs_perso: {
+      types: typesMarq.map(t => ({ id: t.id, nom: t.nom, couleur: t.couleur, mode: t.mode })),
+      items: marqueurs.slice().sort((a, b) => a.start - b.start).map(m => {
+        const o = { type: m.type, start: Math.round(m.start*1000)/1000 };
+        const t = typeMarq(m.type);
+        if (t && t.mode === 'duree') o.end = Math.round(m.end*1000)/1000;
+        if (m.texte) o.texte = m.texte;
+        return o;
+      }),
+    },
   };
+  if (varianteActive || varianteAccordsActive || varianteMelodieActive){
+    // la version choisie devient "paroles" / "accords" ; les versions d'origine restent dans *_variantes
+    sortie.analyse = { ...(donnees.analyse || {}) };
+    if (varianteActive) sortie.analyse.placement_paroles = varianteActive;
+    if (varianteAccordsActive) sortie.analyse.moteur_accords = varianteAccordsActive;
+    if (varianteMelodieActive) sortie.analyse.moteur_melodie = varianteMelodieActive;
+  }
   const jsonBytes = new TextEncoder().encode(JSON.stringify(sortie, null, 2));
 
   const entreesAudio = nomsEntreesAudio.map(nom => ({ nom, data: entreesZipOriginales[nom] })); // inchange
@@ -1472,6 +3585,33 @@ document.getElementById('export-json').addEventListener('click', () => {
   ]);
   telechargerBlob(zipBlob, nomFichierZip || 'bandes_modifie.zip');
 });
+
+// --- PWA : version + mise à jour ---
+(function(){
+  const V = document.querySelector('meta[name="app-version"]').content;
+  const afficher = () => { const el = document.getElementById('app-version'); if (el) el.textContent = 'Bandes v' + V; };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', afficher); else window.addEventListener('load', afficher);
+  if (!('serviceWorker' in navigator)) return;
+  let rechargement = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!rechargement){ rechargement = true; location.reload(); } });
+  function proposer(sw){
+    const b = document.getElementById('maj-bandeau'); if (!b) return;
+    b.style.display = 'flex';
+    b.querySelector('button').onclick = () => sw.postMessage('SKIP_WAITING');
+  }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting && navigator.serviceWorker.controller) proposer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const nv = reg.installing; if (!nv) return;
+        nv.addEventListener('statechange', () => { if (nv.state === 'installed' && navigator.serviceWorker.controller) proposer(nv); });
+      });
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    }).catch(() => {});
+  });
+})();
 </script>
+<div class="app-version" id="app-version"></div>
+<div id="maj-bandeau"><span>Nouvelle version disponible.</span><button type="button">Mettre à jour</button></div>
 </body>
 </html>

@@ -9,6 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
+<meta name="app-version" content="1.10.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -280,7 +281,7 @@
     border-radius: var(--radius);
   }
 
-  .voca-choice{ display: flex; gap: 12px; }
+  .voca-choice{ display: flex; gap: 12px; flex-wrap: wrap; }
 
   .option-toggle{ margin-bottom: 16px; }
   .toggle-row{
@@ -298,7 +299,7 @@
     flex-shrink: 0;
   }
   .voca-option{
-    flex: 1;
+    flex: 1 1 200px;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -375,6 +376,10 @@
   }
 
   footer{ color: var(--text-muted); font-size: 0.8rem; text-align: center; padding-top: 24px; }
+
+  #maj-bandeau{ position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:12px; background:#2A231B; color:#EFE6D8; border:1px solid #C9A06A; border-radius:6px; padding:10px 14px; font:0.85rem 'IBM Plex Sans',sans-serif; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #maj-bandeau button{ background:#C9A06A; color:#1C1712; border:0; border-radius:4px; padding:6px 12px; font-weight:600; cursor:pointer; }
+  .app-version{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:#8a7f70; text-align:center; padding:8px 0 20px; }
 </style>
 </head>
 <body>
@@ -443,10 +448,39 @@
     </div>
 
     <div class="option-toggle">
+      <div class="toggle-row" style="cursor:default;"><span>Séparation des pistes (Demucs)</span></div>
+      <div class="voca-choice" id="demucs-choice-wrap">
+        <label class="voca-option active" id="demucs-4-label">
+          <input type="radio" name="demucs" value="htdemucs" checked>
+          <div class="voca-title">4 pistes</div>
+          <div class="voca-desc">Voix, batterie, basse, autres (htdemucs) — par défaut</div>
+        </label>
+        <label class="voca-option" id="demucs-6-label">
+          <input type="radio" name="demucs" value="htdemucs_6s">
+          <div class="voca-title">6 pistes</div>
+          <div class="voca-desc">+ guitare et piano (htdemucs_6s)</div>
+        </label>
+      </div>
+      <div class="hint" id="demucs-6-hint" style="display:none; margin-top:6px;">All-In-One fait toujours son analyse de structure avec ses propres 4 pistes ; Demucs 6 pistes est lancé ensuite, séparément, et ce sont ces 6 pistes qui sont exportées (et utilisées pour la mélodie et les paroles). Compter un peu plus de temps de calcul. Selon le README de Demucs, la guitare est « correcte » et le piano peu fiable. Avec 6 pistes, le format « 8 canaux fusionnés » n'est pas proposé : il passerait à 12 canaux, que le navigateur ne sait pas lire (testé dans Chrome).</div>
+    </div>
+
+    <div class="option-toggle">
       <label class="toggle-row">
         <input type="checkbox" id="toggle-accords" checked>
         <span>Reconnaissance d'accords</span>
       </label>
+      <div id="accords-moteur-wrap" style="margin-top:12px;">
+        <div class="field">
+          <label>Moteur de reconnaissance</label>
+          <select id="accords-moteur">
+            <option value="btc">BTC (transformer)</option>
+            <option value="madmom" selected>madmom (CNN + CRF) — par défaut</option>
+            <option value="simple">Référence simple (chroma librosa, majeur/mineur)</option>
+            <option value="tous">Test : lancer tous les moteurs et les comparer dans l'éditeur</option>
+          </select>
+        </div>
+        <div class="hint" id="accords-moteur-hint" style="margin-top:6px;"></div>
+      </div>
       <div class="voca-choice" id="voca-choice-wrap">
         <label class="voca-option active" id="voca-large-label">
           <input type="radio" name="voca" value="large" checked>
@@ -466,6 +500,22 @@
         <input type="checkbox" id="toggle-melodie" checked>
         <span>Extraction de la mélodie (à partir de la voix isolée)</span>
       </label>
+      <div id="melodie-moteur-wrap" style="margin-top:12px;">
+        <div class="field">
+          <label>Détecteur de hauteur (pitch)</label>
+          <select id="melodie-moteur">
+            <option value="rmvpe">RMVPE</option>
+            <option value="swiftf0">SwiftF0 (léger, rapide)</option>
+            <option value="crepe">CREPE (torchcrepe)</option>
+            <option value="fcpe" selected>FCPE (torchfcpe) — par défaut</option>
+            <option value="melodia">Melodia (Essentia, sommation harmonique)</option>
+            <option value="basicpitch">Basic Pitch (Spotify, notes directes)</option>
+            <option value="pyin">pYIN (librosa, référence classique)</option>
+            <option value="tous">Test : lancer tous les détecteurs et les comparer dans l'éditeur</option>
+          </select>
+        </div>
+        <div class="hint" id="melodie-moteur-hint" style="margin-top:6px;"></div>
+      </div>
     </div>
 
     <div class="option-toggle">
@@ -474,6 +524,18 @@
         <span>Transcription des paroles (à partir de la voix isolée)</span>
       </label>
       <div class="hint" style="margin-top:6px;">Télécharge un modèle de reconnaissance vocale (~3 Go) au premier lancement dans Colab — désactivez si vous n'en avez pas besoin.</div>
+      <div id="paroles-moteur-wrap" style="margin-top:12px;">
+        <div class="field">
+          <label>Placement des mots dans le temps</label>
+          <select id="paroles-moteur">
+            <option value="whisper">Whisper seul (rapide, placement approximatif)</option>
+            <option value="whisperx" selected>Whisper + WhisperX (alignement wav2vec2) — recommandé</option>
+            <option value="mfa">Whisper + Montreal Forced Aligner (installation longue)</option>
+            <option value="tous">Test : lancer les trois et les comparer dans l'éditeur</option>
+          </select>
+        </div>
+        <div class="hint" id="paroles-moteur-hint" style="margin-top:6px;"></div>
+      </div>
     </div>
   </section>
 
@@ -490,8 +552,13 @@
       </label>
       <label class="voca-option" id="format-4pistes-label">
         <input type="radio" name="format-export" value="aac_4pistes">
-        <div class="voca-title">AAC (M4A), 4 pistes séparées</div>
-        <div class="voca-desc">4 fichiers .m4a (un par stem) — lecture synchronisée dans l'éditeur</div>
+        <div class="voca-title" id="format-aac-titre">AAC (M4A), 4 pistes séparées</div>
+        <div class="voca-desc" id="format-aac-desc">4 fichiers .m4a (un par stem) — lecture synchronisée dans l'éditeur</div>
+      </label>
+      <label class="voca-option" id="format-opus4-label">
+        <input type="radio" name="format-export" value="opus_4pistes">
+        <div class="voca-title" id="format-opus-titre">Opus, 4 pistes séparées</div>
+        <div class="voca-desc" id="format-opus-desc">4 fichiers .opus stéréo (voix, batterie, basse, autres) — légers, un fichier par piste</div>
       </label>
     </div>
     <div id="aac-quality-wrap" style="display:none; margin-top:12px;">
@@ -505,6 +572,18 @@
         </select>
       </div>
       <div class="hint">4 pistes à cette qualité pèsent plus lourd que le fichier Opus unique, mais chaque piste reste éditable/mixable séparément et le format est nativement lisible partout, y compris iOS hors navigateur.</div>
+    </div>
+    <div id="opus-quality-wrap" style="display:none; margin-top:12px;">
+      <div class="field">
+        <label>Qualité Opus (par piste stéréo)</label>
+        <select id="opus-bitrate">
+          <option value="64k">64 kbps — très léger</option>
+          <option value="96k">96 kbps — léger</option>
+          <option value="128k" selected>128 kbps — recommandé</option>
+          <option value="192k">192 kbps — haute qualité</option>
+        </select>
+      </div>
+      <div class="hint">Un fichier <code>.opus</code> par piste, nommé <code>morceau_vocals.opus</code>, <code>morceau_drums.opus</code>, <code>morceau_bass.opus</code>, <code>morceau_other.opus</code>.</div>
     </div>
   </section>
 
@@ -526,11 +605,12 @@
       <li><p>Ouvrez <a href="https://colab.research.google.com" target="_blank" rel="noopener">colab.research.google.com</a>, puis <code>Fichier → Importer un notebook</code> et sélectionnez le fichier téléchargé.</p></li>
       <li><p>Activez le GPU : <code>Exécution → Modifier le type d'exécution → T4 GPU</code>.</p></li>
       <li><p>Lancez <code>Exécution → Tout exécuter</code>, puis sélectionnez vos fichiers audio quand le widget d'upload apparaît — <strong>gardez exactement les mêmes noms de fichiers</strong> que ceux entrés ici pour que vos informations leur soient bien associées.</p></li>
-      <li><p>À la fin du traitement, une archive <code>.zip</code> se télécharge automatiquement — un dossier par morceau, avec l'audio (<code>.opus</code>, 8 canaux) et les métadonnées (<code>.json</code>). Chargez ce zip directement dans l'onglet « Éditer les métadonnées » pour le corriger.</p></li>
+      <li><p>À la fin du traitement, une archive <code>.zip</code> se télécharge automatiquement — un dossier par morceau, avec l'audio (selon le format choisi : un <code>.opus</code> 8 canaux, ou un fichier par piste) et les métadonnées (<code>.json</code>). Chargez ce zip directement dans l'onglet « Éditer les métadonnées » pour le corriger.</p></li>
     </ul>
   </section>
 
   <footer>Fonctionne entièrement dans votre navigateur — aucune donnée n'est envoyée à un serveur.</footer>
+  <div class="app-version" id="app-version"></div>
 </div>
 
 <script>
@@ -818,15 +898,88 @@ document.querySelectorAll('input[name=format-export]').forEach(radio => {
   radio.addEventListener('change', () => {
     document.getElementById('format-8ch-label').classList.toggle('active', radio.value === 'opus_8ch' && radio.checked);
     document.getElementById('format-4pistes-label').classList.toggle('active', radio.value === 'aac_4pistes' && radio.checked);
+    document.getElementById('format-opus4-label').classList.toggle('active', radio.value === 'opus_4pistes' && radio.checked);
     document.getElementById('aac-quality-wrap').style.display = radio.value === 'aac_4pistes' ? 'block' : 'none';
+    document.getElementById('opus-quality-wrap').style.display = radio.value === 'opus_4pistes' ? 'block' : 'none';
   });
 });
 
+document.querySelectorAll('input[name=demucs]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.getElementById('demucs-4-label').classList.toggle('active', radio.value === 'htdemucs' && radio.checked);
+    document.getElementById('demucs-6-label').classList.toggle('active', radio.value === 'htdemucs_6s' && radio.checked);
+    const six = document.querySelector('input[name=demucs]:checked').value === 'htdemucs_6s';
+    // Le nombre de pistes exportees suit le modele Demucs : 4 -> 4 fichiers, 6S -> 6 fichiers
+    const nP = six ? 6 : 4, listeP = six ? 'voix, batterie, basse, guitare, piano, autres' : 'voix, batterie, basse, autres';
+    document.getElementById('format-aac-titre').textContent = `AAC (M4A), ${nP} pistes séparées`;
+    document.getElementById('format-aac-desc').textContent = `${nP} fichiers .m4a (un par stem) — lecture synchronisée dans l'éditeur`;
+    document.getElementById('format-opus-titre').textContent = `Opus, ${nP} pistes séparées`;
+    document.getElementById('format-opus-desc').textContent = `${nP} fichiers .opus stéréo (${listeP}) — légers, un fichier par piste`;
+    document.getElementById('demucs-6-hint').style.display = six ? 'block' : 'none';
+    // 6 pistes = 12 canaux en Opus fusionne : illisible dans le navigateur -> format a pistes separees
+    const radio8 = document.querySelector('input[name=format-export][value=opus_8ch]');
+    radio8.disabled = six;
+    document.getElementById('format-8ch-label').style.opacity = six ? '0.4' : '';
+    if (six && radio8.checked){
+      const r4 = document.querySelector('input[name=format-export][value=opus_4pistes]');
+      r4.checked = true;
+      r4.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+});
+
+const HINTS_MOTEUR = {
+  whisper: "Les mots gardent les temps estimés par Whisper (précision de l'ordre de 0,1 à 0,3 s, moins bonne sur le chant).",
+  whisperx: "Whisper transcrit, puis WhisperX recale chaque mot sur la voix isolée (modèle wav2vec2) et donne une confiance par mot. Langues prises en charge par défaut : français, anglais, allemand, espagnol, italien. Seule la partie alignement de WhisperX est installée.",
+  tous: "Mode test : Whisper transcrit une fois, puis WhisperX et le Montreal Forced Aligner replacent chacun les mêmes mots. Les trois versions sont gardées dans le fichier de métadonnées (la version par défaut est WhisperX) et l'éditeur propose de les comparer. Plus long : installation de MFA comprise.",
+  mfa: "Whisper transcrit, puis le Montreal Forced Aligner recale les mots. Installe un environnement conda dans Colab (environ 5 à 10 minutes la première fois) ; modèles français et anglais. Conçu pour la parole : à tester sur du chant.",
+};
+const selMoteur = document.getElementById('paroles-moteur');
+const togParoles = document.getElementById('toggle-paroles');
+function syncMoteurParoles(){
+  document.getElementById('paroles-moteur-wrap').style.display = togParoles.checked ? 'block' : 'none';
+  document.getElementById('paroles-moteur-hint').textContent = HINTS_MOTEUR[selMoteur.value] || '';
+}
+selMoteur.addEventListener('change', syncMoteurParoles);
+togParoles.addEventListener('change', syncMoteurParoles);
+syncMoteurParoles();
+
+const HINTS_MELODIE = {
+  rmvpe: "RMVPE, conçu pour la voix chantée, robuste aux restes d'accompagnement. Moteur utilisé jusqu'ici.",
+  swiftf0: "SwiftF0 : petit réseau ONNX (pas de GPU nécessaire), annoncé comme précis et très rapide sur les sons monophoniques. Pas du chant seulement : à tester.",
+  crepe: "CREPE (version torchcrepe, modèle « full ») : référence très répandue ; tend à être gourmand mais précis sur voix propre.",
+  fcpe: "FCPE (Fast Context-based Pitch Estimation) : estimateur récent issu du monde du chant synthétique ; API non vérifiée ici : en cas d'échec, RMVPE puis pYIN prennent le relais.",
+  melodia: "Melodia (Salamon et Gómez) via Essentia : repère la hauteur par « sommation harmonique » (énergie des harmoniques de chaque fréquence candidate), puis suit un contour. Appliqué ici à la voix isolée, comme les autres.",
+  basicpitch: "Basic Pitch (Spotify) : réseau qui produit directement des notes (début, fin, hauteur) et non une courbe de hauteur. Il est polyphonique : on garde ici la note la plus forte à chaque instant. Son installation dépend de la version de Python de Colab : ignoré en cas d'échec.",
+  pyin: "pYIN : algorithme classique sans réseau de neurones (librosa). Sert de point de comparaison ; sensible au bruit résiduel.",
+  tous: "Mode test : chaque détecteur analyse la voix isolée ; les versions sont gardées dans le fichier (par défaut RMVPE) et l'éditeur propose de les comparer. Le découpage en notes est le même pour tous : seule la détection de hauteur change.",
+};
+const selMelodieMoteur = document.getElementById('melodie-moteur');
+const toggleMelodie = document.getElementById('toggle-melodie');
+function syncMelodieMoteur(){
+  document.getElementById('melodie-moteur-wrap').style.display = toggleMelodie.checked ? 'block' : 'none';
+  document.getElementById('melodie-moteur-hint').textContent = HINTS_MELODIE[selMelodieMoteur.value] || '';
+}
+selMelodieMoteur.addEventListener('change', syncMelodieMoteur);
+toggleMelodie.addEventListener('change', syncMelodieMoteur);
+syncMelodieMoteur();
+
 const toggleAccords = document.getElementById('toggle-accords');
 const vocaChoiceWrap = document.getElementById('voca-choice-wrap');
+const HINTS_ACCORDS = {
+  btc: "BTC (Bi-directional Transformer for Chord recognition) : vocabulaire étendu possible (7e, sus, dim...).",
+  madmom: "madmom : réseau convolutif + CRF (Korzeniowski), majeur/mineur uniquement. Installé depuis GitHub : si l'installation échoue dans Colab, BTC puis la référence simple prennent le relais.",
+  simple: "Référence maison sans modèle : chromagramme + gabarits majeur/mineur + lissage de Viterbi. Rapide et toujours disponible ; sert surtout de point de comparaison.",
+  tous: "Mode test : chaque moteur analyse le morceau ; les versions sont gardées dans le fichier de métadonnées (par défaut BTC) et l'éditeur propose de les comparer. Le vocabulaire étendu/simple ci-dessous ne concerne que BTC.",
+};
+const selAccordsMoteur = document.getElementById('accords-moteur');
 function syncVocaVisibility(){
-  vocaChoiceWrap.style.display = toggleAccords.checked ? 'flex' : 'none';
+  const on = toggleAccords.checked;
+  vocaChoiceWrap.style.display = on ? 'flex' : 'none';
+  document.getElementById('accords-moteur-wrap').style.display = on ? 'block' : 'none';
+  document.getElementById('accords-moteur-hint').textContent = HINTS_ACCORDS[selAccordsMoteur.value] || '';
 }
+selAccordsMoteur.addEventListener('change', syncVocaVisibility);
 toggleAccords.addEventListener('change', syncVocaVisibility);
 syncVocaVisibility();
 
@@ -851,7 +1004,7 @@ function toSource(text){
 function md(text){ return { cell_type: 'markdown', metadata: {}, source: toSource(text) }; }
 function code(text){ return { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: toSource(text) }; }
 
-function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer, formatExport, aacBitrate){
+function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer, formatExport, aacBitrate, opusBitrate, demucsModele, parolesMoteur, accordsMoteur, melodieMoteur){
   const metadataParFichier = {};
   tracksList.forEach(t => {
     if (!t.filename) return;
@@ -883,6 +1036,11 @@ function buildNotebook(tracksList, btcLargeVoca, accordsActif, melodieActif, par
   const driveDeplacerPy = driveDeplacer ? 'True' : 'False';
   const formatExportPy = JSON.stringify(formatExport || 'opus_8ch');
   const aacBitratePy = JSON.stringify(aacBitrate || '192k');
+  const opusBitratePy = JSON.stringify(opusBitrate || '128k');
+  const demucsModelePy = JSON.stringify(demucsModele || 'htdemucs');
+  const parolesMoteurPy = JSON.stringify(parolesMoteur || 'whisper');
+  const accordsMoteurPy = JSON.stringify(accordsMoteur || 'madmom');
+  const melodieMoteurPy = JSON.stringify(melodieMoteur || 'fcpe');
 
   const cells = [
     md(
@@ -912,7 +1070,11 @@ BTC_LARGE_VOCA = ${btcVocaPy}
 
 # Modules optionnels a activer pour ce traitement
 ACCORDS_ACTIF = ${accordsPy}
+# Moteur d'accords : btc, madmom, simple (reference librosa) ou tous (test comparatif)
+ACCORDS_MOTEUR = ${accordsMoteurPy}
 MELODIE_ACTIF = ${melodiePy}
+# Detecteur de hauteur : rmvpe, swiftf0, crepe, fcpe, pyin ou tous (test comparatif)
+MELODIE_MOTEUR = ${melodieMoteurPy}
 PAROLES_ACTIF = ${parolesPy}
 
 # Source des fichiers audio : "upload" (widget d'upload) ou "drive" (dossier Google Drive)
@@ -924,8 +1086,23 @@ DRIVE_DEPLACER_APRES_TRAITEMENT = ${driveDeplacerPy}
 #  "opus_8ch"    -> un seul fichier .opus, 8 canaux (4 stems fusionnes)
 #  "aac_4pistes" -> 4 fichiers .m4a separes (un par stem), lecture synchronisee
 #                   par l'editeur via AudioContext (horloge commune)
+#  "opus_4pistes"-> 4 fichiers .opus stereo separes (un par stem)
 FORMAT_EXPORT = ${formatExportPy}
 AAC_BITRATE = ${aacBitratePy}  # par piste, en mode aac_4pistes uniquement
+OPUS_BITRATE = ${opusBitratePy}  # par piste stereo, en mode opus_4pistes uniquement
+
+# Modele Demucs utilise pour les pistes EXPORTEES :
+#  "htdemucs"    -> 4 pistes (voix, batterie, basse, autres) : celles qu'All-In-One produit deja
+#  "htdemucs_6s" -> 6 pistes (+ guitare, piano), lance separement apres All-In-One
+#                   (All-In-One garde ses propres 4 pistes pour l'analyse de structure)
+DEMUCS_MODELE = ${demucsModelePy}
+
+# Moteur de placement des mots des paroles (le texte vient toujours de Whisper) :
+#  "whisper"  -> temps de Whisper tels quels
+#  "whisperx" -> alignement forced wav2vec2 (partie alignement de WhisperX)
+#  "mfa"      -> Montreal Forced Aligner (environnement conda installe dans Colab)
+PAROLES_MOTEUR = ${parolesMoteurPy}
+PAROLES_ALIGN_MARGE = 0.3  # secondes de contexte audio avant/apres chaque segment pour l'alignement
 
 # =========================================================
 # Reglages fins de la transcription des paroles (faster-whisper).
@@ -951,7 +1128,14 @@ PAROLES_VAD_SPEECH_PAD_MS = 200
 # Si MELODIE_ACTIF et PAROLES_ACTIF sont tous les deux actifs : retente
 # automatiquement la transcription (en mode tres permissif, sans VAD) sur toute
 # zone ou une melodie chantee est detectee mais sans parole correspondante.
-PAROLES_RATTRAPAGE_VIA_MELODIE = True`
+PAROLES_RATTRAPAGE_VIA_MELODIE = True
+
+# Modele de transcription. WHISPER_MODELE est utilise sur GPU. Si le GPU est
+# inutilisable pour faster-whisper (voir le test au chargement), on bascule
+# automatiquement sur CPU avec WHISPER_MODELE_CPU, plus leger car le CPU est
+# beaucoup plus lent ("medium" ou "small" ; "large-v3" marche aussi mais tres lent).
+WHISPER_MODELE = "large-v3"
+WHISPER_MODELE_CPU = "medium"`
     ),
 
     md(`## 2. Installation des dépendances`),
@@ -969,23 +1153,98 @@ print("Installation des dependances de base...")
 pip_install('all-in-one-infer')
 
 if ACCORDS_ACTIF:
-    print("Installation des dependances accords (BTC)...")
-    pip_install('transformers', 'huggingface_hub')
+    print("Installation des dependances accords...")
+    pip_install('transformers', 'huggingface_hub', 'librosa', 'soundfile')
+
+MADMOM_PRET = False
+if ACCORDS_ACTIF and ACCORDS_MOTEUR in ("madmom", "tous"):
+    print("Installation de madmom (depuis GitHub, la version PyPI ne fonctionne plus avec Python recent)...")
+    try:
+        pip_install('cython', 'mido')
+        pip_install('--no-deps', 'git+https://github.com/CPJKU/madmom.git')
+        MADMOM_PRET = True
+    except Exception as e:
+        print(f"  [!] Installation de madmom impossible ({type(e).__name__}) -- ce moteur sera ignore.")
 
 if MELODIE_ACTIF:
     print("Installation des dependances audio (melodie)...")
     pip_install('soundfile', 'librosa')
 
-if MELODIE_ACTIF:
+if MELODIE_ACTIF:   # RMVPE sert aussi de secours si le detecteur choisi echoue
     print("Installation de rmvpe-onnx (melodie)...")
     pip_install('rmvpe-onnx')
+
+for _moteur_pitch, _paquets_pitch in (("swiftf0", [["swift-f0"]]), ("crepe", [["torchcrepe"]]), ("fcpe", [["torchfcpe"]]),
+                                      ("melodia", [["essentia"]]),
+                                      # Basic Pitch : on evite ses dependances figees (tensorflow, numpy) et on utilise le moteur ONNX
+                                      ("basicpitch", [["--no-deps", "--ignore-requires-python", "basic-pitch"],
+                                                      ["onnxruntime", "pretty_midi", "resampy", "mir_eval"]])):
+    if MELODIE_ACTIF and MELODIE_MOTEUR in (_moteur_pitch, "tous"):
+        print(f"Installation du detecteur {_moteur_pitch} (melodie)...")
+        try:
+            for _paquets in _paquets_pitch:
+                pip_install(*_paquets)
+        except Exception as e:
+            print(f"  [!] Installation de {_moteur_pitch} impossible ({type(e).__name__}) -- ce detecteur sera ignore.")
 
 if PAROLES_ACTIF:
     print("Installation de faster-whisper (paroles)...")
     # PyAV 19.0.0 (sorti tres recemment) a retire l'argument "metadata_errors" que
     # faster-whisper utilise pour decoder l'audio en interne -> TypeError a l'usage.
     # On fige donc av sous la 19 tant que faster-whisper n'est pas mis a jour.
-    pip_install('faster-whisper', 'av<19')
+    # CTranslate2 (moteur de faster-whisper) est compile pour CUDA 12 alors que Colab
+    # fournit desormais CUDA 13 (torch +cu130, cuBLAS 13 uniquement) : on installe
+    # cuBLAS 12 a part, precharge ensuite par precharger_cublas12().
+    pip_install('faster-whisper', 'av<19', 'nvidia-cublas-cu12')
+
+if PAROLES_ACTIF and PAROLES_MOTEUR in ("whisperx", "tous"):
+    print("Installation de WhisperX (alignement des mots)...")
+    # WhisperX complet impose torch 2.8 et pyannote : on n'installe QUE le paquet, sans ses
+    # dependances (on n'utilise que son module d'alignement), pour ne pas toucher a torch.
+    pip_install('--no-deps', 'whisperx')
+    pip_install('nltk', 'pandas', 'transformers', 'librosa', 'soundfile')
+
+# --- Montreal Forced Aligner : uniquement disponible via conda (binaires Kaldi) ---
+import os, shutil
+from pathlib import Path as _Path
+
+MFA_RACINE = _Path("/content/mfa_env")
+MFA_DONNEES = _Path("/content/mfa_data")
+MFA_MODELES = {"en": "english_us_arpa", "fr": "french_mfa"}
+MFA_PRET = False
+
+def lancer_mfa(*args):
+    env = dict(os.environ, MFA_ROOT_DIR=str(MFA_DONNEES), MAMBA_ROOT_PREFIX=str(MFA_RACINE))
+    return subprocess.run([str(MFA_RACINE / "bin" / "micromamba"), "run", "-n", "mfa", "mfa", *args],
+                          env=env, check=True, capture_output=True, text=True)
+
+def installer_mfa():
+    global MFA_PRET
+    print("Installation du Montreal Forced Aligner (conda, 5 a 10 minutes)...")
+    try:
+        MFA_RACINE.mkdir(parents=True, exist_ok=True)
+        MFA_DONNEES.mkdir(parents=True, exist_ok=True)
+        mm = MFA_RACINE / "bin" / "micromamba"
+        if not mm.exists():
+            subprocess.run(f"curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xj -C {MFA_RACINE} bin/micromamba",
+                           shell=True, check=True)
+        env = dict(os.environ, MAMBA_ROOT_PREFIX=str(MFA_RACINE))
+        subprocess.run([str(mm), "create", "-y", "-n", "mfa", "-c", "conda-forge", "python=3.11", "montreal-forced-aligner"],
+                       env=env, check=True, capture_output=True, text=True)
+        for nom_modele in MFA_MODELES.values():
+            for type_modele in ("acoustic", "dictionary", "g2p"):
+                lancer_mfa("model", "download", type_modele, nom_modele)
+        MFA_PRET = True
+        print("  MFA installe.")
+    except subprocess.CalledProcessError as e:
+        print("  [!] Installation de MFA impossible :", (e.stderr or "")[-600:])
+        print("      Les paroles garderont les temps de Whisper.")
+    except Exception as e:
+        print(f"  [!] Installation de MFA impossible : {type(e).__name__}: {e}")
+        print("      Les paroles garderont les temps de Whisper.")
+
+if PAROLES_ACTIF and PAROLES_MOTEUR in ("mfa", "tous"):
+    installer_mfa()
 
 print("Installation terminee.")`
     ),
@@ -1061,24 +1320,121 @@ print(f"{len(fichiers_a_traiter)} fichier(s) pret(s).")`
     md(`## 4. Chargement du modèle de reconnaissance d'accords (BTC)`),
 
     code(
-`if ACCORDS_ACTIF:
-    from transformers import AutoModel
-    print("Chargement du modele BTC...")
-    btc_model = AutoModel.from_pretrained(
-        "puar-playground/btc-chord",
-        trust_remote_code=True,
-        large_voca=BTC_LARGE_VOCA,
-    )
-    print("Modele BTC charge.")
+`btc_model = None
+if ACCORDS_ACTIF:   # BTC sert aussi de secours si le moteur choisi echoue
+    try:
+        from transformers import AutoModel
+        print("Chargement du modele BTC...")
+        btc_model = AutoModel.from_pretrained(
+            "puar-playground/btc-chord",
+            trust_remote_code=True,
+            large_voca=BTC_LARGE_VOCA,
+        )
+        print("Modele BTC charge.")
+    except Exception as e:
+        print(f"  [!] BTC indisponible ({type(e).__name__}: {e}) -- ce moteur sera ignore.")
 else:
-    btc_model = None
-    print("Reconnaissance d'accords desactivee.")`
+    print("Reconnaissance d'accords desactivee.")
+
+NOTES_ACCORDS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+def accords_madmom(chemin):
+    if not MADMOM_PRET:
+        raise RuntimeError("madmom non installe")
+    try:
+        from madmom.features.chords import CNNChordFeatureProcessor, CRFChordRecognitionProcessor
+        brut = CRFChordRecognitionProcessor()(CNNChordFeatureProcessor()(str(chemin)))
+    except Exception as e1:
+        print(f"    [madmom] CNN+CRF indisponible ({type(e1).__name__}: {e1}) -- essai DeepChroma")
+        from madmom.audio.chroma import DeepChromaProcessor
+        from madmom.features.chords import DeepChromaChordRecognitionProcessor
+        brut = DeepChromaChordRecognitionProcessor()(DeepChromaProcessor()(str(chemin)))
+    return [{"start": round(float(l[0]), 3), "end": round(float(l[1]), 3), "chord": str(l[2])} for l in brut]
+
+def accords_librosa(chemin):
+    import numpy as np
+    import librosa
+    y, sr = librosa.load(str(chemin), sr=22050, mono=True)
+    duree = len(y) / float(sr)
+    y = librosa.effects.harmonic(y)
+    hop = 2048
+    brut = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop)
+    energie = np.linalg.norm(brut, axis=0)
+    chroma = brut / (energie + 1e-9)
+    gabarits, noms = [], []
+    for qualite, gab in (("maj", [1,0,0,0,1,0,0,1,0,0,0,0]), ("min", [1,0,0,1,0,0,0,1,0,0,0,0])):
+        for r in range(12):
+            v = np.roll(np.array(gab, dtype=float), r)
+            gabarits.append(v / np.linalg.norm(v))
+            noms.append(NOTES_ACCORDS[r] + ":" + qualite)
+    sim = np.array(gabarits) @ chroma
+    prob = np.exp(8.0 * sim)
+    prob = prob / prob.sum(axis=0, keepdims=True)
+    etats = librosa.sequence.viterbi_discriminative(prob, librosa.sequence.transition_loop(len(noms), 0.97))
+    seuil = 0.1 * float(np.median(energie))
+    etiquettes = [noms[e] if energie[i] > seuil else "N" for i, e in enumerate(etats)]
+    temps = librosa.frames_to_time(np.arange(len(etiquettes)), sr=sr, hop_length=hop)
+    sortie = []
+    for i, lab in enumerate(etiquettes):
+        if sortie and sortie[-1]["chord"] == lab:
+            continue
+        sortie.append({"start": round(float(temps[i]), 3), "end": 0.0, "chord": lab})
+    for k, a in enumerate(sortie):
+        a["end"] = sortie[k+1]["start"] if k + 1 < len(sortie) else round(duree, 3)
+    return sortie`
     ),
 
     md(`## 5. Traitement : structure + séparation (Demucs) + accords`),
 
     code(
 `rapports = []
+
+DEMUCS_CACHE = {}
+
+def separer_demucs(chemin_audio, nom):
+    """Separation avec DEMUCS_MODELE (ex. htdemucs_6s) -- en plus de l'analyse All-In-One,
+    qui garde ses propres 4 pistes. Meme procedure que la ligne de commande de Demucs :
+    normalisation du mix avant separation, puis remise a l'echelle des pistes."""
+    import numpy as np
+    import torch
+    import librosa
+    from demucs_infer.pretrained import get_model
+    from demucs_infer.apply import apply_model
+    from demucs_infer.audio import save_audio
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if 'modele' not in DEMUCS_CACHE:
+        modele = get_model(DEMUCS_MODELE)
+        modele.to(device)
+        modele.eval()
+        DEMUCS_CACHE['modele'] = modele
+    modele = DEMUCS_CACHE['modele']
+    sr = modele.samplerate
+
+    wav, _ = librosa.load(str(chemin_audio), sr=sr, mono=False)
+    wav = torch.from_numpy(np.atleast_2d(wav)).float()
+    if wav.shape[0] == 1:
+        wav = wav.repeat(2, 1)
+    elif wav.shape[0] > 2:
+        wav = wav[:2]
+
+    ref = wav.mean(0)
+    moyenne, ecart = ref.mean(), ref.std() + 1e-8
+    wav = (wav - moyenne) / ecart
+    with torch.no_grad():
+        sources = apply_model(modele, wav[None].to(device), device=device, overlap=0.25, progress=True)[0]
+    sources = sources.cpu() * ecart + moyenne
+
+    dossier = Path("./demix") / DEMUCS_MODELE / nom
+    dossier.mkdir(parents=True, exist_ok=True)
+    fichiers = []
+    for nom_source, source in zip(modele.sources, sources):
+        chemin = dossier / f"{nom_source}.wav"
+        save_audio(source, chemin, sr)
+        fichiers.append(chemin)
+    if device == 'cuda':
+        torch.cuda.empty_cache()
+    return sorted(fichiers)
 
 for item in fichiers_a_traiter:
     chemin = item["chemin_local"]
@@ -1098,13 +1454,56 @@ for item in fichiers_a_traiter:
     if not stem_files:
         print(f"  ATTENTION : aucun stem trouve dans {stems_dir}")
 
-    if ACCORDS_ACTIF:
+    if DEMUCS_MODELE != "htdemucs":
         t0 = time.time()
-        accords = btc_model.predict(str(chemin))
-        duree_btc = time.time() - t0
-        print(f"  accords (BTC)           : {duree_btc:.1f} s")
-    else:
-        accords = []
+        try:
+            stem_files = separer_demucs(chemin, nom)
+            print(f"  separation {DEMUCS_MODELE} ({len(stem_files)} pistes) : {time.time()-t0:.1f} s")
+        except Exception as e:
+            print(f"  [!] Separation {DEMUCS_MODELE} impossible ({type(e).__name__}: {e}) -- repli sur les 4 pistes d'All-In-One.")
+
+    accords = []
+    variantes_accords = {}
+    moteur_accords = None
+    if ACCORDS_ACTIF:
+        essais = []
+        if ACCORDS_MOTEUR in ("btc", "tous") and btc_model is not None:
+            essais.append(("btc", lambda: btc_model.predict(str(chemin))))
+        if ACCORDS_MOTEUR in ("madmom", "tous"):
+            essais.append(("madmom", lambda: accords_madmom(chemin)))
+        if ACCORDS_MOTEUR in ("simple", "tous"):
+            essais.append(("simple", lambda: accords_librosa(chemin)))
+        for nom_moteur, fonction in essais:
+            t0 = time.time()
+            try:
+                resultat_accords = fonction()
+                if resultat_accords:
+                    variantes_accords[nom_moteur] = resultat_accords
+                print(f"  accords ({nom_moteur}) : {len(resultat_accords)} accords, {time.time()-t0:.1f} s")
+            except Exception as e:
+                print(f"  [!] accords ({nom_moteur}) impossible : {type(e).__name__}: {e}")
+        if not variantes_accords:
+            for nom_repli, fonction in (("btc", (lambda: btc_model.predict(str(chemin))) if btc_model is not None else None),
+                                        ("simple", lambda: accords_librosa(chemin))):
+                if fonction is None:
+                    continue
+                try:
+                    resultat_repli = fonction()
+                    if resultat_repli:
+                        variantes_accords[nom_repli] = resultat_repli
+                        print(f"  accords : repli sur {nom_repli}")
+                        break
+                except Exception as e:
+                    print(f"  [!] accords (repli {nom_repli}) impossible : {type(e).__name__}: {e}")
+            if not variantes_accords:
+                print("  [!] accords : aucun moteur n'a fonctionne")
+        for nom_moteur in ("madmom", "btc", "simple"):
+            if variantes_accords.get(nom_moteur):
+                moteur_accords = nom_moteur
+                accords = variantes_accords[nom_moteur]
+                break
+        if ACCORDS_MOTEUR != "tous" or len(variantes_accords) < 2:
+            variantes_accords = {}  # rien a comparer
 
     rapports.append({
         "nom_fichier": chemin.name,
@@ -1120,6 +1519,8 @@ for item in fichiers_a_traiter:
             for s in getattr(resultat, "segments", [])
         ],
         "accords": accords,
+        "moteur_accords": moteur_accords,
+        "variantes_accords": variantes_accords,
         "stem_files": stem_files,
     })
 
@@ -1129,7 +1530,8 @@ print("\\nTraitement termine.")`
     md(`## 6. Mélodie et paroles (à partir de la voix isolée)`),
 
     code(
-`import numpy as np
+`import re, copy
+import numpy as np
 
 if MELODIE_ACTIF:
     import librosa
@@ -1143,12 +1545,13 @@ SEMITONE_TOLERANCE = 0.5     # ecart max (demi-tons) pour considerer 2 frames co
 def freq_to_midi(f):
     return 69 + 12 * np.log2(f / 440.0)
 
-def extraire_melodie(chemin_voix, rmvpe_modele):
-    audio, sr = librosa.load(str(chemin_voix), sr=None, mono=True)
-    temps, frequence, confiance, _ = rmvpe_modele.predict(audio=audio, sr=sr)
-
+def notes_depuis_pitch(temps, frequence, confiance, seuil):
+    """Decoupage en notes commun a tous les detecteurs : seule la courbe de hauteur change."""
+    temps = np.asarray(temps, dtype=float)
+    frequence = np.asarray(frequence, dtype=float)
+    confiance = np.asarray(confiance, dtype=float)
     freq_clean = frequence.copy()
-    freq_clean[confiance < CONFIDENCE_THRESHOLD] = np.nan
+    freq_clean[~(confiance >= seuil)] = np.nan
 
     midi_notes = np.full_like(freq_clean, np.nan)
     valid = ~np.isnan(freq_clean) & (freq_clean > 0)
@@ -1183,9 +1586,164 @@ def extraire_melodie(chemin_voix, rmvpe_modele):
 
     return notes
 
+# --- Detecteurs de hauteur : chacun renvoie (temps, frequences Hz, confiance, seuil de confiance) ---
+def pitch_rmvpe(chemin):
+    if rmvpe_modele is None:
+        raise RuntimeError("RMVPE non charge")
+    audio, sr = librosa.load(str(chemin), sr=None, mono=True)
+    temps, frequence, confiance, _ = rmvpe_modele.predict(audio=audio, sr=sr)
+    return temps, frequence, confiance, CONFIDENCE_THRESHOLD
+
+def pitch_pyin(chemin):
+    audio, sr = librosa.load(str(chemin), sr=22050, mono=True)
+    hop = 256
+    f0, voise, proba = librosa.pyin(audio, fmin=librosa.note_to_hz("C2"), fmax=librosa.note_to_hz("C6"),
+                                    sr=sr, frame_length=2048, hop_length=hop)
+    temps = librosa.times_like(f0, sr=sr, hop_length=hop)
+    return temps, np.nan_to_num(f0, nan=0.0), np.where(voise, np.nan_to_num(proba, nan=0.0), 0.0), 0.5
+
+def pitch_crepe(chemin):
+    import torch
+    import torchcrepe
+    audio, sr = librosa.load(str(chemin), sr=16000, mono=True)
+    appareil = "cuda:0" if torch.cuda.is_available() else "cpu"
+    hop = int(sr / 100.0)  # 10 ms
+    x = torch.from_numpy(audio).float()[None]
+    f0, periodicite = torchcrepe.predict(x, sr, hop, 50.0, 1100.0, "full", batch_size=512, device=appareil,
+                                         decoder=torchcrepe.decode.viterbi, return_periodicity=True)
+    periodicite = torchcrepe.filter.median(periodicite, 3)
+    periodicite = torchcrepe.threshold.Silence(-60.0)(periodicite, x, sr, hop)
+    f0 = f0[0].cpu().numpy()
+    periodicite = periodicite[0].cpu().numpy()
+    temps = np.arange(len(f0)) * hop / float(sr)
+    return temps, f0, periodicite, 0.21
+
+def pitch_swiftf0(chemin):
+    from swift_f0 import SwiftF0
+    audio, sr = librosa.load(str(chemin), sr=16000, mono=True)
+    try:
+        detecteur = SwiftF0(fmin=50, fmax=1100)
+    except TypeError:
+        detecteur = SwiftF0()
+    res = detecteur.detect(audio, sr)
+    return res.timestamps, res.pitch_hz, res.confidence, 0.5
+
+def pitch_fcpe(chemin):
+    import torch
+    from torchfcpe import spawn_bundled_infer_model
+    appareil = "cuda" if torch.cuda.is_available() else "cpu"
+    audio, sr = librosa.load(str(chemin), sr=16000, mono=True)
+    modele = spawn_bundled_infer_model(device=appareil)
+    x = torch.from_numpy(audio).float()[None, :, None].to(appareil)
+    try:
+        f0 = modele.infer(x, sr=sr, decoder_mode="local_argmax", threshold=0.006, f0_min=50, f0_max=1100)
+    except TypeError:
+        f0 = modele.infer(x, sr=sr)
+    f0 = f0.reshape(-1).detach().cpu().numpy()
+    temps = np.linspace(0.0, len(audio) / float(sr), len(f0))
+    return temps, f0, (f0 > 0).astype(float), 0.5
+
+def pitch_melodia(chemin):
+    import essentia.standard as es
+    audio = es.MonoLoader(filename=str(chemin), sampleRate=44100)()
+    audio = es.EqualLoudness()(audio)
+    hop = 128
+    hauteur, _ = es.PredominantPitchMelodia(frameSize=2048, hopSize=hop, minFrequency=55, maxFrequency=1760)(audio)
+    hauteur = np.array(hauteur, dtype=float)
+    temps = np.arange(len(hauteur)) * hop / 44100.0
+    return temps, hauteur, (hauteur > 0).astype(float), 0.5
+
+def notes_monophoniques(evenements):
+    """Basic Pitch est polyphonique : a chaque instant on garde la note la plus forte."""
+    if not evenements:
+        return []
+    bornes = sorted({t for e in evenements for t in (e[0], e[1])})
+    segs = []
+    for a, b in zip(bornes[:-1], bornes[1:]):
+        if b - a < 1e-6:
+            continue
+        actifs = [e for e in evenements if e[0] <= a + 1e-9 and e[1] >= b - 1e-9]
+        if not actifs:
+            continue
+        m = max(actifs, key=lambda e: e[3])
+        if segs and segs[-1]["midi"] == m[2] and abs(segs[-1]["end"] - a) < 1e-6:
+            segs[-1]["end"] = b
+        else:
+            segs.append({"start": a, "end": b, "midi": int(m[2])})
+    return [{"start": round(x["start"], 3), "end": round(x["end"], 3), "midi": x["midi"]}
+            for x in segs if x["end"] - x["start"] >= MIN_NOTE_DURATION]
+
+def notes_basicpitch(chemin):
+    from basic_pitch.inference import predict
+    try:
+        _, _, evenements = predict(str(chemin), minimum_frequency=50, maximum_frequency=1100)
+    except TypeError:
+        _, _, evenements = predict(str(chemin))
+    return notes_monophoniques([(float(e[0]), float(e[1]), int(e[2]), float(e[3])) for e in evenements])
+
+# (nom, fonction, type de sortie) : "pitch" = courbe de hauteur a decouper en notes, "notes" = notes deja pretes
+# L'ordre donne aussi le detecteur par defaut en mode test (le premier qui a fonctionne)
+DETECTEURS_PITCH = [("fcpe", pitch_fcpe, "pitch"), ("rmvpe", pitch_rmvpe, "pitch"), ("swiftf0", pitch_swiftf0, "pitch"),
+                    ("crepe", pitch_crepe, "pitch"), ("melodia", pitch_melodia, "pitch"),
+                    ("basicpitch", notes_basicpitch, "notes"), ("pyin", pitch_pyin, "pitch")]
+
+def extraire_melodies(chemin_voix):
+    """Lance le(s) detecteur(s) choisi(s). Renvoie (notes_par_moteur, moteur_par_defaut)."""
+    resultats = {}
+    for nom_moteur, fonction, type_sortie in DETECTEURS_PITCH:
+        if MELODIE_MOTEUR not in (nom_moteur, "tous"):
+            continue
+        t0 = time.time()
+        try:
+            sortie = fonction(chemin_voix)
+            notes = notes_depuis_pitch(*sortie) if type_sortie == "pitch" else sortie
+            resultats[nom_moteur] = notes
+            print(f"    melodie ({nom_moteur}) : {len(notes)} notes, {time.time()-t0:.1f} s")
+        except Exception as e:
+            print(f"    [!] melodie ({nom_moteur}) impossible : {type(e).__name__}: {e}")
+    if not any(resultats.values()):
+        for nom_repli, fonction, type_sortie in DETECTEURS_PITCH:
+            if nom_repli not in ("rmvpe", "pyin") or nom_repli in resultats:
+                continue
+            try:
+                sortie = fonction(chemin_voix)
+                notes = notes_depuis_pitch(*sortie) if type_sortie == "pitch" else sortie
+                if notes:
+                    resultats[nom_repli] = notes
+                    print(f"    melodie : repli sur {nom_repli}")
+                    break
+            except Exception as e:
+                print(f"    [!] melodie (repli {nom_repli}) impossible : {type(e).__name__}: {e}")
+        if not any(resultats.values()):
+            print("    [!] melodie : aucun detecteur n'a fonctionne")
+    defaut = next((n for n, _, _ in DETECTEURS_PITCH if resultats.get(n)), None)
+    return resultats, defaut
+
 # --- Paroles : transcription (faster-whisper), avec filtrage des hallucinations ---
 # Seuils desormais definis dans la cellule de configuration (PAROLES_NO_SPEECH_MAX,
 # PAROLES_LOGPROB_MIN, PAROLES_VAD_*) pour pouvoir les ajuster sans tout relancer.
+
+def mots_du_segment(s, decalage=0.0):
+    """Timestamps mot a mot de whisper (word_timestamps=True), conserves dans le JSON
+    pour que l'editeur puisse colorer les paroles en suivant la musique."""
+    mots = []
+    for w in (getattr(s, "words", None) or []):
+        t = w.word.strip()
+        if t:
+            mot = {"start": round(decalage + w.start, 3), "end": round(decalage + w.end, 3), "texte": t}
+            if getattr(w, "probability", None) is not None:
+                mot["score"] = round(float(w.probability), 3)
+            mots.append(mot)
+    return mots
+
+def segment_paroles(s, decalage=0.0):
+    seg = {"start": round(decalage + s.start, 3), "end": round(decalage + s.end, 3), "texte": s.text.strip()}
+    mots = mots_du_segment(s, decalage)
+    if mots:
+        seg["mots"] = mots
+    return seg
+
+DERNIERE_LANGUE = {"code": ""}  # langue detectee par Whisper (utile aux aligneurs si la langue n'est pas imposee)
 
 def extraire_paroles(chemin_voix, whisper_modele, langue, vad_actif=True):
     segments, _info = whisper_modele.transcribe(
@@ -1213,6 +1771,7 @@ def extraire_paroles(chemin_voix, whisper_modele, langue, vad_actif=True):
         compression_ratio_threshold=None,
         condition_on_previous_text=False,  # evite qu'une hallucination se propage au segment suivant
     )
+    DERNIERE_LANGUE["code"] = langue or getattr(_info, "language", "") or ""
     resultats = []
     segments_bruts = 0
     segments_rejetes = 0
@@ -1224,7 +1783,7 @@ def extraire_paroles(chemin_voix, whisper_modele, langue, vad_actif=True):
         texte = s.text.strip()
         if not texte:
             continue
-        resultats.append({"start": round(s.start, 3), "end": round(s.end, 3), "texte": texte})
+        resultats.append(segment_paroles(s))
     # Diagnostic : si "segments bruts" est deja faible par rapport a la duree du
     # morceau, le VAD lui-meme a juge le reste "non-parle" (autre piste a creuser si
     # le probleme persiste malgre ce changement).
@@ -1291,7 +1850,7 @@ def rattraper_paroles_via_melodie(chemin_voix, whisper_modele, langue, melodie, 
                 texte = s.text.strip()
                 if not texte:
                     continue
-                ajouts.append({"start": round(d+s.start, 3), "end": round(d+s.end, 3), "texte": texte})
+                ajouts.append(segment_paroles(s, d))
         finally:
             tmp_path.unlink(missing_ok=True)
 
@@ -1299,18 +1858,195 @@ def rattraper_paroles_via_melodie(chemin_voix, whisper_modele, langue, melodie, 
     resultat = sorted(paroles + ajouts, key=lambda p: p["start"])
     return resultat
 
+rmvpe_modele = None
 if MELODIE_ACTIF:
-    from rmvpe_onnx import RMVPE
-    print("Chargement du modele RMVPE (melodie)...")
-    rmvpe_modele = RMVPE()  # telecharge le modele au premier appel
-else:
-    rmvpe_modele = None
+    try:
+        from rmvpe_onnx import RMVPE
+        print("Chargement du modele RMVPE (melodie)...")
+        rmvpe_modele = RMVPE()  # telecharge le modele au premier appel
+    except Exception as e:
+        print(f"  [!] RMVPE indisponible ({type(e).__name__}: {e}) -- ce detecteur sera ignore.")
+elif not MELODIE_ACTIF:
     print("Extraction de la melodie desactivee.")
 
-if PAROLES_ACTIF:
+def precharger_cublas12():
+    """CTranslate2 charge libcublas.so.12 au premier calcul GPU (pas a l'import).
+    L'image Colab actuelle (torch +cu130) n'a que cuBLAS 13 : on charge en memoire
+    la version 12 installee via pip (nvidia-cublas-cu12). Le chargement par chemin
+    absolu en mode local rend ensuite le nom "libcublas.so.12" resolvable pour
+    CTranslate2, sans toucher au cuBLAS 13 utilise par torch."""
+    import ctypes, glob, os, sysconfig
+    racine = sysconfig.get_paths()["purelib"]
+    charge = []
+    # libcublasLt d'abord : libcublas en depend
+    for motif in ("libcublasLt.so.12*", "libcublas.so.12*"):
+        trouves = sorted(glob.glob(os.path.join(racine, "nvidia", "**", motif), recursive=True))
+        if trouves:
+            ctypes.CDLL(trouves[0])
+            charge.append(os.path.basename(trouves[0]))
+    return charge
+
+def charger_whisper():
     from faster_whisper import WhisperModel
+    try:
+        print("  cuBLAS 12 precharge :", precharger_cublas12() or "aucune bibliotheque trouvee")
+        modele = WhisperModel(WHISPER_MODELE, device="cuda", compute_type="float16")
+        # Le chargement du modele ne suffit pas : les bibliotheques CUDA ne sont
+        # sollicitees qu'au premier calcul. Test reel sur 2 s de silence.
+        segments, _info = modele.transcribe(np.zeros(32000, dtype=np.float32), language="en", vad_filter=False)
+        list(segments)  # le calcul n'a lieu qu'a l'iteration du generateur
+        print(f"  faster-whisper : GPU operationnel (modele {WHISPER_MODELE}).")
+        return modele
+    except Exception as e:
+        print(f"  [!] faster-whisper ne peut pas utiliser le GPU : {type(e).__name__}: {e}")
+        print(f"      Repli sur CPU avec le modele '{WHISPER_MODELE_CPU}' -- nettement plus lent.")
+        return WhisperModel(WHISPER_MODELE_CPU, device="cpu", compute_type="int8")
+
+# --- Alignement des mots : WhisperX (wav2vec2) ou Montreal Forced Aligner ---
+# Le texte et le decoupage en segments viennent de Whisper ; l'aligneur ne fait que repositionner
+# chaque mot dans le temps. Chaque fonction renvoie (paroles, ok) : si quoi que ce soit echoue,
+# les paroles de Whisper sont conservees telles quelles.
+
+MODELES_WAV2VEC_HF = {"en": "facebook/wav2vec2-base-960h", "fr": "jonatasgrosman/wav2vec2-large-xlsr-53-french"}
+
+def aligner_whisperx(chemin_voix, paroles, langue):
+    try:
+        import torch
+        import librosa
+        import whisperx
+        try:
+            import torchaudio.pipelines  # utilise par WhisperX pour ses modeles par defaut
+        except Exception:
+            pass
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        code = (langue or "")[:2]
+        try:
+            modele, meta = whisperx.load_align_model(language_code=code, device=device)
+        except Exception as e1:
+            if code not in MODELES_WAV2VEC_HF:
+                raise
+            print(f"    [WhisperX] modele par defaut indisponible ({type(e1).__name__}) -- essai avec {MODELES_WAV2VEC_HF[code]}")
+            modele, meta = whisperx.load_align_model(language_code=code, device=device, model_name=MODELES_WAV2VEC_HF[code])
+        audio, _ = librosa.load(str(chemin_voix), sr=16000, mono=True)
+        duree = len(audio) / 16000.0
+        sortie = []
+        n_alignes = 0
+        for p in paroles:
+            debut = max(0.0, p["start"] - PAROLES_ALIGN_MARGE)
+            fin = min(duree, p["end"] + PAROLES_ALIGN_MARGE)
+            resultat = None
+            try:
+                if fin - debut > 0.1 and p["texte"].strip():
+                    resultat = whisperx.align([{"text": p["texte"], "start": debut, "end": fin}], modele, meta, audio, device)
+            except Exception as e2:
+                print(f"    [WhisperX] segment ignore ({type(e2).__name__}: {e2})")
+            ajoutes = 0
+            for sg in (resultat or {}).get("segments", []):
+                mots = []
+                for w in sg.get("words", []):
+                    if "start" in w and "end" in w:
+                        mot = {"start": round(float(w["start"]), 3), "end": round(float(w["end"]), 3), "texte": w["word"]}
+                        if w.get("score") is not None:
+                            mot["score"] = round(float(w["score"]), 3)
+                        mots.append(mot)
+                if mots:
+                    sortie.append({"start": mots[0]["start"], "end": mots[-1]["end"], "texte": sg["text"].strip(), "mots": mots})
+                    ajoutes += 1
+            if ajoutes:
+                n_alignes += 1
+            else:
+                sortie.append(p)  # alignement impossible : on garde le segment de Whisper
+        print(f"    [WhisperX] {n_alignes}/{len(paroles)} segments realignes")
+        sortie.sort(key=lambda x: x["start"])
+        return sortie, n_alignes > 0
+    except Exception as e:
+        print(f"    [!] WhisperX indisponible ({type(e).__name__}: {e}) -- paroles conservees avec les temps de Whisper.")
+        return paroles, False
+
+def lire_textgrid_mots(chemin):
+    """Intervalles (debut, fin, mot) du tier 'words' d'un TextGrid au format long (silences exclus)."""
+    texte = chemin.read_text(encoding="utf-8")
+    for tier in texte.split("item [")[1:]:
+        m = re.search('name = "([^"]*)"', tier)
+        if m and m.group(1).endswith("words"):
+            intervalles = re.findall('xmin = ([0-9.eE+-]+)[^a-z]+xmax = ([0-9.eE+-]+)[^a-z]+text = "([^"]*)"', tier)
+            return [(float(a), float(b), t) for a, b, t in intervalles if t.strip()]
+    return []
+
+def aligner_mfa(chemin_voix, paroles, langue):
+    if not MFA_PRET:
+        print("    [!] MFA non installe -- paroles conservees avec les temps de Whisper.")
+        return paroles, False
+    try:
+        import librosa
+        import soundfile as sf
+        modele = MFA_MODELES.get((langue or "")[:2])
+        if modele is None:
+            print(f"    [MFA] langue '{langue}' non prise en charge (fr, en) -- paroles conservees.")
+            return paroles, False
+        audio, sr = librosa.load(str(chemin_voix), sr=16000, mono=True)
+        duree = len(audio) / float(sr)
+        racine_corpus = MFA_DONNEES / "corpus"
+        corpus = racine_corpus / "voix"  # un seul "locuteur" (le nom du dossier)
+        sortie = MFA_DONNEES / "sortie"
+        shutil.rmtree(racine_corpus, ignore_errors=True)
+        shutil.rmtree(sortie, ignore_errors=True)
+        corpus.mkdir(parents=True)
+        decalages = {}
+        for i, p in enumerate(paroles):
+            debut = max(0.0, p["start"] - PAROLES_ALIGN_MARGE)
+            fin = min(duree, p["end"] + PAROLES_ALIGN_MARGE)
+            if fin - debut < 0.1 or not p["texte"].strip():
+                continue
+            nom_seg = f"seg_{i:04d}"
+            sf.write(str(corpus / f"{nom_seg}.wav"), audio[int(debut*sr):int(fin*sr)], sr)
+            (corpus / f"{nom_seg}.lab").write_text(p["texte"], encoding="utf-8")
+            decalages[nom_seg] = debut
+        g2p = MFA_DONNEES / "pretrained_models" / "g2p" / f"{modele}.zip"
+        base = ["align", str(racine_corpus), modele, modele, str(sortie), "--clean", "--output_format", "long_textgrid"]
+        essais = []
+        if g2p.exists():
+            essais.append(base + ["--g2p_model_path", str(g2p), "--beam", "100", "--retry_beam", "400"])
+        essais.append(base + ["--beam", "100", "--retry_beam", "400"])
+        essais.append(base)
+        reussi = False
+        for args in essais:
+            try:
+                lancer_mfa(*args)
+                reussi = True
+                break
+            except subprocess.CalledProcessError as e:
+                print("    [MFA] tentative echouee :", (e.stderr or e.stdout or "")[-300:].replace(chr(10), " "))
+        if not reussi:
+            return paroles, False
+        grilles = {g.stem: g for g in sortie.rglob("*.TextGrid")}
+        resultat_final = []
+        n_alignes = 0
+        for i, p in enumerate(paroles):
+            nom_seg = f"seg_{i:04d}"
+            intervalles = lire_textgrid_mots(grilles[nom_seg]) if nom_seg in grilles else []
+            if not intervalles:
+                resultat_final.append(p)
+                continue
+            decalage = decalages[nom_seg]
+            jetons = p["texte"].split()
+            conserver_texte = len(jetons) == len(intervalles)  # sinon on garde l'orthographe de MFA
+            mots = []
+            for k, (a, b, t) in enumerate(intervalles):
+                mots.append({"start": round(a + decalage, 3), "end": round(b + decalage, 3),
+                             "texte": jetons[k] if conserver_texte else t})
+            resultat_final.append({"start": mots[0]["start"], "end": mots[-1]["end"], "texte": p["texte"], "mots": mots})
+            n_alignes += 1
+        print(f"    [MFA] {n_alignes}/{len(paroles)} segments realignes")
+        resultat_final.sort(key=lambda x: x["start"])
+        return resultat_final, n_alignes > 0
+    except Exception as e:
+        print(f"    [!] MFA a echoue ({type(e).__name__}: {e}) -- paroles conservees avec les temps de Whisper.")
+        return paroles, False
+
+if PAROLES_ACTIF:
     print("Chargement du modele faster-whisper (paroles)...")
-    whisper_modele = WhisperModel("large-v3", device="cuda", compute_type="float16")
+    whisper_modele = charger_whisper()
 else:
     whisper_modele = None
     print("Transcription des paroles desactivee.")
@@ -1322,10 +2058,16 @@ for r in rapports:
 
     if MELODIE_ACTIF and voix is not None:
         t0 = time.time()
-        r["melodie"] = extraire_melodie(voix, rmvpe_modele)
-        print(f"  {r['nom_fichier']} -- melodie ({len(r['melodie'])} notes) : {time.time()-t0:.1f} s")
+        notes_par_moteur, moteur_melodie = extraire_melodies(voix)
+        r["melodie"] = notes_par_moteur.get(moteur_melodie, []) if moteur_melodie else []
+        r["moteur_melodie"] = moteur_melodie
+        non_vides = {k: v for k, v in notes_par_moteur.items() if v}
+        r["variantes_melodie"] = non_vides if (MELODIE_MOTEUR == "tous" and len(non_vides) >= 2) else {}
+        print(f"  {r['nom_fichier']} -- melodie ({len(r['melodie'])} notes, detecteur : {moteur_melodie}) : {time.time()-t0:.1f} s")
     else:
         r["melodie"] = []
+        r["moteur_melodie"] = None
+        r["variantes_melodie"] = {}
 
     if PAROLES_ACTIF and voix is not None:
         t0 = time.time()
@@ -1333,18 +2075,46 @@ for r in rapports:
         r["paroles"] = extraire_paroles(voix, whisper_modele, langue)
         if MELODIE_ACTIF and PAROLES_RATTRAPAGE_VIA_MELODIE:
             r["paroles"] = rattraper_paroles_via_melodie(voix, whisper_modele, langue, r["melodie"], r["paroles"])
-        print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments, langue={langue or 'auto'}) : {time.time()-t0:.1f} s")
+        r["moteur_paroles"] = "whisper"
+        langue_alignement = langue or DERNIERE_LANGUE["code"]
+        r["variantes_paroles"] = {}
+        if r["paroles"]:
+            if PAROLES_MOTEUR == "tous":
+                r["variantes_paroles"]["whisper"] = copy.deepcopy(r["paroles"])
+            if PAROLES_MOTEUR in ("whisperx", "tous"):
+                px, ok = aligner_whisperx(voix, r["paroles"], langue_alignement)
+                if ok:
+                    r["variantes_paroles"]["whisperx"] = px
+            if PAROLES_MOTEUR in ("mfa", "tous"):
+                pm, ok = aligner_mfa(voix, r["paroles"], langue_alignement)
+                if ok:
+                    r["variantes_paroles"]["mfa"] = pm
+            for choix in ("whisperx", "mfa"):
+                if choix in r["variantes_paroles"] and (PAROLES_MOTEUR == choix or PAROLES_MOTEUR == "tous"):
+                    r["paroles"] = r["variantes_paroles"][choix]
+                    r["moteur_paroles"] = choix
+                    break
+        if PAROLES_MOTEUR != "tous" or len(r["variantes_paroles"]) < 2:
+            r["variantes_paroles"] = {}  # rien a comparer
+        print(f"  {r['nom_fichier']} -- paroles ({len(r['paroles'])} segments, langue={langue_alignement or 'auto'}, placement : {r['moteur_paroles']}) : {time.time()-t0:.1f} s")
     else:
-        r["paroles"] = []`
+        r["paroles"] = []
+        r["variantes_paroles"] = {}
+        r["moteur_paroles"] = "whisper"`
     ),
 
-    md(`## 7. Fusion des stems en un fichier Opus 8 canaux + fichier de métadonnées séparé`),
+    md(`## 7. Encodage des stems (Opus 8 canaux, ou un fichier par piste) + fichier de métadonnées séparé`),
 
     code(
 `import subprocess
 
-# Ordre canonique des pistes (4 x stereo)
-ORDRE_STEMS = ['vocals', 'drums', 'bass', 'other']
+# Ordre canonique des pistes (stereo) ; les pistes inconnues sont ajoutees a la fin
+ORDRE_STEMS = ['vocals', 'drums', 'bass', 'guitar', 'piano', 'other']
+
+# Un Opus fusionne de plus de 8 canaux (6 pistes = 12 canaux) n'est pas lisible dans le navigateur.
+if FORMAT_EXPORT == "opus_8ch" and DEMUCS_MODELE != "htdemucs":
+    print("Format 8 canaux incompatible avec 6 pistes -> export en Opus, une piste par fichier.")
+    FORMAT_EXPORT = "opus_4pistes"
 
 def ordonner_stems(stem_files):
     par_nom = {f.stem: f for f in stem_files}
@@ -1365,7 +2135,7 @@ def fusionner_stems_opus(stem_files, sortie_path):
         # surround type 7.1, contrairement au mapping par defaut d'Opus pour 8 canaux)
         ['ffmpeg', '-y', *inputs, '-filter_complex', filtre, '-map', '[a]',
          '-c:a', 'libopus', '-mapping_family', '255', '-application', 'audio',
-         '-b:a', '384k', str(sortie_path)],
+         '-b:a', f'{96 * n}k', str(sortie_path)],
         check=True, capture_output=True,
     )
     return [f.stem for f in ordonnes]
@@ -1383,11 +2153,29 @@ def encoder_stems_aac(stem_files, nom_base, bitrate):
         chemins.append(sortie)
     return [f.stem for f in ordonnes], chemins
 
+def encoder_stems_opus(stem_files, nom_base, bitrate):
+    ordonnes = ordonner_stems(stem_files)
+    chemins = []
+    for f in ordonnes:
+        sortie = RESULT_DIR / f"{nom_base}_{f.stem}.opus"
+        subprocess.run(
+            ['ffmpeg', '-y', '-i', str(f), '-vn', '-c:a', 'libopus', '-b:a', bitrate,
+             '-application', 'audio', str(sortie)],
+            check=True, capture_output=True,
+        )
+        chemins.append(sortie)
+    return [f.stem for f in ordonnes], chemins
+
+# Formats "une piste = un fichier" : audio_path est alors une liste de fichiers
+FORMAT_MULTI_FICHIERS = FORMAT_EXPORT in ("aac_4pistes", "opus_4pistes")
+
 for r in rapports:
     nom = Path(r["nom_fichier"]).stem
 
     if FORMAT_EXPORT == "aac_4pistes":
         ordre, audio_path = encoder_stems_aac(r["stem_files"], nom, AAC_BITRATE)
+    elif FORMAT_EXPORT == "opus_4pistes":
+        ordre, audio_path = encoder_stems_opus(r["stem_files"], nom, OPUS_BITRATE)
     else:
         audio_path = RESULT_DIR / f"{nom}_stems.opus"
         ordre = fusionner_stems_opus(r["stem_files"], audio_path)
@@ -1395,7 +2183,7 @@ for r in rapports:
     metadata = dict(r["metadata"])
     releves = metadata.pop('releves', [])
 
-    r["audio_path"] = audio_path  # Path (opus_8ch) ou liste de Path (aac_4pistes)
+    r["audio_path"] = audio_path  # Path (opus_8ch) ou liste de Path (aac_4pistes / opus_4pistes)
     r["metadonnees_completes"] = {
         "pistes": ordre,
         "structure": {
@@ -1410,6 +2198,10 @@ for r in rapports:
         "paroles": r["paroles"],
         "metadata": metadata,
         "releves": releves,
+        "paroles_variantes": r.get("variantes_paroles", {}),
+        "accords_variantes": r.get("variantes_accords", {}),
+        "melodie_variantes": r.get("variantes_melodie", {}),
+        "analyse": {"demucs": DEMUCS_MODELE if len(ordre) > 4 else "htdemucs", "placement_paroles": r.get("moteur_paroles", "whisper"), "moteur_accords": r.get("moteur_accords"), "moteur_melodie": r.get("moteur_melodie")},
     }
 
     json_path = RESULT_DIR / f"{nom}_metadonnees.json"
@@ -1417,7 +2209,7 @@ for r in rapports:
         json.dump(r["metadonnees_completes"], f, indent=2, ensure_ascii=False)
     r["json_path"] = json_path
 
-    if FORMAT_EXPORT == "aac_4pistes":
+    if FORMAT_MULTI_FICHIERS:
         taille_ko = sum(p.stat().st_size for p in audio_path) / 1024
         noms_audio = ", ".join(p.name for p in audio_path)
     else:
@@ -1445,7 +2237,7 @@ zip_path = WORKDIR / f"resultats_{int(time.time())}.zip"
 with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
     for r in rapports:
         nom = Path(r["nom_fichier"]).stem
-        if FORMAT_EXPORT == "aac_4pistes":
+        if FORMAT_MULTI_FICHIERS:
             for chemin_audio in r["audio_path"]:
                 zf.write(chemin_audio, f"{nom}/{chemin_audio.name}")
         else:
@@ -1497,7 +2289,10 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   const parolesActif = document.getElementById('toggle-paroles').checked;
   const formatExport = document.querySelector('input[name=format-export]:checked').value;
   const aacBitrate = document.getElementById('aac-bitrate').value;
-  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer, formatExport, aacBitrate);
+  const opusBitrate = document.getElementById('opus-bitrate').value;
+  const demucsModele = document.querySelector('input[name=demucs]:checked').value;
+  const parolesMoteur = document.getElementById('paroles-moteur').value;
+  const notebook = buildNotebook(tracks, btcLargeVoca, accordsActif, melodieActif, parolesActif, sourceMode, driveFolder, driveDeplacer, formatExport, aacBitrate, opusBitrate, demucsModele, parolesMoteur, document.getElementById('accords-moteur').value, document.getElementById('melodie-moteur').value);
   const blob = new Blob([JSON.stringify(notebook, null, 1)], { type: 'application/x-ipynb+json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1513,13 +2308,34 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   status.textContent = `Notebook téléchargé (${suffixe}). Ouvrez-le dans Google Colab pour continuer.`;
 });
 
-if ('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
-}
 
 addTrack();
+
+// --- PWA : version + mise à jour ---
+(function(){
+  const V = document.querySelector('meta[name="app-version"]').content;
+  const afficher = () => { const el = document.getElementById('app-version'); if (el) el.textContent = 'Bandes v' + V; };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', afficher); else window.addEventListener('load', afficher);
+  if (!('serviceWorker' in navigator)) return;
+  let rechargement = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!rechargement){ rechargement = true; location.reload(); } });
+  function proposer(sw){
+    const b = document.getElementById('maj-bandeau'); if (!b) return;
+    b.style.display = 'flex';
+    b.querySelector('button').onclick = () => sw.postMessage('SKIP_WAITING');
+  }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      if (reg.waiting && navigator.serviceWorker.controller) proposer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const nv = reg.installing; if (!nv) return;
+        nv.addEventListener('statechange', () => { if (nv.state === 'installed' && navigator.serviceWorker.controller) proposer(nv); });
+      });
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    }).catch(() => {});
+  });
+})();
 </script>
+<div id="maj-bandeau"><span>Nouvelle version disponible.</span><button type="button">Mettre à jour</button></div>
 </body>
 </html>
