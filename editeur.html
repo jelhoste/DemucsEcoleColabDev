@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.13.0">
+<meta name="app-version" content="1.14.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -570,17 +570,29 @@
   #timeline-scroll[data-focus="melodie"] .lane:not(#lane-melodie),
   #timeline-scroll[data-focus="paroles"] .lane:not(#lane-paroles),
   #timeline-scroll[data-focus="marqueurs"] .lane:not(#lane-marqueurs){ display:none; }
-  #timeline-scroll[data-focus="paroles"] #lane-paroles{ height: 132px; }
   #timeline-scroll[data-focus="paroles"] #lane-paroles .seg-block, #timeline-scroll[data-focus="paroles"] #lane-paroles .seg-joint{ display:none; }
+  #timeline-scroll{ --ech: 1.5; }
+  .focus-actions{ display:none; align-items:center; gap:6px; flex-wrap:wrap; }
+  .focus-actions label{ display:inline-flex; align-items:center; gap:6px; }
+  .focus-actions input[type=range]{ width:90px; accent-color: var(--brass); }
+  #timeline-scroll[data-focus="structure"] #lane-structure, #timeline-scroll[data-focus="accords"] #lane-accords{ height: calc(var(--ech) * 64px); }
+  #timeline-scroll[data-focus="structure"] .seg-block, #timeline-scroll[data-focus="accords"] .seg-block{ top:6px; bottom:6px; }
+  #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label{ padding:0 6px; }
+  #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label,
+  #timeline-scroll[data-focus="structure"] .seg-edit-input, #timeline-scroll[data-focus="accords"] .seg-edit-input{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size: calc(var(--ech) * 0.8rem + 0.2rem); }
+  .seg-block.choisi{ outline:2px solid #fff; outline-offset:-1px; }
   .mw-phrase{ position:absolute; top:22px; height:16px; background: color-mix(in srgb, var(--lane-color) 18%, var(--panel)); border-left:1px solid var(--lane-color); font-size:0.64rem; color: var(--text-muted); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding:0 4px; line-height:16px; pointer-events:none; }
-  .mw{ position:absolute; height:36px; background: color-mix(in srgb, var(--lane-color) 40%, var(--panel)); border:1px solid var(--lane-color); border-radius:4px; cursor:grab; touch-action:none; overflow:hidden; display:flex; align-items:center; user-select:none; min-width:8px; }
-  .mw span.t{ padding:0 8px; font-size:0.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; color: var(--text); }
-  .mw.virtuel{ border-style:dashed; background: color-mix(in srgb, var(--lane-color) 14%, var(--panel)); }
+  .mw{ position:absolute; background: color-mix(in srgb, var(--lane-color) 38%, var(--panel)); border:1px solid var(--lane-color); border-radius:4px; cursor:grab; touch-action:none; user-select:none; min-width:14px; box-sizing:border-box; }
+  .mw .t{ position:absolute; left:15px; top:0; bottom:0; display:flex; align-items:center; padding:0 6px; white-space:nowrap; color: var(--text); pointer-events:none; background: color-mix(in srgb, var(--lane-color) 38%, var(--panel)); border-radius:0 4px 4px 0; z-index:2; font-family:'IBM Plex Sans',sans-serif; font-weight:600; }
+  .mw.virtuel, .mw.virtuel .t{ background: color-mix(in srgb, var(--lane-color) 14%, var(--panel)); }
+  .mw.virtuel{ border-style:dashed; }
   .mw.douteux{ border-color:#C98F8F; }
-  .mw.actif{ background: color-mix(in srgb, var(--lane-color) 75%, var(--panel)); }
-  .mw.choisi{ outline:2px solid #fff; }
-  .mw .h{ position:absolute; top:0; bottom:0; width:7px; cursor:ew-resize; background: var(--lane-color); opacity:0.75; }
-  .mw .h[data-edge=start]{ left:0; } .mw .h[data-edge=end]{ right:0; }
+  .mw.actif, .mw.actif .t{ background: color-mix(in srgb, var(--lane-color) 78%, var(--panel)); }
+  .mw.choisi{ outline:2px solid #fff; outline-offset:1px; }
+  .mw .hl{ position:absolute; left:0; top:0; bottom:0; width:14px; cursor:ew-resize; background: var(--lane-color); border-radius:3px 0 0 3px; z-index:3;
+           background-image: repeating-linear-gradient(90deg, transparent 0 3px, rgba(0,0,0,.35) 3px 4px); background-size:100% 40%; background-repeat:no-repeat; background-position:center; }
+  .mw .hr{ position:absolute; right:0; top:0; bottom:0; width:6px; cursor:ew-resize; background: var(--lane-color); opacity:0.7; border-radius:0 3px 3px 0; z-index:3; }
+  .mw-edit{ position:absolute; z-index:20; font-family:'IBM Plex Sans',sans-serif; font-weight:600; color: var(--text); background: var(--panel-raised); border:2px solid var(--brass); border-radius:4px; padding:0 8px; box-sizing:border-box; }
   .mw-aide{ position:absolute; left:90px; top:4px; font-size:0.7rem; color: var(--text-muted); pointer-events:none; }
   .mot-tick{ position:absolute; bottom:1px; width:2px; height:9px; background: rgba(255,255,255,0.6); pointer-events:none; }
   .mots-btn{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:2px 8px; font-size:0.72rem; cursor:pointer; white-space:nowrap; }
@@ -672,6 +684,12 @@
         <button type="button" data-focus="melodie">Mélodie</button>
         <button type="button" data-focus="paroles">Paroles (mot à mot)</button>
         <button type="button" data-focus="marqueurs">Marqueurs</button>
+        <span class="focus-actions" id="focus-actions">
+          <button type="button" data-fa="ajout" title="Ajouter une carte à la position de lecture">＋ Carte au curseur</button>
+          <button type="button" data-fa="scinder" title="Scinder la carte choisie en deux (au curseur de lecture, ou à la position du curseur de texte si vous êtes en train d'écrire)">✂ Scinder</button>
+          <button type="button" data-fa="suppr" title="Supprimer la carte choisie">🗑 Supprimer</button>
+          <label title="Taille du texte et hauteur des cartes">Taille <input type="range" id="focus-taille" min="1" max="2.5" step="0.1" value="1.5"></label>
+        </span>
       </div>
       <div class="timeline-scroll" id="timeline-scroll" data-focus="toutes">
         <div class="timeline-wrap" id="timeline-wrap">
@@ -1188,7 +1206,7 @@ async function chargerZip(file){
     appliquerLargeurTimeline();
     dessinerWaveform();
     dessinerGrilleRythmique();
-    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); } } catch (_) {}
+    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none'; } } catch (_) {}
     rendreTout();
     requestAnimationFrame(bouclePlayhead);
   } catch(err){
@@ -1547,8 +1565,8 @@ function trierSegments(segments){ segments.sort((a,b) => a.start-b.start); }
 const JOINT_EPS = 0.02; // deux cartes dont l'ecart est inferieur sont considerees comme "jointes"
 const MIN_GAP = 0.05;   // duree minimale d'une carte
 
-function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
-  let actifId = null, actifEl = null;
+function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif, fmtAffichage){
+  let actifId = null, actifEl = null, selId = null;
 
   function render(){
     laneEl.querySelectorAll('.seg-block, .seg-joint').forEach(el => el.remove());
@@ -1566,12 +1584,13 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
       block.style.left = left+'px';
       block.style.width = w+'px';
       block.dataset.id = seg.id;
+      if (seg.id === selId) block.classList.add('choisi');
       block.title = seg.value;
       // Poignee propre a la carte uniquement du cote "libre" (premier bord, dernier bord,
       // ou bord qui ne touche pas la voisine) ; entre deux cartes jointes : une poignee commune.
       block.innerHTML =
         (jStart ? '' : '<div class="seg-handle" data-edge="start"></div>') +
-        `<span class="seg-label">${escapeHtml(seg.value)}</span>` +
+        `<span class="seg-label">${escapeHtml(fmtAffichage ? fmtAffichage(seg.value) : seg.value)}</span>` +
         (jEnd ? '' : '<div class="seg-handle" data-edge="end"></div>');
       if (Array.isArray(seg.mots) && seg.mots.length){
         const dseg = Math.max(0.001, seg.end - seg.start);
@@ -1673,6 +1692,8 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
     const seg = segments.find(sg => sg.id === Number(block.dataset.id));
     if (!seg) return;
 
+    selId = seg.id;
+    laneEl.querySelectorAll('.seg-block').forEach(b => b.classList.toggle('choisi', Number(b.dataset.id) === selId));
     const labelEl = block.querySelector('.seg-label');
     const input = document.createElement('input');
     input.type = 'text';
@@ -1697,11 +1718,11 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif){
     input.addEventListener('pointerdown', (ev) => ev.stopPropagation());
   });
 
-  return { render, maj };
+  return { render, maj, getSel: () => selId, setSel: (id) => { selId = id; laneEl.querySelectorAll('.seg-block').forEach(b => b.classList.toggle('choisi', Number(b.dataset.id) === selId)); } };
 }
 
 const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (f) => { if (f) trierSegments(structureSegments); rendreListeStructure(); }, 'structure');
-const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (f) => { if (f) trierSegments(accordSegments); rendreListeAccords(); }, 'accords');
+const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (f) => { if (f) trierSegments(accordSegments); rendreListeAccords(); }, 'accords', (v) => accordAffichage(v));
 const laneParoles = creerLaneEditable(document.getElementById('lane-paroles'), () => parolesSegments, (f) => { if (f) trierSegments(parolesSegments); rendreListeParoles(); });
 
 // ============================================================
@@ -3463,11 +3484,20 @@ function motsPlats(){     // tous les mots dans l'ordre, y compris ceux d'une li
   });
   return out;
 }
+function echelleFocus(){ return Number(document.getElementById('focus-taille').value) || 1.5; }
+let _ctxMesure = null;
+function largeurTexte(txt, px){
+  if (!_ctxMesure) _ctxMesure = document.createElement('canvas').getContext('2d');
+  _ctxMesure.font = '600 ' + px + 'px "IBM Plex Sans", sans-serif';
+  return _ctxMesure.measureText(txt).width;
+}
+let motsLaneCache = null;
 function rendreMotsLane(){
   const lane = document.getElementById('lane-paroles');
-  lane.querySelectorAll('.mw, .mw-phrase, .mw-aide').forEach(x => x.remove());
-  if (focusPiste !== 'paroles' || !duration) return;
+  lane.querySelectorAll('.mw, .mw-phrase, .mw-aide, .mw-edit').forEach(x => x.remove());
+  if (focusPiste !== 'paroles' || !duration){ lane.style.height = ''; return; }
   const W = lane.clientWidth; if (!W) return;
+  const ech = echelleFocus(), fz = Math.round(11 * ech) + 2, rowH = Math.round(24 * ech) + 6, GAP = 4, TOP = 26;
   parolesSegments.forEach(seg => {
     const ph = document.createElement('div'); ph.className = 'mw-phrase';
     ph.style.left = (seg.start / duration * W) + 'px'; ph.style.width = Math.max(4, (seg.end - seg.start) / duration * W) + 'px';
@@ -3479,47 +3509,81 @@ function rendreMotsLane(){
     a.textContent = 'Blocs en pointillés : ligne sans minutage mot à mot (répartition automatique). Touchez-en un pour le créer.';
     lane.appendChild(a);
   }
+  // rangees : un mot va sur la premiere rangee ou il ne recouvre rien (texte entier compris)
+  const finRangee = []; let nRang = 1;
   plats.forEach((p, i) => {
+    const x0 = p.m.start / duration * W, wB = Math.max(14, (p.m.end - p.m.start) / duration * W);
+    const fin = x0 + Math.max(wB, 15 + 12 + largeurTexte(p.m.texte, fz));
+    let r = 0; while (finRangee[r] !== undefined && finRangee[r] > x0 - 3) r++;
+    finRangee[r] = fin; nRang = Math.max(nRang, r + 1);
     const el = document.createElement('div');
     el.className = 'mw' + (p.virtuel ? ' virtuel' : '') + ((p.m.score != null && p.m.score < 0.3) ? ' douteux' : '') + ((motChoisi && motChoisi.m === p.m) ? ' choisi' : '');
     el.dataset.i = i; el.title = p.m.texte + (p.m.score != null ? '  (confiance ' + p.m.score + ')' : '');
-    el.style.top = (44 + (i % 2) * 40) + 'px';
-    el.innerHTML = '<span class="h" data-edge="start"></span><span class="t">' + escapeHtml(p.m.texte) + '</span><span class="h" data-edge="end"></span>';
+    el.style.top = (TOP + r * (rowH + GAP)) + 'px'; el.style.height = rowH + 'px'; el.style.fontSize = fz + 'px';
+    el.innerHTML = '<span class="hl" title="Ancre du mot : glisser pour déplacer son début"></span><span class="t">' + escapeHtml(p.m.texte) + '</span><span class="hr" title="Fin du mot"></span>';
     positionnerMot(el, p.m, W);
     lane.appendChild(el);
   });
+  lane.style.height = (TOP + nRang * (rowH + GAP) + 6) + 'px';
   majMotsLane(getTempsActuel());
 }
 function positionnerMot(el, m, W){
   el.style.left = (m.start / duration * W) + 'px';
-  el.style.width = Math.max(8, (m.end - m.start) / duration * W) + 'px';
+  el.style.width = Math.max(14, (m.end - m.start) / duration * W) + 'px';
 }
 function majMotsLane(t){
-  if (focusPiste !== 'paroles') return;
+  if (focusPiste !== 'paroles' || !motsLaneCache) return;
   document.querySelectorAll('#lane-paroles .mw').forEach(el => {
-    const p = motsLaneCache && motsLaneCache[Number(el.dataset.i)];
+    const p = motsLaneCache[Number(el.dataset.i)];
     el.classList.toggle('actif', !!p && t >= p.m.start && t < p.m.end);
   });
 }
-let motsLaneCache = null;
+let edition = null;   // { inp, seg, m } : mot en cours d'ecriture
+function editerMot(seg, m, el){
+  const lane = document.getElementById('lane-paroles');
+  if (edition) edition.fin(true);
+  const ech = echelleFocus(), fz = Math.round(11 * ech) + 2, rowH = Math.round(24 * ech) + 6;
+  const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'mw-edit'; inp.value = m.texte;
+  inp.style.left = el.style.left; inp.style.top = el.style.top; inp.style.height = rowH + 'px'; inp.style.fontSize = fz + 'px';
+  inp.style.width = Math.max(el.offsetWidth, largeurTexte(m.texte, fz) + 60, 110) + 'px';
+  lane.appendChild(inp); inp.focus(); inp.select();
+  let fini = false;
+  const fin = (ok) => {
+    if (fini) return; fini = true; edition = null;
+    const v = inp.value.trim();
+    if (ok && v && v !== m.texte){ m.texte = v; valeurDepuisMots(seg); }
+    rendreListeParoles();
+  };
+  edition = { inp, seg, m, fin };
+  inp.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter'){ ev.preventDefault(); fin(true); } else if (ev.key === 'Escape'){ fin(false); } });
+  inp.addEventListener('pointerdown', ev => ev.stopPropagation());
+  inp.addEventListener('blur', () => fin(true));
+}
 (function(){
   const lane = document.getElementById('lane-paroles');
   let drag = null;
   const EPS = 0.025;
   function temps(e){ const r = lane.getBoundingClientRect(); return Math.max(0, Math.min(duration, (e.clientX - r.left) / r.width * duration)); }
+  function elDe(idx){ return lane.querySelector('.mw[data-i="' + idx + '"]'); }
   lane.addEventListener('pointerdown', (e) => {
     if (focusPiste !== 'paroles') return;
     const el = e.target.closest('.mw'); if (!el) return;
     const plats = motsPlats(); const p = plats[Number(el.dataset.i)]; if (!p) return;
-    if (p.virtuel){ p.seg.mots = motsDe(p.seg).map(m => ({ start: m.start, end: m.end, texte: m.texte })); }  // cree le minutage
-    const seg = p.seg;
-    const reel = seg.mots[plats.filter(x => x.seg === seg).indexOf(p)];
-    const plats2 = motsPlats(); const idx = plats2.findIndex(x => x.m === reel);
+    if (edition) edition.fin(true);
+    let seg = p.seg, reel = p.m;
+    if (p.virtuel){
+      const k = plats.filter(x => x.seg === seg).indexOf(p);
+      seg.mots = motsDe(seg).map(m => ({ start: m.start, end: m.end, texte: m.texte }));
+      reel = seg.mots[k];
+    }
+    const plats2 = p.virtuel ? motsPlats() : plats; const idx = plats2.findIndex(x => x.m === reel);
     motChoisi = { seg, m: reel };
-    drag = { el, idx, plats: plats2, seg, m: reel, mode: e.target.closest('.h') ? e.target.closest('.h').dataset.edge : 'corps',
-             t0: temps(e), s0: reel.start, e0: reel.end, bouge: false };
-    e.preventDefault(); el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    const h = e.target.closest('.hl, .hr');
+    drag = { idx, plats: plats2, seg, m: reel, mode: h ? (h.classList.contains('hl') ? 'start' : 'end') : 'corps',
+             t0: temps(e), s0: reel.start, e0: reel.end, bouge: false, poignee: !!h };
+    e.preventDefault();
     if (p.virtuel) rendreMotsLane();
+    lane.querySelectorAll('.mw').forEach(x => x.classList.toggle('choisi', Number(x.dataset.i) === idx));
     document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); document.addEventListener('pointercancel', onUp);
   });
   function onMove(e){
@@ -3527,7 +3591,8 @@ let motsLaneCache = null;
     const { plats, idx, m, mode } = drag;
     const prev = plats[idx-1] && plats[idx-1].m, next = plats[idx+1] && plats[idx+1].m;
     const t = temps(e); const d = t - drag.t0;
-    if (Math.abs(d) > 0.005) drag.bouge = true;
+    if (Math.abs(d) * lane.clientWidth / duration > 3) drag.bouge = true;   // seuil de 3 px : sinon c'est un clic
+    if (!drag.bouge) return;
     if (mode === 'start'){
       const joint = prev && Math.abs(prev.end - drag.s0) <= EPS;
       const mini = joint ? prev.start + EPS : (prev ? Math.min(prev.end, drag.s0) : 0);
@@ -3541,38 +3606,120 @@ let motsLaneCache = null;
     } else {
       const dur = drag.e0 - drag.s0;
       const mini = prev ? Math.min(prev.end, drag.s0) : 0, maxi = next ? Math.max(next.start, drag.e0) : duration;
-      let s = Math.max(mini, Math.min(maxi - dur, drag.s0 + d));
+      const s = Math.max(mini, Math.min(maxi - dur, drag.s0 + d));
       m.start = s; m.end = s + dur;
     }
     const W = lane.clientWidth;
-    [prev, m, next].forEach(x => { if (!x) return; const k = plats.findIndex(y => y.m === x); const el = lane.querySelector('.mw[data-i="' + k + '"]'); if (el) positionnerMot(el, x, W); });
+    [prev, m, next].forEach(x => { if (!x) return; const k = plats.findIndex(y => y.m === x); const el = elDe(k); if (el) positionnerMot(el, x, W); });
   }
   function onUp(){
     document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); document.removeEventListener('pointercancel', onUp);
     if (!drag) return;
-    const { bouge, m, seg, el } = drag; drag = null;
-    if (bouge){ ajusterBornesMots(seg); rendreListeParoles(); }
-    else { seekTo(m.start); lane.querySelectorAll('.mw').forEach(x => x.classList.toggle('choisi', x === el)); }  // pas de re-rendu : le double-clic doit retrouver son bloc
+    const { bouge, m, seg, idx, poignee, mode } = drag; drag = null;
+    if (bouge){ ajusterBornesMots(seg); rendreListeParoles(); return; }
+    if (poignee && mode === 'start'){ seekTo(m.start); return; }
+    if (!poignee){ const el = elDe(idx); if (el) editerMot(seg, m, el); }
   }
-  // double-clic : renommer le mot (le minutage ne change pas)
-  lane.addEventListener('dblclick', (e) => {
-    if (focusPiste !== 'paroles') return;
-    const el = e.target.closest('.mw'); if (!el) return;
-    const p = motsPlats()[Number(el.dataset.i)]; if (!p || p.virtuel) return;
-    const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'seg-edit-input'; inp.value = p.m.texte;
-    inp.style.cssText = 'position:absolute;inset:3px 8px;width:calc(100% - 16px);';
-    el.appendChild(inp); inp.focus(); inp.select();
-    let fini = false;
-    const fin = (ok) => { if (fini) return; fini = true; const v = inp.value.trim(); if (ok && v){ p.m.texte = v; valeurDepuisMots(p.seg); } rendreListeParoles(); };
-    inp.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter'){ ev.preventDefault(); fin(true); } else if (ev.key === 'Escape'){ fin(false); } });
-    inp.addEventListener('pointerdown', ev => ev.stopPropagation());
-    inp.addEventListener('blur', () => fin(true));
-  });
 })();
+function motCible(){
+  if (motChoisi && parolesSegments.includes(motChoisi.seg) && Array.isArray(motChoisi.seg.mots) && motChoisi.seg.mots.includes(motChoisi.m)) return motChoisi;
+  const t = getTempsActuel();
+  for (const seg of parolesSegments) if (Array.isArray(seg.mots)){ const m = seg.mots.find(x => t >= x.start && t < x.end); if (m) return { seg, m }; }
+  return null;
+}
+function actionMots(a){
+  const t = Math.max(0, Math.min(duration, getTempsActuel()));
+  if (a === 'ajout'){
+    let seg = parolesSegments.find(s => t >= s.start && t <= s.end);
+    if (!seg){
+      const suiv = parolesSegments.find(s => s.start > t);
+      seg = { id: nextId++, start: t, end: Math.min(suiv ? suiv.start : duration, t + 1), value: '', mots: null };
+      parolesSegments.push(seg); trierSegments(parolesSegments);
+    }
+    if (!Array.isArray(seg.mots) || !seg.mots.length) seg.mots = seg.value.trim() ? motsDe(seg).map(m => ({ start: m.start, end: m.end, texte: m.texte })) : [];
+    let deb = t;
+    const dedans = seg.mots.find(m => deb >= m.start && deb < m.end); if (dedans) deb = dedans.end;
+    const suiv = seg.mots.find(m => m.start >= deb);
+    const fin = Math.min(suiv ? suiv.start : seg.end, deb + 0.5, duration);
+    const nv = { start: deb, end: Math.max(fin, deb + 0.1), texte: '…' };
+    seg.mots.push(nv); seg.mots.sort((x, y) => x.start - y.start);
+    valeurDepuisMots(seg); ajusterBornesMots(seg);
+    motChoisi = { seg, m: nv };
+    rendreListeParoles();
+    const k = motsPlats().findIndex(x => x.m === nv); const el = document.querySelector('#lane-paroles .mw[data-i="' + k + '"]');
+    if (el) editerMot(seg, nv, el);
+    return;
+  }
+  const c = motCible(); if (!c) return;
+  const { seg, m } = c;
+  if (a === 'suppr'){
+    seg.mots.splice(seg.mots.indexOf(m), 1);
+    if (!seg.mots.length) parolesSegments.splice(parolesSegments.indexOf(seg), 1); else valeurDepuisMots(seg);
+    motChoisi = null; rendreListeParoles();
+  } else if (a === 'scinder'){
+    let coupe = null, txt = m.texte;
+    if (edition && edition.m === m){ coupe = edition.inp.selectionStart; txt = edition.inp.value; edition.fin(false); }
+    let tc = (t > m.start + 0.04 && t < m.end - 0.04) ? t : (m.start + m.end) / 2;
+    let g, d;
+    if (coupe !== null && coupe > 0 && coupe < txt.length){ g = txt.slice(0, coupe).trim(); d = txt.slice(coupe).trim(); }
+    else { const mots = txt.trim().split(/\s+/); if (mots.length > 1){ const h = Math.ceil(mots.length / 2); g = mots.slice(0, h).join(' '); d = mots.slice(h).join(' '); } else { const h = Math.ceil(txt.length / 2); g = txt.slice(0, h); d = txt.slice(h); } }
+    if (!g) g = '…'; if (!d) d = '…';
+    const k = seg.mots.indexOf(m);
+    const m2 = { start: tc, end: m.end, texte: d };
+    m.end = tc; m.texte = g;
+    seg.mots.splice(k + 1, 0, m2); valeurDepuisMots(seg);
+    motChoisi = { seg, m }; rendreListeParoles();
+  }
+}
+// ---- Structure / accords : memes actions sur les cartes
+function actionCartes(cle, a){
+  const cfg = cle === 'structure'
+    ? { get: () => structureSegments, lane: laneStructure, rendre: rendreListeStructure, defaut: 'nouvelle_section' }
+    : { get: () => accordSegments, lane: laneAccords, rendre: rendreListeAccords, defaut: 'N' };
+  const segs = cfg.get(); const t = Math.max(0, Math.min(duration, getTempsActuel()));
+  const sous = segs.find(s => t >= s.start && t < s.end);
+  const sel = segs.find(s => s.id === cfg.lane.getSel()) || sous;
+  let cible = null;
+  if (a === 'ajout'){
+    if (sous){ cible = scinderSegment(segs, sous, (t > sous.start + MIN_GAP && t < sous.end - MIN_GAP) ? t : (sous.start + sous.end) / 2); }
+    else {
+      const suiv = segs.find(s => s.start > t);
+      const fin = Math.min(suiv ? suiv.start : duration, t + 2);
+      if (fin - t < 0.1) return;
+      cible = { id: nextId++, start: t, end: fin, value: cfg.defaut }; segs.push(cible); trierSegments(segs);
+    }
+  } else if (a === 'scinder'){
+    if (!sel) return;
+    const tc = (t > sel.start + MIN_GAP && t < sel.end - MIN_GAP) ? t : (sel.start + sel.end) / 2;
+    scinderSegment(segs, sel, tc); cible = sel;
+  } else if (a === 'suppr'){
+    if (!sel) return;
+    segs.splice(segs.indexOf(sel), 1); cfg.rendre(); return;
+  }
+  cfg.rendre();
+  if (cible){
+    cfg.lane.setSel(cible.id);
+    if (a === 'ajout'){ const b = document.querySelector('#lane-' + cle + ' .seg-block[data-id="' + cible.id + '"]'); if (b) b.click(); }
+  }
+}
+document.getElementById('focus-actions').addEventListener('mousedown', (ev) => { if (ev.target.closest('button')) ev.preventDefault(); });  // garde le curseur de texte
+document.getElementById('focus-actions').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-fa]'); if (!b || !duration) return;
+  if (focusPiste === 'paroles') actionMots(b.dataset.fa);
+  else if (focusPiste === 'structure' || focusPiste === 'accords') actionCartes(focusPiste, b.dataset.fa);
+});
+document.getElementById('focus-taille').addEventListener('input', (ev) => {
+  document.getElementById('timeline-scroll').style.setProperty('--ech', ev.target.value);
+  try { localStorage.setItem('bandes.focus.taille', ev.target.value); } catch (_) {}
+  if (focusPiste === 'paroles') rendreMotsLane();
+  dessinerGrilleRythmique(); dessinerPlayhead();
+});
+try { const v = localStorage.getItem('bandes.focus.taille'); if (v){ document.getElementById('focus-taille').value = v; document.getElementById('timeline-scroll').style.setProperty('--ech', v); } } catch (_) {}
 function definirFocus(f, sauver){
   focusPiste = f;
   document.getElementById('timeline-scroll').dataset.focus = f;
-  document.querySelectorAll('#focus-bar button').forEach(b => b.classList.toggle('actif', b.dataset.focus === f));
+  document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f));
+  document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none';
   if (sauver !== false){ try { localStorage.setItem('bandes.focus', f); } catch (_) {} }
   if (typeof rendreTout === 'function' && duration){ rendreTout(); dessinerGrilleRythmique(); dessinerPlayhead(); }
 }

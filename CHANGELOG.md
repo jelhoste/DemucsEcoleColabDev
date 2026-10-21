@@ -5,6 +5,11 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.14.0 — 2026-10-21
+- Éditeur, piste Paroles seule : poignée d'ancre à gauche de chaque mot (déplace son début ; un simple clic dessus saute au mot), fin du mot à droite, corps pour déplacer. Le texte s'écrit en entier : les mots se placent sur autant de rangées que nécessaire pour ne jamais se recouvrir. Un clic sur un mot ouvre l'édition du texte.
+- Éditeur, pistes Paroles / Accords / Structure seules : boutons « ＋ Carte au curseur », « ✂ Scinder » (à la position de lecture, ou au curseur de texte pendant l'écriture d'un mot) et « 🗑 Supprimer » ; la carte choisie est entourée de blanc.
+- Éditeur : curseur « Taille » (texte plus gros, cartes plus hautes) pour ces vues, mémorisé. Les accords s'affichent en notation courte (Am7) sur la piste.
+
 ## 1.13.0 — 2026-10-21
 - Éditeur : sélecteur « Piste affichée » au-dessus de la forme d'onde (Toutes, Structure, Accords, Mélodie, Paroles, Marqueurs) : la forme d'onde reste toujours visible, une seule piste s'affiche à la fois. Le choix est mémorisé.
 - Éditeur : en mode « Paroles (mot à mot) », chaque mot est un bloc sur la piste, avec ses deux ancres. Glisser le corps déplace le mot, glisser un bord change son début ou sa fin (le bord d'un mot collé à son voisin entraîne celui-ci), clic = aller au mot, double-clic = renommer sans toucher au minutage. Les lignes sans minutage s'affichent en pointillés et le minutage est créé au premier geste.
