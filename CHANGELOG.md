@@ -5,6 +5,11 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.19.0 — 2026-10-22
+- Banc d'essai : bouton « ⇩ Notebook … seul » en haut à droite de chaque conteneur (FCPE, RMVPE, Basic Pitch) pour ne générer le notebook que pour ce modèle.
+- Banc d'essai : table des temps facultative (le …_metadonnees.json du morceau ou son zip, envoyé dans Colab ou sur Drive). Calage des notes sur la grille des temps (subdivisions 0/1/2/3/4, attraction réglable), chaque calage donnant une variante en plus ; structure.json ajouté au zip exporté. Explications sur les fichiers à fournir (beats, downbeats, beat_positions, bpm, segments).
+- Comparateur : charge la table des temps (.json ou structure.json du zip) : grille des temps, temps forts, sections sur la règle, bouton ▦ Grille et clic de métronome ♩ Clic (accent sur le temps fort).
+
 ## 1.18.0 — 2026-10-21
 - Nouvelle page « Banc d'essai mélodie » (banc.html) : génère un notebook Colab qui prend un seul fichier voix et teste toutes les combinaisons de réglages de FCPE, RMVPE et Basic Pitch (listes de valeurs séparées par des virgules). Un fichier MIDI par variante (1 ms par tick, temps exacts), doublons écartés, export en zip avec reglages.json.
 - Nouvelle page « Comparer des relevés » (comparateur.html) : charge un audio et des MIDI (ou le zip du banc d'essai), forme d'onde au-dessus et un relevé par piste ; synthé par relevé (timbre, octave, volume), panoramique G/C/D, muet, solo, zone de boucle (glisser sur la règle, ou boutons A/B), zoom, hauteurs réglables.

@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.18.0">
+<meta name="app-version" content="1.19.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -44,7 +44,7 @@
   #cv{ position:sticky; left:0; display:block; }
   #tete{ position:absolute; top:0; bottom:0; width:0; border-left:2px solid var(--rust); pointer-events:none; z-index:3; }
   .rang{ border-bottom:1px solid var(--border); padding:4px 8px; display:flex; flex-direction:column; justify-content:center; gap:3px; overflow:hidden; }
-  .rang.regle{ height:20px; padding:0; border-bottom:1px solid var(--border); }
+  .rang.regle{ height:var(--hr,20px); padding:0; border-bottom:1px solid var(--border); }
   .rang.audio{ height:var(--hw); }
   .rang.lane{ height:var(--hl); }
   .ligne{ display:flex; align-items:center; gap:5px; min-height:20px; }
@@ -71,14 +71,14 @@
     <a href="./comparateur.html" class="nav-tab active">Comparer des relevés</a>
   </nav>
   <h1>Comparer des relevés</h1>
-  <p class="sous">Charge un audio (la voix, par exemple) et des fichiers <code>.mid</code> — ou directement le <code>.zip</code> produit par le banc d'essai. Chaque relevé a son propre synthé : mets un relevé à gauche, un autre à droite, et écoute-les ensemble avec l'audio ou l'un après l'autre.</p>
+  <p class="sous">Charge un audio (la voix, par exemple) et des fichiers <code>.mid</code> — ou directement le <code>.zip</code> produit par le banc d'essai. Tu peux aussi charger le <code>.json</code> du morceau (<code>…_metadonnees.json</code>, celui d'« Éditer les métadonnées ») : la table des temps, les temps forts et les sections de la structure s'affichent alors derrière les relevés, avec un clic de métronome facultatif. Chaque relevé a son propre synthé : mets un relevé à gauche, un autre à droite, et écoute-les ensemble avec l'audio ou l'un après l'autre.</p>
 
   <div class="barre">
     <button class="btn" id="b-audio">♪ Audio…</button>
-    <button class="btn" id="b-midi">＋ MIDI / zip…</button>
+    <button class="btn" id="b-midi">＋ MIDI / zip / json…</button>
     <button class="btn" id="b-vider">Vider les relevés</button>
     <input type="file" id="f-audio" accept="audio/*,.opus,.ogg,.flac,.wav,.mp3,.m4a">
-    <input type="file" id="f-midi" accept=".mid,.midi,.zip,audio/*,.opus,.flac,.wav" multiple>
+    <input type="file" id="f-midi" accept=".mid,.midi,.zip,.json,audio/*,.opus,.flac,.wav" multiple>
   </div>
 
   <div class="barre" id="transport">
@@ -90,6 +90,8 @@
     <button class="btn" id="b-fit">Tout voir</button>
     <label class="reg">↕ onde <input type="range" id="r-hw" min="60" max="220" step="2" value="90"></label>
     <label class="reg">↕ relevés <input type="range" id="r-hl" min="112" max="340" step="2" value="122"></label>
+    <button class="btn" id="b-grille" title="Afficher / masquer les temps (fournis par le .json de Bandes)">▦ Grille</button>
+    <button class="btn" id="b-clic" title="Clic de métronome sur chaque temps (accent sur le temps fort)">♩ Clic</button>
     <button class="btn" id="b-boucle" title="Glisse sur la règle (en haut de la zone) pour choisir une zone à répéter">⟲ Boucle</button>
     <button class="btn petit" id="b-boucle-a" title="Début de la boucle = position actuelle">A</button>
     <button class="btn petit" id="b-boucle-b" title="Fin de la boucle = position actuelle">B</button>
@@ -107,7 +109,8 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const COULEURS = ['#E0A458', '#6FB3D2', '#D77A8A', '#8FC47A', '#B692E0', '#E0D45E', '#5FC9B8', '#E58A5A', '#9AA7E8', '#C9C9C9'];
-const H_REGLE = 20;
+const H_TEMPS = 20;   // bandeau des temps (secondes)
+const hr = () => (E.struct && E.struct.segments && E.struct.segments.length) ? 36 : H_TEMPS;   // + bandeau des sections
 const NOMS_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // ============================================================
@@ -117,6 +120,7 @@ const E = {
   ctx: null, master: null,
   audio: { buf: null, nom: '', vol: 1, pan: 0, mute: false, solo: false, gain: null, pann: null, src: null, pics: null, pasPics: 0.002 },
   lanes: [], nextId: 1,
+  struct: null, afficherGrille: true, clic: false, clicIdx: 0,
   dur: 0, ech: 60,
   lecture: false, posDebut: 0, ctxDebut: 0,
   boucle: { a: null, b: null, actif: false },
@@ -127,6 +131,7 @@ function ctx(){
   if (!E.ctx){
     E.ctx = new (window.AudioContext || window.webkitAudioContext)();
     E.master = E.ctx.createGain(); E.master.gain.value = parseFloat($('r-master').value); E.master.connect(E.ctx.destination);
+    E.clicGain = E.ctx.createGain(); E.clicGain.gain.value = 0.5; E.clicGain.connect(E.master);
     E.audio.gain = E.ctx.createGain(); E.audio.pann = E.ctx.createStereoPanner();
     E.audio.gain.connect(E.audio.pann); E.audio.pann.connect(E.master);
     majGains();
@@ -236,11 +241,21 @@ async function lireZip(arrayBuffer){
 const EXT_AUDIO = /\.(opus|ogg|oga|flac|wav|mp3|m4a|aac|webm)$/i;
 async function chargerFichiers(liste){
   const fichiers = [...liste];
-  let nMidi = 0, erreurs = [];
+  let nMidi = 0, nStruct = 0, erreurs = [];
   const traiter = async (nom, u8) => {
     const court = nom.split('/').pop();
     if (/\.midi?$/i.test(court)){
       try { ajouterLane(court.replace(/\.midi?$/i, ''), lireMidi(u8)); nMidi++; } catch (e) { erreurs.push(court + ' : ' + e.message); }
+    } else if (/\.json$/i.test(court)){
+      try {
+        const j = JSON.parse(new TextDecoder().decode(u8)), st = j.structure || j;
+        if (st && Array.isArray(st.beats) && st.beats.length){
+          const num = (a) => (Array.isArray(a) ? a : []).map(Number).filter(Number.isFinite);
+          E.struct = { bpm: st.bpm, beats: num(st.beats).sort((a, b) => a - b), downbeats: num(st.downbeats), beat_positions: num(st.beat_positions),
+                       segments: (Array.isArray(st.segments) ? st.segments : []).filter(x => Number.isFinite(x.start) && Number.isFinite(x.end)) };
+          nStruct++;
+        }
+      } catch (e) { erreurs.push(court + ' : ' + e.message); }
     } else if (EXT_AUDIO.test(court)){
       await chargerAudio(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength), court);
     }
@@ -254,7 +269,7 @@ async function chargerFichiers(liste){
     } catch (e) { erreurs.push(f.name + ' : ' + e.message); }
   }
   recalculer();
-  msg((nMidi ? nMidi + ' relevé(s) chargé(s). ' : '') + (erreurs.length ? 'Problème : ' + erreurs.join(' ; ') : ''), erreurs.length > 0);
+  msg((nMidi ? nMidi + ' relevé(s) chargé(s). ' : '') + (nStruct ? 'Table des temps chargée (' + E.struct.beats.length + ' temps' + (E.struct.bpm ? ', ' + Math.round(E.struct.bpm) + ' bpm' : '') + '). ' : '') + (erreurs.length ? 'Problème : ' + erreurs.join(' ; ') : ''), erreurs.length > 0);
 }
 
 async function chargerAudio(ab, nom){
@@ -411,6 +426,12 @@ function jouerNote(l, n, quand, duree){
   l.actifs.push(rec);
   osc.onended = () => { const i = l.actifs.indexOf(rec); if (i >= 0) l.actifs.splice(i, 1); try { g.disconnect(); } catch (e) {} };
 }
+function jouerClic(quand, fort){
+  const o = E.ctx.createOscillator(), g = E.ctx.createGain();
+  o.frequency.value = fort ? 1700 : 1150;
+  g.gain.setValueAtTime(fort ? 0.9 : 0.55, quand); g.gain.exponentialRampToValueAtTime(0.001, quand + 0.045);
+  o.connect(g); g.connect(E.clicGain); o.start(quand); o.stop(quand + 0.06);
+}
 function arreterLane(l){
   for (const r of l.actifs.splice(0)){ try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; r.osc.stop(); } catch (e) {} }
 }
@@ -431,6 +452,8 @@ function demarrer(depuis){
     let i = 0; while (i < l.notes.length && l.notes[i].end <= E.posDebut) i++;
     l.idx = i;
   }
+  E.clicIdx = 0;
+  if (E.struct){ const b = E.struct.beats; while (E.clicIdx < b.length && b[E.clicIdx] < E.posDebut - 0.001) E.clicIdx++; }
   $('b-play').textContent = '⏸ Pause'; $('b-play').classList.add('on');
   planifier();
   boucleRAF();
@@ -449,6 +472,14 @@ function planifier(){
   if (E.boucle.actif && E.boucle.a != null && E.boucle.b != null && tNow >= E.boucle.b - 0.01){ demarrer(E.boucle.a); return; }
   if (tNow >= E.dur){ arreter(); E.posDebut = 0; redessiner(); majTemps(); return; }
   const limite = tNow + HORIZON;
+  if (E.clic && E.struct){
+    const b = E.struct.beats, pbs = E.struct.beat_positions || [];
+    while (E.clicIdx < b.length && b[E.clicIdx] < limite){
+      const i = E.clicIdx++;
+      const quand = E.ctxDebut + (b[i] - E.posDebut);
+      if (quand >= c.currentTime - 0.01) jouerClic(Math.max(quand, c.currentTime), pbs[i] === 1 || (!pbs.length && E.struct.downbeats.some(d => Math.abs(d - b[i]) < 0.02)));
+    }
+  }
   for (const l of E.lanes){
     while (l.idx < l.notes.length && l.notes[l.idx].start < limite){
       const n = l.notes[l.idx++];
@@ -482,16 +513,19 @@ $('r-master').oninput = (e) => { if (E.master) E.master.gain.value = parseFloat(
 // ============================================================
 // Dessin
 // ============================================================
-function hauteurTotale(){ return H_REGLE + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')) + E.lanes.length * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl')); }
+function hauteurTotale(){ return hr() + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')) + E.lanes.length * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl')); }
 let dessinPlanifie = false;
 function redessiner(){ if (dessinPlanifie) return; dessinPlanifie = true; requestAnimationFrame(() => { dessinPlanifie = false; dessiner(); }); }
 
+function etiquetteIdx(l){ let h = 0; for (const c of String(l || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 5; }
 function nomNote(m){ return NOMS_NOTES[m % 12] + (Math.floor(m / 12) - 1); }
 
 function dessiner(){
   const sc = $('scroller'), cv = $('cv');
   const W = Math.max(50, sc.clientWidth), hw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')), hl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl'));
-  const H = H_REGLE + hw + E.lanes.length * hl;
+  const HR = hr();
+  document.documentElement.style.setProperty('--hr', HR + 'px');
+  const H = HR + hw + E.lanes.length * hl;
   const dpr = window.devicePixelRatio || 1;
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
   $('spacer').style.width = Math.ceil(E.dur * E.ech + W * 0.3) + 'px'; $('spacer').style.height = H + 'px';
@@ -502,14 +536,14 @@ function dessiner(){
   g.fillStyle = '#241E17'; g.fillRect(0, 0, W, H);
 
   // règle
-  g.fillStyle = '#2A231C'; g.fillRect(0, 0, W, H_REGLE);
+  g.fillStyle = '#2A231C'; g.fillRect(0, 0, W, HR);
   const pasS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60].find(s => s * ech >= 70) || 60;
   g.font = '10px IBM Plex Mono, monospace'; g.textBaseline = 'middle';
   for (let t = Math.ceil(t0 / pasS) * pasS; t <= t1; t += pasS){
     const x = Math.round(X(t)) + 0.5;
-    g.strokeStyle = '#5a4d3d'; g.beginPath(); g.moveTo(x, H_REGLE - 6); g.lineTo(x, H_REGLE); g.stroke();
-    g.fillStyle = '#A79885'; g.fillText(fmt(t).replace(/\.00$/, ''), x + 3, H_REGLE / 2);
-    g.strokeStyle = 'rgba(255,255,255,0.04)'; g.beginPath(); g.moveTo(x, H_REGLE); g.lineTo(x, H); g.stroke();
+    g.strokeStyle = '#5a4d3d'; g.beginPath(); g.moveTo(x, H_TEMPS - 6); g.lineTo(x, H_TEMPS); g.stroke();
+    g.fillStyle = '#A79885'; g.fillText(fmt(t).replace(/\.00$/, ''), x + 3, H_TEMPS / 2);
+    g.strokeStyle = 'rgba(255,255,255,0.04)'; g.beginPath(); g.moveTo(x, HR); g.lineTo(x, H); g.stroke();
   }
 
   // zone de boucle
@@ -517,11 +551,25 @@ function dessiner(){
   if (bo.a != null && bo.b != null){
     g.fillStyle = bo.actif ? 'rgba(192,153,106,0.22)' : 'rgba(192,153,106,0.08)';
     g.fillRect(X(bo.a), 0, (bo.b - bo.a) * ech, H);
-    g.fillStyle = '#C0996A'; g.fillRect(X(bo.a), 0, 2, H_REGLE); g.fillRect(X(bo.b) - 2, 0, 2, H_REGLE);
+    g.fillStyle = '#C0996A'; g.fillRect(X(bo.a), 0, 2, HR); g.fillRect(X(bo.b) - 2, 0, 2, HR);
   }
 
   // forme d'onde
-  let y = H_REGLE;
+  // sections de la structure
+  if (E.struct && E.struct.segments && E.struct.segments.length){
+    g.font = '10px IBM Plex Sans, sans-serif'; g.textBaseline = 'middle';
+    E.struct.segments.forEach((sg, i) => {
+      if (sg.end < t0 || sg.start > t1) return;
+      const x0 = X(sg.start), w = (sg.end - sg.start) * ech;
+      g.fillStyle = ['rgba(192,153,106,0.35)', 'rgba(111,179,210,0.30)', 'rgba(215,122,138,0.30)', 'rgba(143,196,122,0.30)', 'rgba(182,146,224,0.30)'][etiquetteIdx(sg.label)];
+      g.fillRect(x0 + 1, H_TEMPS, Math.max(1, w - 2), HR - H_TEMPS - 1);
+      g.save(); g.beginPath(); g.rect(x0 + 1, H_TEMPS, Math.max(1, w - 2), HR - H_TEMPS); g.clip();
+      g.fillStyle = '#EDE4D3'; g.fillText(String(sg.label || ''), Math.max(x0, 0) + 5, H_TEMPS + (HR - H_TEMPS) / 2); g.restore();
+    });
+  }
+
+  // forme d'onde
+  let y = HR;
   g.fillStyle = '#1C1712'; g.fillRect(0, y, W, hw);
   const A = E.audio;
   if (A.pics){
@@ -568,6 +616,17 @@ function dessiner(){
     y += hl;
   });
 
+  // grille des temps
+  if (E.struct && E.afficherGrille){
+    const st = E.struct, bts = st.beats;
+    if (bts.length > 1 && (bts[1] - bts[0]) * ech >= 5){
+      g.fillStyle = 'rgba(192,153,106,0.13)';
+      for (const b of bts){ if (b < t0) continue; if (b > t1) break; g.fillRect(Math.round(X(b)), HR, 1, H - HR); }
+    }
+    g.fillStyle = 'rgba(192,153,106,0.45)';
+    for (const d of st.downbeats){ if (d < t0) continue; if (d > t1) break; g.fillRect(Math.round(X(d)), H_TEMPS, 1, H - H_TEMPS); }
+  }
+
   // tête de lecture
   const x = X(pos());
   const tete = $('tete'); tete.style.left = (sc.scrollLeft + x) + 'px';
@@ -612,7 +671,7 @@ function tempsDepuisEvt(e){ const sc = $('scroller'), r = sc.getBoundingClientRe
     const r = sc.getBoundingClientRect(), y = e.clientY - r.top;
     if (y > parseFloat($('cv').style.height || 0)) return;   // barre de défilement
     const t = tempsDepuisEvt(e);
-    drag = { regle: y < H_REGLE, t0: t, bouge: false };
+    drag = { regle: y < hr(), t0: t, bouge: false };
     sc.setPointerCapture(e.pointerId);
   });
   sc.addEventListener('pointermove', (e) => {
@@ -628,6 +687,13 @@ function tempsDepuisEvt(e){ const sc = $('scroller'), r = sc.getBoundingClientRe
     drag = null; redessiner();
   });
 })();
+$('b-grille').classList.add('on');
+$('b-grille').onclick = () => { E.afficherGrille = !E.afficherGrille; $('b-grille').classList.toggle('on', E.afficherGrille); redessiner(); };
+$('b-clic').onclick = () => {
+  if (!E.struct){ msg("Pas de table des temps : charge le .json du morceau (voir le texte en haut).", true); return; }
+  E.clic = !E.clic; $('b-clic').classList.toggle('on', E.clic);
+  if (E.lecture){ const t = pos(); demarrer(t); }
+};
 $('b-boucle').onclick = () => {
   if (E.boucle.a == null){ msg('Glisse sur la règle (bandeau du haut de la zone) pour choisir la zone à répéter.'); return; }
   E.boucle.actif = !E.boucle.actif; $('b-boucle').classList.toggle('on', E.boucle.actif); redessiner();

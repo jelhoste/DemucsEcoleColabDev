@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.18.0">
+<meta name="app-version" content="1.19.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -40,6 +40,9 @@
   .det-head{ display:flex; align-items:center; gap:10px; }
   .det-head input{ width:18px; height:18px; accent-color:var(--brass); }
   .det-head h2{ margin:0; }
+  .btn-seul{ margin-left:auto; background:var(--raised); color:var(--brass); border:1px solid var(--brass-dim); border-radius:4px; padding:5px 10px; font-size:0.78rem; cursor:pointer; white-space:nowrap; }
+  .btn-seul:hover{ background:var(--brass); color:#1C1712; }
+  .liens a{ color:var(--brass); }
   .det-body.off{ opacity:0.4; pointer-events:none; }
   .grille{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
   @media (max-width:560px){ .grille{ grid-template-columns:1fr; } }
@@ -87,7 +90,29 @@
   </section>
 
   <section>
-    <div class="det-head"><input type="checkbox" id="d-fcpe" checked><h2>FCPE ★</h2></div>
+    <h2>Table des temps (facultatif)</h2>
+    <p class="liens">Le fichier à fournir est le <code>…_metadonnees.json</code> du morceau : c'est celui qu'on ouvre dans <a href="./editeur.html">Éditer les métadonnées</a>, et qui est produit par le notebook de <a href="./index.html">Préparer</a> (il se trouve dans le zip du morceau ; tu peux aussi donner ce <code>.zip</code> directement).</p>
+    <p>Dans ce fichier, la clé <code>structure</code> contient : <code>beats</code> (la table de tous les temps), <code>downbeats</code> (les temps forts, début de mesure), <code>beat_positions</code> (le numéro de chaque temps dans la mesure), <code>bpm</code>, et <code>segments</code> (les sections : intro, couplet, refrain…). Ici, ce qui compte, c'est <b>la table des temps et les temps forts</b> ; les sections sont seulement recopiées pour être affichées dans « Comparer des relevés ».</p>
+    <div class="radios">
+      <label><input type="radio" name="struct" value="aucune" checked> Sans</label>
+      <label><input type="radio" name="struct" value="upload"> Je l'envoie dans Colab</label>
+      <label><input type="radio" name="struct" value="drive"> Il est sur Google Drive</label>
+    </div>
+    <label class="champ" id="champ-struct-drive" style="display:none">
+      <span>Chemin du fichier sur Drive</span>
+      <input type="text" id="struct-drive" value="/content/drive/MyDrive/Bandes/morceau_metadonnees.json">
+    </label>
+    <div id="bloc-grille" style="display:none">
+      <div class="grille">
+        <label class="champ"><span>Calage sur la grille (subdivisions par temps)</span><span class="hint"><code>0</code> = pas de calage, <code>1</code> = sur les temps, <code>2</code> = demi-temps (croches), <code>3</code> = triolets, <code>4</code> = doubles croches. Chaque valeur donne une variante en plus.</span><input type="text" id="g-q-sub" value="0, 2"></label>
+        <label class="champ"><span>Attraction de la grille (0 à 1)</span><span class="hint"><code>1</code> = toutes les notes sont calées ; <code>0.5</code> = seules celles déjà proches de la grille (à moins d'un quart de pas) le sont.</span><input type="text" id="g-q-att" value="1"></label>
+      </div>
+      <p class="hint">Aucun des trois modèles ne reçoit la grille en entrée : elle sert à caler les notes après la détection, et à afficher les temps dans le comparateur.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="det-head"><input type="checkbox" id="d-fcpe" checked><h2>FCPE ★</h2><button type="button" class="btn-seul" data-seul="fcpe" title="Génère un notebook qui ne teste que FCPE">⇩ Notebook FCPE seul</button></div>
     <div class="det-body" id="b-fcpe">
       <div class="grille">
         <label class="champ"><span>Seuil de voisement</span><span class="hint">Plus bas = plus de notes (y compris du bruit). Défaut du modèle : 0,006.</span><input type="text" id="g-fcpe-seuil" value="0.003, 0.006, 0.02"></label>
@@ -97,7 +122,7 @@
   </section>
 
   <section>
-    <div class="det-head"><input type="checkbox" id="d-rmvpe" checked><h2>RMVPE ★</h2></div>
+    <div class="det-head"><input type="checkbox" id="d-rmvpe" checked><h2>RMVPE ★</h2><button type="button" class="btn-seul" data-seul="rmvpe" title="Génère un notebook qui ne teste que RMVPE">⇩ Notebook RMVPE seul</button></div>
     <div class="det-body" id="b-rmvpe">
       <label class="champ"><span>Seuil de confiance</span><span class="hint">Les trames moins sûres que ce seuil sont ignorées. Plus haut = relevé plus propre mais avec des trous. Valeur de base du notebook : 0,03. La courbe de hauteur n'est calculée qu'une fois : ce réglage est quasi gratuit.</span><input type="text" id="g-rmvpe-conf" value="0.02, 0.03, 0.1, 0.3"></label>
     </div>
@@ -112,7 +137,7 @@
   </section>
 
   <section>
-    <div class="det-head"><input type="checkbox" id="d-bp" checked><h2>Basic Pitch ★</h2></div>
+    <div class="det-head"><input type="checkbox" id="d-bp" checked><h2>Basic Pitch ★</h2><button type="button" class="btn-seul" data-seul="basicpitch" title="Génère un notebook qui ne teste que Basic Pitch">⇩ Notebook Basic Pitch seul</button></div>
     <div class="det-body" id="b-bp">
       <div class="grille">
         <label class="champ"><span>Seuil d'attaque</span><span class="hint">Sensibilité pour déclencher une note. Bas = plus de notes.</span><input type="text" id="g-bp-att" value="0.3, 0.5, 0.7"></label>
@@ -156,10 +181,11 @@ function boolsListe(idOui, idNon){
 }
 
 // Lit tout le formulaire ; renvoie { cfg, erreurs, total }
-function lireFormulaire(){
+function lireFormulaire(seul){
   const erreurs = [];
   const marque = (id, ok) => { $(id).classList.toggle('err', !ok); if (!ok) erreurs.push(id); return ok; };
-  const act = { fcpe: $('d-fcpe').checked, rmvpe: $('d-rmvpe').checked, basicpitch: $('d-bp').checked };
+  const act = seul ? { fcpe: seul === 'fcpe', rmvpe: seul === 'rmvpe', basicpitch: seul === 'basicpitch' }
+                   : { fcpe: $('d-fcpe').checked, rmvpe: $('d-rmvpe').checked, basicpitch: $('d-bp').checked };
   const cfg = { actifs: Object.keys(act).filter(k => act[k]) };
   const segMin = listeNombres('g-seg-min'), segTol = listeNombres('g-seg-tol'), tess = listeMots('g-tess', TESS_OK);
   const besoinSeg = act.fcpe || act.rmvpe;
@@ -178,6 +204,15 @@ function lireFormulaire(){
   if (act.basicpitch && (!bm || !bo)) erreurs.push('bool');
   cfg.bpMel = bm || [true]; cfg.bpOct = bo || [true];
   if (!cfg.actifs.length) erreurs.push('aucun');
+  const sm = document.querySelector('input[name=struct]:checked').value;
+  cfg.struct = sm; cfg.structDrive = $('struct-drive').value.trim();
+  const qs = listeNombres('g-q-sub'), qa = listeNombres('g-q-att');
+  if (sm !== 'aucune'){
+    marque('g-q-sub', !!qs && qs.every(v => Number.isInteger(v) && v >= 0 && v <= 8));
+    marque('g-q-att', !!qa && qa.every(v => v > 0 && v <= 1));
+  } else { $('g-q-sub').classList.remove('err'); $('g-q-att').classList.remove('err'); }
+  cfg.qSub = qs || [0]; cfg.qAtt = qa || [1];
+  const mult = sm === 'aucune' ? 1 : cfg.qSub.reduce((acc, v) => acc + (v === 0 ? 1 : cfg.qAtt.length), 0);
 
   const nSeg = cfg.segMin.length * cfg.segTol.length;
   const n = {
@@ -185,7 +220,7 @@ function lireFormulaire(){
     rmvpe: act.rmvpe ? cfg.rmvpeConf.length * nSeg : 0,
     basicpitch: act.basicpitch ? cfg.tess.length * cfg.bpAtt.length * cfg.bpNote.length * cfg.bpLen.length * cfg.bpMel.length * cfg.bpTrou.length * cfg.bpOct.length : 0,
   };
-  return { cfg, erreurs, n, total: n.fcpe + n.rmvpe + n.basicpitch };
+  return { cfg, erreurs, n, mult, total: (n.fcpe + n.rmvpe + n.basicpitch) * mult };
 }
 
 function majTotal(){
@@ -193,13 +228,18 @@ function majTotal(){
     const id = b.id === 'b-fcpe' ? 'd-fcpe' : b.id === 'b-rmvpe' ? 'd-rmvpe' : 'd-bp';
     b.classList.toggle('off', !$(id).checked);
   });
-  const { n, total } = lireFormulaire();
+  const { n, total, mult } = lireFormulaire();
   const el = $('total');
-  el.textContent = `${total} variante${total > 1 ? 's' : ''} au maximum (FCPE ${n.fcpe} · RMVPE ${n.rmvpe} · Basic Pitch ${n.basicpitch})` +
+  el.textContent = `${total} variante${total > 1 ? 's' : ''} au maximum (FCPE ${n.fcpe} · RMVPE ${n.rmvpe} · Basic Pitch ${n.basicpitch})${mult > 1 ? ' × ' + mult + ' calage(s) sur la grille' : ''}` +
     (total > 400 ? ' — trop : le notebook s\'arrêtera à 400' : total > 150 ? ' — beaucoup, ce sera long' : '');
   el.classList.toggle('alerte', total > 150);
 }
 document.querySelectorAll('input').forEach(i => i.addEventListener('input', majTotal));
+document.querySelectorAll('input[name=struct]').forEach(r => r.addEventListener('change', () => {
+  const v = document.querySelector('input[name=struct]:checked').value;
+  $('champ-struct-drive').style.display = v === 'drive' ? '' : 'none';
+  $('bloc-grille').style.display = v === 'aucune' ? 'none' : '';
+}));
 document.querySelectorAll('input[name=source]').forEach(r => r.addEventListener('change', () => {
   $('champ-drive').style.display = document.querySelector('input[name=source]:checked').value === 'drive' ? '' : 'none';
 }));
@@ -210,12 +250,13 @@ const pyStr = (a) => '[' + a.map(x => JSON.stringify(x)).join(', ') + ']';
 const pyBool = (a) => '[' + a.map(x => x ? 'True' : 'False').join(', ') + ']';
 
 function construireNotebook(f, source, driveChemin){
+  const seulNom = f.cfg.actifs.length === 1 ? { fcpe: 'FCPE', rmvpe: 'RMVPE', basicpitch: 'Basic Pitch' }[f.cfg.actifs[0]] : null;
   const c = f.cfg;
   const a = (k) => c.actifs.includes(k);
   const cells = [];
   cells.push(md(`# Banc d'essai mélodie
 
-Ce notebook prend **un fichier voix** et teste de nombreuses combinaisons de réglages pour **FCPE**, **RMVPE** et **Basic Pitch**.
+Ce notebook prend **un fichier voix** et teste de nombreuses combinaisons de réglages pour ${seulNom ? '**' + seulNom + '** (seul)' : '**FCPE**, **RMVPE** et **Basic Pitch**'}.
 Chaque variante est exportée en **fichier MIDI** (1 ms par tick, donc les temps sont exacts), et le tout est rassemblé dans un zip à ouvrir dans la page « Comparer des relevés ».
 
 Le cadre « Réglages à tester » ci-dessous peut être modifié ici même avant de lancer : chaque liste est testée en entier, toutes les combinaisons sont essayées.
@@ -284,7 +325,16 @@ BP_NOTE = ${pyNum(c.bpNote)}          # seuil de note : sensibilite pour la gard
 BP_DUREE_MS = ${pyNum(c.bpLen)}          # duree minimale d'une note, en millisecondes
 BP_MELODIA = ${pyBool(c.bpMel)}   # melodia trick : comble les petits trous dans une note tenue
 BP_TROU_MS = ${pyNum(c.bpTrou)}           # fusion de deux notes identiques separees par moins que ca (0 = aucune)
-BP_OCTAVES = ${pyBool(c.bpOct)}       # corrige les notes isolees qui sautent d'une octave`));
+BP_OCTAVES = ${pyBool(c.bpOct)}       # corrige les notes isolees qui sautent d'une octave
+
+# =========================================================
+# TABLE DES TEMPS (facultatif) : le fichier ..._metadonnees.json du morceau (ou son .zip)
+# Il contient structure.beats (tous les temps), structure.downbeats (temps forts), structure.segments (sections)
+# =========================================================
+STRUCTURE_SOURCE = ${JSON.stringify(c.struct)}   # "aucune", "upload" (envoye dans Colab) ou "drive"
+DRIVE_STRUCTURE = ${JSON.stringify(c.structDrive)}
+GRILLE_SUBDIVISIONS = ${pyNum(c.qSub)}   # calage des notes sur la grille : 0 = aucun, 1 = temps, 2 = demi-temps, 3 = triolets, 4 = doubles croches
+GRILLE_ATTRACTION = ${pyNum(c.qAtt)}      # 1 = toutes les notes sont calees ; 0.5 = seulement celles deja proches de la grille`));
 
   cells.push(md('## Fichier voix'));
   cells.push(code(`import os, json, time, zipfile, itertools
@@ -307,7 +357,45 @@ audio_44k, sr_44k = librosa.load(chemin_source, sr=44100, mono=True)
 VOIX_WAV = '/content/voix_banc.wav'
 sf.write(VOIX_WAV, audio_44k, sr_44k)
 DUREE = len(audio_44k) / float(sr_44k)
-print(f"{NOM} : {DUREE:.1f} s")`));
+print(f"{NOM} : {DUREE:.1f} s")
+
+# ---------- Table des temps (facultatif) ----------
+def lire_structure(chemin):
+    if chemin.lower().endswith('.zip'):
+        with zipfile.ZipFile(chemin) as z:
+            noms = [n for n in z.namelist() if n.lower().endswith('.json')]
+            noms = [n for n in noms if 'metadonnees' in n.lower()] or noms
+            if not noms:
+                raise ValueError("aucun .json dans ce zip")
+            donnees = json.loads(z.read(noms[0]).decode('utf-8'))
+    else:
+        with open(chemin, encoding='utf-8') as fh:
+            donnees = json.load(fh)
+    st = donnees.get('structure', donnees)
+    beats = sorted(float(b) for b in st.get('beats', []))
+    if len(beats) < 2:
+        raise ValueError("pas de table des temps (structure.beats) dans ce fichier")
+    return {"bpm": st.get('bpm'), "beats": beats, "downbeats": [float(d) for d in st.get('downbeats', [])],
+            "beat_positions": st.get('beat_positions', []), "segments": st.get('segments', [])}
+
+STRUCTURE = None
+if STRUCTURE_SOURCE != "aucune":
+    try:
+        if STRUCTURE_SOURCE == "drive":
+            if not os.path.exists('/content/drive/MyDrive'):
+                from google.colab import drive
+                drive.mount('/content/drive')
+            chemin_structure = DRIVE_STRUCTURE
+        else:
+            from google.colab import files as _fichiers
+            print("Envoie maintenant le fichier de la table des temps (..._metadonnees.json ou le .zip du morceau)")
+            envoye_s = _fichiers.upload()
+            chemin_structure = next(iter(envoye_s))
+        STRUCTURE = lire_structure(chemin_structure)
+        print(f"Table des temps : {len(STRUCTURE['beats'])} temps, {len(STRUCTURE['downbeats'])} temps forts, {len(STRUCTURE['segments'])} sections, {STRUCTURE['bpm']} bpm")
+    except Exception as e:
+        print(f"  [!] Table des temps inutilisable ({type(e).__name__}: {e}) -- aucun calage sur la grille.")
+        STRUCTURE = None`));
 
   cells.push(md('## Fonctions'));
   cells.push(code(`def freq_to_midi(f):
@@ -422,7 +510,64 @@ vus = {}           # empreinte des notes -> nom de la premiere variante
 doublons = []
 videes = []
 
+GRILLES = {}
+
+def points_grille(beats, sub):
+    pts = []
+    for i in range(len(beats) - 1):
+        for k in range(sub):
+            pts.append(beats[i] + (beats[i + 1] - beats[i]) * k / sub)
+    pts.append(beats[-1])
+    return np.array(pts)
+
+def quantifier(notes, pts, attraction):
+    """Cale debuts et fins de notes sur la grille ; attraction < 1 : seulement si deja proche."""
+    def caler(t):
+        if t < pts[0] - 1e-6 or t > pts[-1] + 1e-6:
+            return t
+        j = min(int(np.searchsorted(pts, t)), len(pts) - 1)
+        if j > 0 and abs(pts[j - 1] - t) <= abs(pts[j] - t):
+            j -= 1
+        pas = (pts[min(j + 1, len(pts) - 1)] - pts[max(j - 1, 0)]) / (2.0 if 0 < j < len(pts) - 1 else 1.0)
+        return float(pts[j]) if abs(pts[j] - t) <= attraction * pas / 2.0 + 1e-9 else t
+    sortie = []
+    for n in notes:
+        d, f = caler(n["start"]), caler(n["end"])
+        if f - d >= 0.02:
+            sortie.append({"start": round(d, 3), "end": round(f, 3), "midi": n["midi"]})
+    sortie.sort(key=lambda n: n["start"])
+    res = []
+    for n in sortie:
+        if res and n["start"] < res[-1]["end"]:
+            res[-1]["end"] = n["start"]
+            if res[-1]["end"] - res[-1]["start"] < 0.02:
+                res.pop()
+        if res and res[-1]["midi"] == n["midi"] and abs(n["start"] - res[-1]["end"]) < 1e-3:
+            res[-1]["end"] = n["end"]
+        else:
+            res.append(dict(n))
+    return res
+
 def ajouter(nom, notes, reglages):
+    """Garde la variante brute et/ou ses versions calees sur la grille des temps."""
+    combos = [(0, 1)]
+    if STRUCTURE is not None:
+        combos = []
+        for sub in GRILLE_SUBDIVISIONS:
+            if sub == 0:
+                combos.append((0, 1))
+            else:
+                combos += [(sub, a) for a in GRILLE_ATTRACTION]
+    for sub, att in combos:
+        if sub == 0:
+            _garder(nom, notes, dict(reglages))
+        else:
+            if sub not in GRILLES:
+                GRILLES[sub] = points_grille(STRUCTURE["beats"], sub)
+            _garder(f"{nom}_q{sub}" + ("" if att == 1 else f"a{att:g}"), quantifier(notes, GRILLES[sub], att),
+                    dict(reglages, grille_subdivisions=sub, grille_attraction=att))
+
+def _garder(nom, notes, reglages):
     if not notes:
         videes.append(nom)
         return
@@ -518,8 +663,12 @@ index = []
 for nom, notes, reglages in variantes:
     ecrire_midi(notes, f"{dossier}/{nom}.mid", nom)
     index.append({"fichier": nom + ".mid", "notes": len(notes), "reglages": reglages})
+if STRUCTURE is not None:
+    # meme forme que le fichier de metadonnees : la page "Comparer des relevés" l'affiche (temps, temps forts, sections)
+    with open(f"{dossier}/structure.json", "w", encoding="utf-8") as fh:
+        json.dump({"structure": STRUCTURE}, fh, ensure_ascii=False)
 with open(f"{dossier}/reglages.json", "w", encoding="utf-8") as fh:
-    json.dump({"voix": NOM, "duree_s": round(DUREE, 2), "variantes": index, "doublons": [{"ecartee": a, "identique_a": b} for a, b in doublons]},
+    json.dump({"voix": NOM, "duree_s": round(DUREE, 2), "grille_des_temps": STRUCTURE is not None, "variantes": index, "doublons": [{"ecartee": a, "identique_a": b} for a, b in doublons]},
               fh, ensure_ascii=False, indent=1)
 chemin_zip = f"/content/banc_{NOM}.zip"
 with zipfile.ZipFile(chemin_zip, "w", zipfile.ZIP_STORED) as z:
@@ -542,11 +691,11 @@ _files.download(chemin_zip)`));
   };
 }
 
-$('btn-go').addEventListener('click', () => {
-  const f = lireFormulaire();
+function generer(seul){
+  const f = lireFormulaire(seul);
   const statut = $('statut');
   if (f.erreurs.length){
-    statut.textContent = f.erreurs.includes('aucun') ? 'Coche au moins un détecteur.' :
+    statut.textContent = f.erreurs.includes('aucun') ? 'Coche au moins un détecteur.' : f.erreurs.includes('bool') ? 'Basic Pitch : coche au moins « avec » ou « sans » pour chaque option.' :
       'Certains champs sont vides ou invalides (en rouge). Écris des nombres séparés par des virgules ; tessiture : grave, medium, aigue ou large.';
     return;
   }
@@ -555,10 +704,12 @@ $('btn-go').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(nb, null, 1)], { type: 'application/x-ipynb+json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `banc_melodie_${new Date().toISOString().slice(0, 10)}.ipynb`;
+  a.href = url; a.download = `banc_melodie${seul ? '_' + seul : ''}_${new Date().toISOString().slice(0, 10)}.ipynb`;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  statut.textContent = `Notebook téléchargé (jusqu'à ${f.total} variantes). Ouvre-le dans Google Colab, puis charge le zip obtenu dans « Comparer des relevés ».`;
-});
+  statut.textContent = `Notebook${seul ? ' ' + { fcpe: 'FCPE', rmvpe: 'RMVPE', basicpitch: 'Basic Pitch' }[seul] + ' seul' : ''} téléchargé (jusqu'à ${f.total} variantes). Ouvre-le dans Google Colab, puis charge le zip obtenu dans « Comparer des relevés ».`;
+}
+$('btn-go').addEventListener('click', () => generer(null));
+document.querySelectorAll('[data-seul]').forEach(b => b.addEventListener('click', () => generer(b.dataset.seul)));
 majTotal();
 
 // --- PWA : version + mise à jour ---
