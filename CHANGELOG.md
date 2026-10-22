@@ -5,6 +5,15 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.20.0 — 2026-10-22
+- Correctif banc d'essai : quand le fichier voix et la table des temps (.json/.zip) étaient envoyés ensemble dans Colab, le notebook prenait le .json pour l'audio (erreur « Error opening ..._metadonnees.json »). Le fichier voix est maintenant le fichier audio parmi ceux envoyés, et la table des temps envoyée en même temps est reconnue (plus de seconde demande).
+- Comparateur : mode « Carrousel » (un relevé à la fois, flèches ← →, liste déroulante, option « seul le relevé affiché sonne » pour comparer à l'oreille en changeant de relevé pendant la lecture) en plus de l'affichage en liste.
+- Comparateur : note de 0 à 20 par relevé, « Trier par note », export « Notes (CSV) » (nom, note, détecteur, réglages), réglages lus depuis le reglages.json du zip du banc d'essai et affichés en info-bulle ; avertissement avant de quitter la page si des notes sont saisies.
+
+## 1.19.1 — 2026-10-22
+- Banc d'essai : bloc « Et ensuite ? » (lien Google Colab, étapes) et pied de page comme dans « Préparer ».
+- Notebook du banc d'essai : récapitulatif au lancement (détecteurs, source du fichier voix, table des temps) pour vérifier les présélections.
+
 ## 1.19.0 — 2026-10-22
 - Banc d'essai : bouton « ⇩ Notebook … seul » en haut à droite de chaque conteneur (FCPE, RMVPE, Basic Pitch) pour ne générer le notebook que pour ce modèle.
 - Banc d'essai : table des temps facultative (le …_metadonnees.json du morceau ou son zip, envoyé dans Colab ou sur Drive). Calage des notes sur la grille des temps (subdivisions 0/1/2/3/4, attraction réglable), chaque calage donnant une variante en plus ; structure.json ajouté au zip exporté. Explications sur les fichiers à fournir (beats, downbeats, beat_positions, bpm, segments).

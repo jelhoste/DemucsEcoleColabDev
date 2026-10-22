@@ -9,13 +9,13 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.19.0">
+<meta name="app-version" content="1.20.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{ --bg:#1C1712; --panel:#241E17; --raised:#2A231C; --border:#3D342A; --brass:#C0996A; --brass-dim:#8C7350; --rust:#C1502E; --text:#EDE4D3; --muted:#A79885; --radius:6px;
-         --hw:90px; --hl:122px; --col:272px; }
+         --hw:90px; --hl:150px; --col:272px; }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; height:100%; }
   body{ background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; line-height:1.4; -webkit-font-smoothing:antialiased; padding:0 16px 40px; }
@@ -53,6 +53,10 @@
   .rang input[type=range]{ flex:1; min-width:0; height:14px; accent-color:var(--brass); margin:0; }
   .rang .lbl{ font-family:'IBM Plex Mono',monospace; font-size:0.66rem; color:var(--muted); width:26px; flex:none; }
   .rang select{ background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:3px; font-size:0.72rem; padding:1px 2px; max-width:84px; }
+  .rang input[type=number]{ width:62px; flex:none; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:3px; font-size:0.8rem; padding:1px 4px; }
+  #car{ display:none; align-items:center; gap:6px; }
+  #car select{ max-width:340px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:0.78rem; padding:4px; }
+  #car-info{ font-size:0.76rem; color:var(--muted); margin:0 0 8px; display:none; word-break:break-all; }
   .btn.m.on{ background:var(--rust); border-color:var(--rust); color:#fff; }
   .btn.s.on{ background:#D6B23E; border-color:#D6B23E; color:#1C1712; }
   #vide{ padding:28px 18px; color:var(--muted); font-size:0.9rem; text-align:center; border:1px dashed var(--border); border-radius:var(--radius); margin-top:8px; }
@@ -71,7 +75,7 @@
     <a href="./comparateur.html" class="nav-tab active">Comparer des relevés</a>
   </nav>
   <h1>Comparer des relevés</h1>
-  <p class="sous">Charge un audio (la voix, par exemple) et des fichiers <code>.mid</code> — ou directement le <code>.zip</code> produit par le banc d'essai. Tu peux aussi charger le <code>.json</code> du morceau (<code>…_metadonnees.json</code>, celui d'« Éditer les métadonnées ») : la table des temps, les temps forts et les sections de la structure s'affichent alors derrière les relevés, avec un clic de métronome facultatif. Chaque relevé a son propre synthé : mets un relevé à gauche, un autre à droite, et écoute-les ensemble avec l'audio ou l'un après l'autre.</p>
+  <p class="sous">Charge un audio (la voix, par exemple) et des fichiers <code>.mid</code> — ou directement le <code>.zip</code> produit par le banc d'essai. Chaque relevé a une note de 0 à 20 ; le mode « Carrousel » n'en montre qu'un à la fois (flèches ← →). Tu peux aussi charger le <code>.json</code> du morceau (<code>…_metadonnees.json</code>, celui d'« Éditer les métadonnées ») : la table des temps, les temps forts et les sections de la structure s'affichent alors derrière les relevés, avec un clic de métronome facultatif. Chaque relevé a son propre synthé : mets un relevé à gauche, un autre à droite, et écoute-les ensemble avec l'audio ou l'un après l'autre.</p>
 
   <div class="barre">
     <button class="btn" id="b-audio">♪ Audio…</button>
@@ -89,7 +93,12 @@
     <label class="reg">Zoom <input type="range" id="r-zoom" min="0" max="100" step="1" value="40"></label>
     <button class="btn" id="b-fit">Tout voir</button>
     <label class="reg">↕ onde <input type="range" id="r-hw" min="60" max="220" step="2" value="90"></label>
-    <label class="reg">↕ relevés <input type="range" id="r-hl" min="112" max="340" step="2" value="122"></label>
+    <label class="reg">↕ relevés <input type="range" id="r-hl" min="150" max="360" step="2" value="150"></label>
+    <button class="btn" id="b-mode" title="Basculer entre tous les relevés les uns sous les autres et un seul relevé à la fois">▭ Carrousel</button>
+    <span id="car"><button class="btn petit" id="car-prev" title="Relevé précédent (←)">‹</button><select id="car-sel"></select><button class="btn petit" id="car-next" title="Relevé suivant (→)">›</button>
+      <label class="reg" title="En mode carrousel, seul le relevé affiché sonne (avec l'audio)"><input type="checkbox" id="car-seul" checked> seul le relevé affiché sonne</label></span>
+    <button class="btn" id="b-trier" title="Classer les relevés par note décroissante">↧ Trier par note</button>
+    <button class="btn" id="b-csv" title="Télécharger un tableau (nom, note, réglages) au format CSV">⇩ Notes (CSV)</button>
     <button class="btn" id="b-grille" title="Afficher / masquer les temps (fournis par le .json de Bandes)">▦ Grille</button>
     <button class="btn" id="b-clic" title="Clic de métronome sur chaque temps (accent sur le temps fort)">♩ Clic</button>
     <button class="btn" id="b-boucle" title="Glisse sur la règle (en haut de la zone) pour choisir une zone à répéter">⟲ Boucle</button>
@@ -98,6 +107,7 @@
     <button class="btn petit" id="b-boucle-x" title="Effacer la zone de boucle">✕</button>
   </div>
   <div id="msg"></div>
+  <div id="car-info"></div>
 
   <div id="vide">Glisse ici un fichier audio, des fichiers <code>.mid</code> ou un <code>.zip</code> du banc d'essai — ou utilise les boutons ci-dessus.</div>
 
@@ -120,6 +130,7 @@ const E = {
   ctx: null, master: null,
   audio: { buf: null, nom: '', vol: 1, pan: 0, mute: false, solo: false, gain: null, pann: null, src: null, pics: null, pasPics: 0.002 },
   lanes: [], nextId: 1,
+  mode: 'liste', cur: 0, seulAffiche: true, reglages: {},
   struct: null, afficherGrille: true, clic: false, clicIdx: 0,
   dur: 0, ech: 60,
   lecture: false, posDebut: 0, ctxDebut: 0,
@@ -249,6 +260,7 @@ async function chargerFichiers(liste){
     } else if (/\.json$/i.test(court)){
       try {
         const j = JSON.parse(new TextDecoder().decode(u8)), st = j.structure || j;
+        if (Array.isArray(j.variantes)) for (const v of j.variantes) if (v && v.fichier) E.reglages[String(v.fichier).replace(/\.midi?$/i, '')] = v.reglages;
         if (st && Array.isArray(st.beats) && st.beats.length){
           const num = (a) => (Array.isArray(a) ? a : []).map(Number).filter(Number.isFinite);
           E.struct = { bpm: st.bpm, beats: num(st.beats).sort((a, b) => a - b), downbeats: num(st.downbeats), beat_positions: num(st.beat_positions),
@@ -298,8 +310,12 @@ function calculerPics(buf){
   E.audio.pics = { mn, mx };
 }
 
+function visibles(){
+  if (E.mode === 'carrousel' && E.lanes.length){ E.cur = Math.max(0, Math.min(E.cur, E.lanes.length - 1)); return [E.lanes[E.cur]]; }
+  return E.lanes;
+}
 function ajouterLane(nom, notes){
-  const lane = { id: E.nextId++, nom, notes, couleur: COULEURS[(E.lanes.length) % COULEURS.length], mute: false, solo: false, pan: 0, vol: 0.7, oct: 0, timbre: 'triangle', gain: null, pann: null, actifs: [], idx: 0 };
+  const lane = { id: E.nextId++, nom, notes, couleur: COULEURS[(E.lanes.length) % COULEURS.length], mute: false, solo: false, pan: 0, vol: 0.7, oct: 0, timbre: 'triangle', note: null, reglages: null, gain: null, pann: null, actifs: [], idx: 0 };
   E.lanes.push(lane);
 }
 
@@ -309,10 +325,12 @@ function recalculer(){
   for (const l of E.lanes) for (const x of l.notes){ if (x.end > dur && !E.audio.buf) dur = Math.max(dur, x.end); if (x.midi < pmin) pmin = x.midi; if (x.midi > pmax) pmax = x.midi; n++; }
   E.dur = Math.max(dur, 1);
   if (n){ E.pmin = Math.max(0, pmin - 1); E.pmax = Math.min(127, pmax + 1); if (E.pmax - E.pmin < 12){ const c = (E.pmin + E.pmax) / 2; E.pmin = Math.max(0, Math.round(c - 6)); E.pmax = E.pmin + 12; } }
+  for (const l of E.lanes) if (!l.reglages && E.reglages[l.nom]) l.reglages = E.reglages[l.nom];
   const present = E.audio.buf || E.lanes.length;
   $('vide').style.display = present ? 'none' : '';
   $('zone').style.display = present ? 'flex' : 'none';
   construireControles();
+  majCarrousel();
   ajusterZoom(); // redessine
   majGains();
 }
@@ -331,16 +349,17 @@ function construireControles(){
     <div class="ligne"><span class="lbl">Vol</span><input type="range" min="0" max="1.5" step="0.01" value="${E.audio.vol}" data-a="vol"></div>`;
   a.addEventListener('click', (e) => actionAudio(e)); a.addEventListener('input', (e) => actionAudio(e));
   g.appendChild(a);
-  E.lanes.forEach((l, i) => {
+  visibles().forEach((l) => {
     const d = document.createElement('div'); d.className = 'rang lane'; d.dataset.id = l.id;
-    d.innerHTML = `<div class="ligne"><span class="pastille" style="background:${l.couleur}"></span><span class="nom" title="${esc(l.nom)} — ${l.notes.length} notes">${esc(l.nom)}</span>
+    d.innerHTML = `<div class="ligne"><span class="pastille" style="background:${l.couleur}"></span><span class="nom" title="${esc(l.nom)} — ${l.notes.length} notes${l.reglages ? '\n' + esc(texteReglages(l.reglages)) : ''}">${esc(l.nom)}</span>
         <button class="btn petit" data-a="haut" title="Monter">↑</button><button class="btn petit" data-a="bas" title="Descendre">↓</button><button class="btn petit" data-a="suppr" title="Retirer">✕</button></div>
       <div class="ligne"><button class="btn petit m ${l.mute ? 'on' : ''}" data-a="mute" title="Muet">M</button><button class="btn petit s ${l.solo ? 'on' : ''}" data-a="solo" title="Solo">S</button>
         <select data-a="timbre" title="Timbre">${['triangle', 'sine', 'sawtooth', 'square'].map(t => `<option value="${t}" ${l.timbre === t ? 'selected' : ''}>${{ triangle: 'triangle', sine: 'sinus', sawtooth: 'dent de scie', square: 'carré' }[t]}</option>`).join('')}</select>
         <select data-a="oct" title="Octave du synthé">${[-1, 0, 1].map(o => `<option value="${o}" ${l.oct === o ? 'selected' : ''}>oct ${o > 0 ? '+' : ''}${o}</option>`).join('')}</select></div>
       <div class="ligne"><span class="lbl">Pan</span><button class="btn petit" data-a="pan" data-v="-1">G</button><button class="btn petit" data-a="pan" data-v="0">C</button><button class="btn petit" data-a="pan" data-v="1">D</button>
         <input type="range" min="-1" max="1" step="0.05" value="${l.pan}" data-a="panr"></div>
-      <div class="ligne"><span class="lbl">Vol</span><input type="range" min="0" max="1" step="0.01" value="${l.vol}" data-a="vol"></div>`;
+      <div class="ligne"><span class="lbl">Vol</span><input type="range" min="0" max="1" step="0.01" value="${l.vol}" data-a="vol"></div>
+      <div class="ligne"><span class="lbl">Note</span><input type="number" min="0" max="20" step="0.5" value="${l.note == null ? '' : l.note}" placeholder="–" data-a="note" title="Note de 0 à 20"><span class="lbl" style="width:auto">/ 20</span></div>`;
     d.addEventListener('click', (e) => actionLane(e, l)); d.addEventListener('input', (e) => actionLane(e, l));
     g.appendChild(d);
   });
@@ -370,7 +389,7 @@ function actionLane(e, l){
     else if (a === 'suppr'){ arreterLane(l); E.lanes = E.lanes.filter(x => x !== l); recalculer(); return; }
     else if (a === 'haut' || a === 'bas'){
       const i = E.lanes.indexOf(l), j = a === 'haut' ? i - 1 : i + 1;
-      if (j >= 0 && j < E.lanes.length){ E.lanes.splice(i, 1); E.lanes.splice(j, 0, l); construireControles(); redessiner(); }
+      if (j >= 0 && j < E.lanes.length){ E.lanes.splice(i, 1); E.lanes.splice(j, 0, l); if (E.mode === 'carrousel') E.cur = j; construireControles(); majCarrousel(); redessiner(); }
       return;
     } else return;
   } else if (e.type === 'input'){
@@ -378,6 +397,11 @@ function actionLane(e, l){
     else if (a === 'panr') l.pan = parseFloat(el.value);
     else if (a === 'timbre') l.timbre = el.value;
     else if (a === 'oct') l.oct = parseInt(el.value, 10);
+    else if (a === 'note'){
+      const v = parseFloat(String(el.value).replace(',', '.'));
+      l.note = Number.isFinite(v) ? Math.max(0, Math.min(20, v)) : null;
+      majCarrousel(true); return;
+    }
     else return;
   } else return;
   majGains(); redessiner();
@@ -388,14 +412,14 @@ function actionLane(e, l){
 // ============================================================
 function majGains(){
   if (!E.ctx) return;
-  const soloActif = E.audio.solo || E.lanes.some(l => l.solo);
+  const soloActif = soloEnCours();
   const audible = (m, s) => !m && (!soloActif || s);
   const t = E.ctx.currentTime;
   E.audio.gain.gain.setTargetAtTime(audible(E.audio.mute, E.audio.solo) ? E.audio.vol : 0, t, 0.01);
   E.audio.pann.pan.setTargetAtTime(E.audio.pan, t, 0.01);
   for (const l of E.lanes){
     noeudsLane(l);
-    l.gain.gain.setTargetAtTime(audible(l.mute, l.solo) ? l.vol : 0, t, 0.01);
+    l.gain.gain.setTargetAtTime(estAudible(l) ? l.vol : 0, t, 0.01);
     l.pann.pan.setTargetAtTime(l.pan, t, 0.01);
   }
 }
@@ -404,7 +428,11 @@ function noeudsLane(l){
   l.gain = E.ctx.createGain(); l.pann = E.ctx.createStereoPanner();
   l.gain.connect(l.pann); l.pann.connect(E.master);
 }
-function estAudible(l){ const s = E.audio.solo || E.lanes.some(x => x.solo); return !l.mute && (!s || l.solo); }
+function soloEnCours(){ return E.audio.solo || (E.mode === 'liste' && E.lanes.some(x => x.solo)); }
+function estAudible(l){
+  if (E.mode === 'carrousel' && E.seulAffiche && l !== E.lanes[E.cur]) return false;
+  const s = soloEnCours(); return !l.mute && (!s || (E.mode === 'liste' && l.solo));
+}
 
 // ============================================================
 // Lecture
@@ -513,7 +541,7 @@ $('r-master').oninput = (e) => { if (E.master) E.master.gain.value = parseFloat(
 // ============================================================
 // Dessin
 // ============================================================
-function hauteurTotale(){ return hr() + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')) + E.lanes.length * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl')); }
+function hauteurTotale(){ return hr() + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')) + visibles().length * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl')); }
 let dessinPlanifie = false;
 function redessiner(){ if (dessinPlanifie) return; dessinPlanifie = true; requestAnimationFrame(() => { dessinPlanifie = false; dessiner(); }); }
 
@@ -525,7 +553,7 @@ function dessiner(){
   const W = Math.max(50, sc.clientWidth), hw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')), hl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl'));
   const HR = hr();
   document.documentElement.style.setProperty('--hr', HR + 'px');
-  const H = HR + hw + E.lanes.length * hl;
+  const H = HR + hw + visibles().length * hl;
   const dpr = window.devicePixelRatio || 1;
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
   $('spacer').style.width = Math.ceil(E.dur * E.ech + W * 0.3) + 'px'; $('spacer').style.height = H + 'px';
@@ -591,7 +619,7 @@ function dessiner(){
   // relevés (échelle de hauteur commune)
   const nb = E.pmax - E.pmin + 1;
   const ligneH = (hl - 6) / nb;
-  E.lanes.forEach((l, k) => {
+  visibles().forEach((l, k) => {
     const top = y + 3;
     g.fillStyle = k % 2 ? '#201A14' : '#1C1712'; g.fillRect(0, y, W, hl);
     // lignes de do
@@ -716,6 +744,59 @@ function appliquerHauteurs(){
   redessiner();
 }
 $('r-hw').oninput = appliquerHauteurs; $('r-hl').oninput = appliquerHauteurs;
+
+// ============================================================
+// Carrousel, notes, export
+// ============================================================
+function texteReglages(r){ return Object.entries(r || {}).map(([k, v]) => k + ' = ' + v).join(', '); }
+function majCarrousel(seulementTexte){
+  const sel = $('car-sel'), n = E.lanes.length;
+  $('car').style.display = E.mode === 'carrousel' && n ? 'flex' : 'none';
+  $('b-mode').textContent = E.mode === 'carrousel' ? '☰ Liste' : '▭ Carrousel';
+  sel.innerHTML = E.lanes.map((l, i) => `<option value="${i}">${i + 1}/${n} — ${esc(l.nom)}${l.note != null ? ' — ' + l.note + '/20' : ''}</option>`).join('');
+  sel.value = String(Math.min(E.cur, Math.max(0, n - 1)));
+  const info = $('car-info'), l = E.lanes[E.cur];
+  info.style.display = E.mode === 'carrousel' && l ? '' : 'none';
+  if (l) info.textContent = l.nom + (l.reglages ? '  —  ' + texteReglages(l.reglages) : '') + '  —  ' + l.notes.length + ' notes';
+  if (!seulementTexte) return;
+}
+function allerA(i){
+  const n = E.lanes.length; if (!n) return;
+  E.cur = ((i % n) + n) % n;
+  construireControles(); majCarrousel(); majGains(); redessiner();
+}
+$('b-mode').onclick = () => {
+  E.mode = E.mode === 'carrousel' ? 'liste' : 'carrousel';
+  construireControles(); majCarrousel(); majGains(); redessiner();
+};
+$('car-prev').onclick = () => allerA(E.cur - 1);
+$('car-next').onclick = () => allerA(E.cur + 1);
+$('car-sel').onchange = (e) => allerA(parseInt(e.target.value, 10));
+$('car-seul').onchange = (e) => { E.seulAffiche = e.target.checked; majGains(); redessiner(); };
+document.addEventListener('keydown', (e) => {
+  if (E.mode !== 'carrousel' || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.code === 'ArrowLeft'){ e.preventDefault(); allerA(E.cur - 1); }
+  if (e.code === 'ArrowRight'){ e.preventDefault(); allerA(E.cur + 1); }
+});
+$('b-trier').onclick = () => {
+  const ordre = E.lanes.map((l, i) => [l, i]);
+  ordre.sort((a, b) => (b[0].note == null ? -1 : b[0].note) - (a[0].note == null ? -1 : a[0].note) || a[1] - b[1]);
+  E.lanes = ordre.map(x => x[0]); E.cur = 0;
+  construireControles(); majCarrousel(); redessiner();
+  msg('Relevés classés par note décroissante (les relevés sans note à la fin).');
+};
+$('b-csv').onclick = () => {
+  if (!E.lanes.length){ msg('Aucun relevé à exporter.', true); return; }
+  const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const lignes = [['relevé', 'note_sur_20', 'detecteur', 'notes', 'réglages'].map(q).join(';')];
+  const tri = E.lanes.slice().sort((a, b) => (b.note == null ? -1 : b.note) - (a.note == null ? -1 : a.note));
+  for (const l of tri) lignes.push([l.nom, l.note == null ? '' : String(l.note).replace('.', ','), l.reglages && l.reglages.detecteur || '', l.notes.length, l.reglages ? JSON.stringify(l.reglages) : ''].map(q).join(';'));
+  const blob = new Blob(['\ufeff' + lignes.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'notes_releves_' + (E.audio.nom ? E.audio.nom.replace(/\.[^.]+$/, '') + '_' : '') + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+window.addEventListener('beforeunload', (e) => { if (E.lanes.some(l => l.note != null)){ e.preventDefault(); e.returnValue = ''; } });
 
 // ============================================================
 // Entrées de fichiers

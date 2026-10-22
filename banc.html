@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.19.0">
+<meta name="app-version" content="1.20.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -43,6 +43,13 @@
   .btn-seul{ margin-left:auto; background:var(--raised); color:var(--brass); border:1px solid var(--brass-dim); border-radius:4px; padding:5px 10px; font-size:0.78rem; cursor:pointer; white-space:nowrap; }
   .btn-seul:hover{ background:var(--brass); color:#1C1712; }
   .liens a{ color:var(--brass); }
+  .steps-list{ list-style:none; padding:0; margin:0; counter-reset:steps; }
+  .steps-list li{ counter-increment:steps; display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .steps-list li:last-child{ border-bottom:none; }
+  .steps-list li::before{ content:counter(steps); flex:none; width:24px; height:24px; border-radius:50%; background:var(--raised); color:var(--brass); font-family:'IBM Plex Mono',monospace; font-size:0.8rem; display:flex; align-items:center; justify-content:center; }
+  .steps-list p{ margin:0; font-size:0.92rem; color:var(--text); }
+  .steps-list a{ color:var(--brass); }
+  footer{ color:var(--muted); font-size:0.8rem; text-align:center; padding-top:24px; }
   .det-body.off{ opacity:0.4; pointer-events:none; }
   .grille{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
   @media (max-width:560px){ .grille{ grid-template-columns:1fr; } }
@@ -155,6 +162,19 @@
   <div class="total" id="total"></div>
   <button class="go" id="btn-go">Générer le notebook</button>
   <div id="statut"></div>
+
+  <section style="margin-top:24px">
+    <h2>Et ensuite ?</h2>
+    <ul class="steps-list">
+      <li><p>Ouvrez <a href="https://colab.research.google.com" target="_blank" rel="noopener">colab.research.google.com</a>, puis <code>Fichier → Importer un notebook</code> et sélectionnez le fichier téléchargé.</p></li>
+      <li><p>Activez le GPU : <code>Exécution → Modifier le type d'exécution → T4 GPU</code> (utile surtout pour FCPE).</p></li>
+      <li><p>Lancez <code>Exécution → Tout exécuter</code>. Le notebook est déjà réglé selon cette page (détecteurs, source du fichier voix, table des temps) : il demande seulement d'envoyer le fichier voix (et, dans la même fenêtre, la table des temps si vous en avez prévu une : les deux fichiers peuvent être choisis ensemble). Les réglages restent modifiables dans la cellule « Réglages à tester ».</p></li>
+      <li><p>À la fin, un <code>.zip</code> de fichiers MIDI se télécharge. Chargez-le avec l'audio dans <a href="./comparateur.html">Comparer des relevés</a> pour écouter et comparer.</p></li>
+    </ul>
+  </section>
+
+  <footer>Fonctionne entièrement dans votre navigateur — aucune donnée n'est envoyée à un serveur.</footer>
+  <div class="app-version" id="app-version"></div>
 </div>
 
 <script>
@@ -342,15 +362,29 @@ import numpy as np
 import librosa
 import soundfile as sf
 
+print("Recapitulatif (regle depuis la page, modifiable dans la cellule Reglages) :")
+print("  detecteurs :", ", ".join(DETECTEURS))
+print("  fichier voix :", "Google Drive (" + DRIVE_CHEMIN + ")" if SOURCE == "drive" else "envoi direct dans Colab")
+print("  table des temps :", {"aucune": "aucune", "upload": "envoyee dans Colab", "drive": "Google Drive (" + DRIVE_STRUCTURE + ")"}[STRUCTURE_SOURCE])
+
 if SOURCE == "drive":
     from google.colab import drive
     drive.mount('/content/drive')
     chemin_source = DRIVE_CHEMIN
 else:
     from google.colab import files
+    print("Envoie le fichier voix (tu peux y ajouter en meme temps la table des temps .json ou .zip si tu en as prevu une).")
     envoye = files.upload()
-    chemin_source = next(iter(envoye))
+    # le fichier voix est le fichier AUDIO parmi ceux envoyes ; les .json / .zip sont gardes pour la table des temps
+    EXT_AUDIO = ('.opus', '.ogg', '.oga', '.flac', '.wav', '.mp3', '.m4a', '.aac', '.webm')
+    audios = [n for n in envoye if n.lower().endswith(EXT_AUDIO)]
+    if not audios:
+        raise ValueError("Aucun fichier audio parmi les fichiers envoyes : " + ", ".join(envoye))
+    chemin_source = audios[0]
+    FICHIERS_ENVOYES_STRUCTURE = [n for n in envoye if n.lower().endswith(('.json', '.zip'))]
 
+if SOURCE == "drive":
+    FICHIERS_ENVOYES_STRUCTURE = []
 NOM = os.path.splitext(os.path.basename(chemin_source))[0]
 # Tous les detecteurs lisent le meme WAV mono : memes temps, memes conditions
 audio_44k, sr_44k = librosa.load(chemin_source, sr=44100, mono=True)
@@ -387,10 +421,13 @@ if STRUCTURE_SOURCE != "aucune":
                 drive.mount('/content/drive')
             chemin_structure = DRIVE_STRUCTURE
         else:
-            from google.colab import files as _fichiers
-            print("Envoie maintenant le fichier de la table des temps (..._metadonnees.json ou le .zip du morceau)")
-            envoye_s = _fichiers.upload()
-            chemin_structure = next(iter(envoye_s))
+            if FICHIERS_ENVOYES_STRUCTURE:
+                chemin_structure = FICHIERS_ENVOYES_STRUCTURE[0]   # deja envoye avec le fichier voix
+            else:
+                from google.colab import files as _fichiers
+                print("Envoie maintenant le fichier de la table des temps (..._metadonnees.json ou le .zip du morceau)")
+                envoye_s = _fichiers.upload()
+                chemin_structure = next(iter(envoye_s))
         STRUCTURE = lire_structure(chemin_structure)
         print(f"Table des temps : {len(STRUCTURE['beats'])} temps, {len(STRUCTURE['downbeats'])} temps forts, {len(STRUCTURE['segments'])} sections, {STRUCTURE['bpm']} bpm")
     except Exception as e:
@@ -737,7 +774,6 @@ majTotal();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) verifier(); });
 })();
 </script>
-<div class="app-version" id="app-version"></div>
 <div id="maj-bandeau"><span>Nouvelle version disponible.</span><button type="button">Mettre à jour</button></div>
 </body>
 </html>
