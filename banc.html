@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bandes — banc d'essai mélodie</title>
+<meta name="description" content="Génère un notebook Colab qui teste de nombreux réglages de FCPE, RMVPE et Basic Pitch sur un seul fichier voix et exporte un MIDI par variante.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#1C1712">
+<meta name="app-version" content="1.18.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#1C1712; --panel:#241E17; --raised:#2A231C; --border:#3D342A; --brass:#C0996A; --brass-dim:#8C7350; --rust:#C1502E; --text:#EDE4D3; --muted:#A79885; --radius:6px; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; padding:0 20px 80px; }
+  .wrap{ max-width:720px; margin:0 auto; }
+  .top-nav{ display:flex; flex-wrap:wrap; gap:4px; padding-top:20px; }
+  .nav-tab{ font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--muted); text-decoration:none; padding:8px 14px; border:1px solid var(--border); border-radius:4px 4px 0 0; border-bottom:none; }
+  .nav-tab.active{ color:var(--brass); border-color:var(--brass-dim); background:var(--panel); }
+  header{ padding:40px 0 20px; }
+  h1{ font-family:'Fraunces',serif; font-weight:600; font-size:2rem; margin:0 0 8px; }
+  h2{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0 0 4px; color:var(--brass); }
+  p{ color:var(--muted); margin:0 0 10px; }
+  code{ font-family:'IBM Plex Mono',monospace; background:var(--raised); padding:1px 5px; border-radius:3px; font-size:0.85em; color:var(--text); }
+  section{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin:0 0 16px; }
+  .hint{ font-size:0.82rem; color:var(--muted); margin:4px 0 0; }
+  label.champ{ display:block; margin:12px 0 0; }
+  label.champ > span{ display:block; font-size:0.85rem; color:var(--text); }
+  label.champ > .hint{ margin:0 0 4px; }
+  input[type=text], select{ width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:8px 10px; font-family:'IBM Plex Mono',monospace; font-size:0.85rem; }
+  input[type=text].err{ border-color:var(--rust); }
+  .radios{ display:flex; gap:18px; flex-wrap:wrap; margin-top:6px; }
+  .radios label, .bools label{ font-size:0.88rem; cursor:pointer; }
+  .bools{ display:flex; gap:18px; margin-top:4px; }
+  .det-head{ display:flex; align-items:center; gap:10px; }
+  .det-head input{ width:18px; height:18px; accent-color:var(--brass); }
+  .det-head h2{ margin:0; }
+  .det-body.off{ opacity:0.4; pointer-events:none; }
+  .grille{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+  @media (max-width:560px){ .grille{ grid-template-columns:1fr; } }
+  .total{ font-family:'IBM Plex Mono',monospace; font-size:0.9rem; color:var(--brass); margin:6px 0 12px; }
+  .total.alerte{ color:var(--rust); }
+  button.go{ background:var(--brass); color:#1C1712; border:0; border-radius:var(--radius); padding:12px 20px; font-weight:600; font-size:1rem; cursor:pointer; width:100%; }
+  button.go:hover{ background:#d0a979; }
+  #statut{ margin-top:10px; font-size:0.88rem; color:var(--muted); min-height:1.4em; }
+  #maj-bandeau{ position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:12px; background:#2A231B; color:#EFE6D8; border:1px solid #C9A06A; border-radius:6px; padding:10px 14px; font:0.85rem 'IBM Plex Sans',sans-serif; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #maj-bandeau button{ background:#C9A06A; color:#1C1712; border:0; border-radius:4px; padding:6px 12px; font-weight:600; cursor:pointer; }
+  .app-version{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:#8a7f70; text-align:center; padding:8px 0 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="top-nav">
+    <a href="./index.html" class="nav-tab">Préparer</a>
+    <a href="./editeur.html" class="nav-tab">Éditer les métadonnées</a>
+    <a href="./banc.html" class="nav-tab active">Banc d'essai mélodie</a>
+    <a href="./comparateur.html" class="nav-tab">Comparer des relevés</a>
+  </nav>
+
+  <header>
+    <h1>Banc d'essai mélodie</h1>
+    <p>Génère un notebook Colab qui prend <b>un seul fichier voix</b> (par exemple <code>morceau_vocals.opus</code>), lance FCPE, RMVPE et Basic Pitch avec toutes les combinaisons de réglages que tu indiques, et exporte <b>un fichier MIDI par variante</b> dans un zip. Les MIDI se comparent ensuite dans <a href="./comparateur.html" style="color:var(--brass)">Comparer des relevés</a>.</p>
+    <p>Pour chaque réglage, écris une ou plusieurs valeurs séparées par des virgules : le notebook essaie toutes les combinaisons. Les variantes qui donnent exactement les mêmes notes sont écartées.</p>
+  </header>
+
+  <section>
+    <h2>Fichier voix</h2>
+    <div class="radios">
+      <label><input type="radio" name="source" value="upload" checked> Je l'envoie dans Colab</label>
+      <label><input type="radio" name="source" value="drive"> Il est sur Google Drive</label>
+    </div>
+    <label class="champ" id="champ-drive" style="display:none">
+      <span>Chemin du fichier sur Drive</span>
+      <input type="text" id="drive-chemin" value="/content/drive/MyDrive/Bandes/morceau_vocals.opus">
+    </label>
+    <label class="champ">
+      <span>Tessiture à tester (FCPE et Basic Pitch)</span>
+      <span class="hint"><code>grave</code> 70–450 Hz, <code>medium</code> 90–750 Hz, <code>aigue</code> 150–1100 Hz, <code>large</code> 50–1100 Hz. Une plage plus étroite évite les erreurs d'octave mais peut couper les notes extrêmes. RMVPE n'a pas ce réglage.</span>
+      <input type="text" id="g-tess" value="medium">
+    </label>
+  </section>
+
+  <section>
+    <div class="det-head"><input type="checkbox" id="d-fcpe" checked><h2>FCPE ★</h2></div>
+    <div class="det-body" id="b-fcpe">
+      <div class="grille">
+        <label class="champ"><span>Seuil de voisement</span><span class="hint">Plus bas = plus de notes (y compris du bruit). Défaut du modèle : 0,006.</span><input type="text" id="g-fcpe-seuil" value="0.003, 0.006, 0.02"></label>
+        <label class="champ"><span>Décodeur</span><span class="hint"><code>local_argmax</code> (lissé, recommandé) ou <code>argmax</code> (brut).</span><input type="text" id="g-fcpe-dec" value="local_argmax"></label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="det-head"><input type="checkbox" id="d-rmvpe" checked><h2>RMVPE ★</h2></div>
+    <div class="det-body" id="b-rmvpe">
+      <label class="champ"><span>Seuil de confiance</span><span class="hint">Les trames moins sûres que ce seuil sont ignorées. Plus haut = relevé plus propre mais avec des trous. Valeur de base du notebook : 0,03. La courbe de hauteur n'est calculée qu'une fois : ce réglage est quasi gratuit.</span><input type="text" id="g-rmvpe-conf" value="0.02, 0.03, 0.1, 0.3"></label>
+    </div>
+  </section>
+
+  <section>
+    <h2 style="margin-bottom:0">Découpage en notes <span class="hint" style="font-weight:400">(FCPE et RMVPE, qui donnent une courbe de hauteur)</span></h2>
+    <div class="grille">
+      <label class="champ"><span>Durée minimale d'une note (secondes)</span><span class="hint">En dessous, la note est ignorée (artefact probable).</span><input type="text" id="g-seg-min" value="0.08, 0.15"></label>
+      <label class="champ"><span>Tolérance de hauteur (demi-tons)</span><span class="hint">Écart maximal pour que deux trames restent la même note. Petit = notes plus nombreuses (vibrato découpé).</span><input type="text" id="g-seg-tol" value="0.5"></label>
+    </div>
+  </section>
+
+  <section>
+    <div class="det-head"><input type="checkbox" id="d-bp" checked><h2>Basic Pitch ★</h2></div>
+    <div class="det-body" id="b-bp">
+      <div class="grille">
+        <label class="champ"><span>Seuil d'attaque</span><span class="hint">Sensibilité pour déclencher une note. Bas = plus de notes.</span><input type="text" id="g-bp-att" value="0.3, 0.5, 0.7"></label>
+        <label class="champ"><span>Seuil de note</span><span class="hint">Sensibilité pour la garder allumée. Bas = notes plus longues.</span><input type="text" id="g-bp-note" value="0.2, 0.3"></label>
+        <label class="champ"><span>Durée minimale (ms)</span><span class="hint">Notes plus courtes écartées. Défaut du modèle : 127,7.</span><input type="text" id="g-bp-len" value="128"></label>
+        <label class="champ"><span>Fusion des trous (ms)</span><span class="hint">Deux notes identiques séparées par moins que ça sont fusionnées. 0 = désactivé.</span><input type="text" id="g-bp-trou" value="80"></label>
+      </div>
+      <div class="grille">
+        <div class="champ"><span>Melodia trick</span><div class="bools"><label><input type="checkbox" id="g-bp-mel1" checked> avec</label><label><input type="checkbox" id="g-bp-mel0" checked> sans</label></div><div class="hint">Comble les petits trous dans une note tenue.</div></div>
+        <div class="champ"><span>Correction des octaves isolées</span><div class="bools"><label><input type="checkbox" id="g-bp-oct1" checked> avec</label><label><input type="checkbox" id="g-bp-oct0"> sans</label></div><div class="hint">Ramène une note isolée qui saute d'octave vers ses voisines.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="total" id="total"></div>
+  <button class="go" id="btn-go">Générer le notebook</button>
+  <div id="statut"></div>
+</div>
+
+<script>
+function toSource(text){ const l = text.split('\n'); return l.map((x, i) => i < l.length - 1 ? x + '\n' : x); }
+function md(text){ return { cell_type: 'markdown', metadata: {}, source: toSource(text) }; }
+function code(text){ return { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: toSource(text) }; }
+
+const $ = (id) => document.getElementById(id);
+const TESS_OK = ['grave', 'medium', 'aigue', 'large'];
+
+function listeNombres(id){
+  const v = $(id).value.split(/[,;\s]+/).filter(Boolean).map(Number);
+  return v.length && v.every(Number.isFinite) ? v : null;
+}
+function listeMots(id, permis){
+  const v = $(id).value.split(/[,;\s]+/).filter(Boolean);
+  return v.length && v.every(x => !permis || permis.includes(x)) ? v : null;
+}
+function boolsListe(idOui, idNon){
+  const l = [];
+  if ($(idOui).checked) l.push(true);
+  if ($(idNon).checked) l.push(false);
+  return l.length ? l : null;
+}
+
+// Lit tout le formulaire ; renvoie { cfg, erreurs, total }
+function lireFormulaire(){
+  const erreurs = [];
+  const marque = (id, ok) => { $(id).classList.toggle('err', !ok); if (!ok) erreurs.push(id); return ok; };
+  const act = { fcpe: $('d-fcpe').checked, rmvpe: $('d-rmvpe').checked, basicpitch: $('d-bp').checked };
+  const cfg = { actifs: Object.keys(act).filter(k => act[k]) };
+  const segMin = listeNombres('g-seg-min'), segTol = listeNombres('g-seg-tol'), tess = listeMots('g-tess', TESS_OK);
+  const besoinSeg = act.fcpe || act.rmvpe;
+  marque('g-seg-min', !besoinSeg || !!segMin); marque('g-seg-tol', !besoinSeg || !!segTol);
+  marque('g-tess', !(act.fcpe || act.basicpitch) || !!tess);
+  cfg.segMin = segMin || [0.08]; cfg.segTol = segTol || [0.5]; cfg.tess = tess || ['medium'];
+  const fs = listeNombres('g-fcpe-seuil'), fd = listeMots('g-fcpe-dec', ['local_argmax', 'argmax']);
+  marque('g-fcpe-seuil', !act.fcpe || !!fs); marque('g-fcpe-dec', !act.fcpe || !!fd);
+  cfg.fcpeSeuil = fs || [0.006]; cfg.fcpeDec = fd || ['local_argmax'];
+  const rc = listeNombres('g-rmvpe-conf'); marque('g-rmvpe-conf', !act.rmvpe || !!rc); cfg.rmvpeConf = rc || [0.03];
+  const ba = listeNombres('g-bp-att'), bn = listeNombres('g-bp-note'), bl = listeNombres('g-bp-len'), bt = listeNombres('g-bp-trou');
+  marque('g-bp-att', !act.basicpitch || !!ba); marque('g-bp-note', !act.basicpitch || !!bn);
+  marque('g-bp-len', !act.basicpitch || !!bl); marque('g-bp-trou', !act.basicpitch || !!bt);
+  cfg.bpAtt = ba || [0.5]; cfg.bpNote = bn || [0.3]; cfg.bpLen = bl || [127.7]; cfg.bpTrou = bt || [80];
+  const bm = boolsListe('g-bp-mel1', 'g-bp-mel0'), bo = boolsListe('g-bp-oct1', 'g-bp-oct0');
+  if (act.basicpitch && (!bm || !bo)) erreurs.push('bool');
+  cfg.bpMel = bm || [true]; cfg.bpOct = bo || [true];
+  if (!cfg.actifs.length) erreurs.push('aucun');
+
+  const nSeg = cfg.segMin.length * cfg.segTol.length;
+  const n = {
+    fcpe: act.fcpe ? cfg.tess.length * cfg.fcpeSeuil.length * cfg.fcpeDec.length * nSeg : 0,
+    rmvpe: act.rmvpe ? cfg.rmvpeConf.length * nSeg : 0,
+    basicpitch: act.basicpitch ? cfg.tess.length * cfg.bpAtt.length * cfg.bpNote.length * cfg.bpLen.length * cfg.bpMel.length * cfg.bpTrou.length * cfg.bpOct.length : 0,
+  };
+  return { cfg, erreurs, n, total: n.fcpe + n.rmvpe + n.basicpitch };
+}
+
+function majTotal(){
+  document.querySelectorAll('.det-body').forEach(b => {
+    const id = b.id === 'b-fcpe' ? 'd-fcpe' : b.id === 'b-rmvpe' ? 'd-rmvpe' : 'd-bp';
+    b.classList.toggle('off', !$(id).checked);
+  });
+  const { n, total } = lireFormulaire();
+  const el = $('total');
+  el.textContent = `${total} variante${total > 1 ? 's' : ''} au maximum (FCPE ${n.fcpe} · RMVPE ${n.rmvpe} · Basic Pitch ${n.basicpitch})` +
+    (total > 400 ? ' — trop : le notebook s\'arrêtera à 400' : total > 150 ? ' — beaucoup, ce sera long' : '');
+  el.classList.toggle('alerte', total > 150);
+}
+document.querySelectorAll('input').forEach(i => i.addEventListener('input', majTotal));
+document.querySelectorAll('input[name=source]').forEach(r => r.addEventListener('change', () => {
+  $('champ-drive').style.display = document.querySelector('input[name=source]:checked').value === 'drive' ? '' : 'none';
+}));
+
+// Formatage de valeurs Python
+const pyNum = (a) => '[' + a.map(x => String(x)).join(', ') + ']';
+const pyStr = (a) => '[' + a.map(x => JSON.stringify(x)).join(', ') + ']';
+const pyBool = (a) => '[' + a.map(x => x ? 'True' : 'False').join(', ') + ']';
+
+function construireNotebook(f, source, driveChemin){
+  const c = f.cfg;
+  const a = (k) => c.actifs.includes(k);
+  const cells = [];
+  cells.push(md(`# Banc d'essai mélodie
+
+Ce notebook prend **un fichier voix** et teste de nombreuses combinaisons de réglages pour **FCPE**, **RMVPE** et **Basic Pitch**.
+Chaque variante est exportée en **fichier MIDI** (1 ms par tick, donc les temps sont exacts), et le tout est rassemblé dans un zip à ouvrir dans la page « Comparer des relevés ».
+
+Le cadre « Réglages à tester » ci-dessous peut être modifié ici même avant de lancer : chaque liste est testée en entier, toutes les combinaisons sont essayées.
+Les variantes qui produisent exactement les mêmes notes sont écartées.
+
+Exécution : *Exécution > Tout exécuter*. Un GPU n'est utile que pour FCPE.`));
+
+  const inst = [
+    "import subprocess, sys",
+    "def pip_install(*paquets):",
+    "    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', *paquets], check=True)",
+    "",
+    "pip_install('soundfile', 'librosa')",
+  ];
+  if (a('rmvpe')) inst.push("try:", "    pip_install('rmvpe-onnx')", "except Exception as e:", "    print('[!] installation de rmvpe-onnx impossible :', e)");
+  if (a('fcpe')) inst.push("try:", "    pip_install('torchfcpe')", "except Exception as e:", "    print('[!] installation de torchfcpe impossible :', e)");
+  if (a('basicpitch')) inst.push("try:", "    # on evite les dependances figees de Basic Pitch (tensorflow, numpy) et on utilise le moteur ONNX",
+    "    pip_install('--no-deps', '--ignore-requires-python', 'basic-pitch')", "    pip_install('onnxruntime', 'pretty_midi', 'resampy', 'mir_eval')",
+    "except Exception as e:", "    print('[!] installation de basic-pitch impossible :', e)");
+  inst.push("print('Installation terminee.')");
+  cells.push(code(inst.join('\n')));
+
+  cells.push(md('## Réglages à tester'));
+  cells.push(code(`# =========================================================
+# SOURCE du fichier voix
+# =========================================================
+SOURCE = ${JSON.stringify(source)}        # "upload" : tu l'envoies quand Colab le demande ; "drive" : il est sur Google Drive
+DRIVE_CHEMIN = ${JSON.stringify(driveChemin)}   # utilise seulement si SOURCE = "drive"
+
+# =========================================================
+# DETECTEURS a lancer (retire un nom pour l'ignorer)
+# =========================================================
+DETECTEURS = ${pyStr(c.actifs)}
+
+# Nombre maximal de variantes gardees (securite : evite un calcul de plusieurs heures)
+MAX_VARIANTES = 400
+
+# =========================================================
+# TESSITURE (FCPE et Basic Pitch) : plage de frequences cherchee
+# =========================================================
+TESSITURES = {"grave": (70, 450), "medium": (90, 750), "aigue": (150, 1100), "large": (50, 1100)}
+TESSITURE = ${pyStr(c.tess)}
+
+# =========================================================
+# DECOUPAGE EN NOTES (FCPE et RMVPE : la courbe de hauteur est decoupee en notes)
+# =========================================================
+SEG_DUREE_MIN = ${pyNum(c.segMin)}   # secondes ; une note plus courte est ignoree
+SEG_TOLERANCE = ${pyNum(c.segTol)}        # demi-tons ; ecart maximal entre deux trames de la meme note
+
+# =========================================================
+# FCPE
+# =========================================================
+FCPE_SEUIL = ${pyNum(c.fcpeSeuil)}   # seuil de voisement : plus bas = plus de notes, y compris du bruit
+FCPE_DECODEUR = ${pyStr(c.fcpeDec)}     # "local_argmax" (lisse) ou "argmax" (brut)
+
+# =========================================================
+# RMVPE
+# =========================================================
+RMVPE_CONFIANCE = ${pyNum(c.rmvpeConf)}   # seuil de confiance : plus haut = releve plus propre mais avec des trous
+
+# =========================================================
+# BASIC PITCH
+# =========================================================
+BP_ATTAQUE = ${pyNum(c.bpAtt)}      # seuil d'attaque : sensibilite pour declencher une note
+BP_NOTE = ${pyNum(c.bpNote)}          # seuil de note : sensibilite pour la garder allumee
+BP_DUREE_MS = ${pyNum(c.bpLen)}          # duree minimale d'une note, en millisecondes
+BP_MELODIA = ${pyBool(c.bpMel)}   # melodia trick : comble les petits trous dans une note tenue
+BP_TROU_MS = ${pyNum(c.bpTrou)}           # fusion de deux notes identiques separees par moins que ca (0 = aucune)
+BP_OCTAVES = ${pyBool(c.bpOct)}       # corrige les notes isolees qui sautent d'une octave`));
+
+  cells.push(md('## Fichier voix'));
+  cells.push(code(`import os, json, time, zipfile, itertools
+import numpy as np
+import librosa
+import soundfile as sf
+
+if SOURCE == "drive":
+    from google.colab import drive
+    drive.mount('/content/drive')
+    chemin_source = DRIVE_CHEMIN
+else:
+    from google.colab import files
+    envoye = files.upload()
+    chemin_source = next(iter(envoye))
+
+NOM = os.path.splitext(os.path.basename(chemin_source))[0]
+# Tous les detecteurs lisent le meme WAV mono : memes temps, memes conditions
+audio_44k, sr_44k = librosa.load(chemin_source, sr=44100, mono=True)
+VOIX_WAV = '/content/voix_banc.wav'
+sf.write(VOIX_WAV, audio_44k, sr_44k)
+DUREE = len(audio_44k) / float(sr_44k)
+print(f"{NOM} : {DUREE:.1f} s")`));
+
+  cells.push(md('## Fonctions'));
+  cells.push(code(`def freq_to_midi(f):
+    return 69 + 12 * np.log2(f / 440.0)
+
+def notes_depuis_pitch(temps, frequence, confiance, seuil, duree_min, tolerance):
+    """Decoupe une courbe de hauteur en notes."""
+    temps = np.asarray(temps, dtype=float)
+    frequence = np.asarray(frequence, dtype=float)
+    confiance = np.asarray(confiance, dtype=float)
+    f = frequence.copy()
+    f[~(confiance >= seuil)] = np.nan
+    midi = np.full_like(f, np.nan)
+    ok = ~np.isnan(f) & (f > 0)
+    midi[ok] = freq_to_midi(f[ok])
+    notes = []
+    debut, valeurs = None, []
+
+    def clore(fin):
+        if debut is not None and fin - debut >= duree_min and valeurs:
+            notes.append({"start": round(float(debut), 3), "end": round(float(fin), 3), "midi": int(round(float(np.median(valeurs))))})
+
+    for i, t in enumerate(temps):
+        v = midi[i]
+        if np.isnan(v):
+            clore(t)
+            debut, valeurs = None, []
+        elif debut is None:
+            debut, valeurs = t, [v]
+        elif abs(v - np.median(valeurs)) <= tolerance:
+            valeurs.append(v)
+        else:
+            clore(t)
+            debut, valeurs = t, [v]
+    clore(temps[-1] if len(temps) else 0)
+    return notes
+
+def notes_monophoniques(evenements, duree_min=0.05):
+    """Basic Pitch est polyphonique : a chaque instant on garde la note la plus forte."""
+    if not evenements:
+        return []
+    bornes = sorted({t for e in evenements for t in (e[0], e[1])})
+    segs = []
+    for a, b in zip(bornes[:-1], bornes[1:]):
+        if b - a < 1e-6:
+            continue
+        actifs = [e for e in evenements if e[0] <= a + 1e-9 and e[1] >= b - 1e-9]
+        if not actifs:
+            continue
+        m = max(actifs, key=lambda e: e[3])
+        if segs and segs[-1]["midi"] == m[2] and abs(segs[-1]["end"] - a) < 1e-6:
+            segs[-1]["end"] = b
+        else:
+            segs.append({"start": a, "end": b, "midi": int(m[2])})
+    return [{"start": round(x["start"], 3), "end": round(x["end"], 3), "midi": x["midi"]} for x in segs if x["end"] - x["start"] >= duree_min]
+
+def nettoyer_notes_bp(notes, trou_ms, corriger_octaves):
+    notes = [dict(n) for n in notes]
+    fus = []
+    for n in notes:
+        if trou_ms > 0 and fus and fus[-1]["midi"] == n["midi"] and (n["start"] - fus[-1]["end"]) * 1000.0 <= trou_ms:
+            fus[-1]["end"] = n["end"]
+        else:
+            fus.append(n)
+    if corriger_octaves:
+        for i in range(1, len(fus) - 1):
+            p, n, q = fus[i - 1], fus[i], fus[i + 1]
+            if n["end"] - n["start"] > 0.3 or n["start"] - p["end"] > 0.3 or q["start"] - n["end"] > 0.3:
+                continue
+            if abs(p["midi"] - q["midi"]) > 3:
+                continue
+            ref = (p["midi"] + q["midi"]) / 2.0
+            if abs(n["midi"] - ref) >= 11:
+                corrige = n["midi"] - 12 * round((n["midi"] - ref) / 12.0)
+                if abs(corrige - ref) <= 3:
+                    n["midi"] = int(corrige)
+    return fus
+
+def vlq(n):
+    sortie = [n & 0x7F]
+    n >>= 7
+    while n:
+        sortie.append((n & 0x7F) | 0x80)
+        n >>= 7
+    return bytes(reversed(sortie))
+
+def ecrire_midi(notes, chemin, titre):
+    """Fichier MIDI standard : 1000 ticks par noire a 60 noires/minute, donc 1 tick = 1 ms."""
+    evts = []
+    for n in notes:
+        d = int(round(n["start"] * 1000))
+        f = max(d + 1, int(round(n["end"] * 1000)))
+        m = max(0, min(127, int(n["midi"])))
+        evts.append((d, 1, m))
+        evts.append((f, 0, m))
+    evts.sort()   # a temps egal, la fin d'une note passe avant le debut de la suivante
+    piste = bytearray()
+    nom = titre.encode('ascii', 'replace')
+    piste += bytes([0, 0xFF, 0x03]) + vlq(len(nom)) + nom
+    piste += bytes([0, 0xFF, 0x51, 0x03]) + (1000000).to_bytes(3, 'big')
+    prec = 0
+    for t, debut, m in evts:
+        piste += vlq(t - prec) + bytes([0x90 if debut else 0x80, m, 100 if debut else 0])
+        prec = t
+    piste += bytes([0, 0xFF, 0x2F, 0x00])
+    entete = b'MThd' + (6).to_bytes(4, 'big') + (0).to_bytes(2, 'big') + (1).to_bytes(2, 'big') + (1000).to_bytes(2, 'big')
+    with open(chemin, 'wb') as fh:
+        fh.write(entete + b'MTrk' + len(piste).to_bytes(4, 'big') + bytes(piste))
+
+variantes = []     # (nom, notes, reglages)
+vus = {}           # empreinte des notes -> nom de la premiere variante
+doublons = []
+videes = []
+
+def ajouter(nom, notes, reglages):
+    if not notes:
+        videes.append(nom)
+        return
+    cle = tuple((round(n["start"], 2), round(n["end"], 2), n["midi"]) for n in notes)
+    if cle in vus:
+        doublons.append((nom, vus[cle]))
+        return
+    if len(variantes) >= MAX_VARIANTES:
+        return
+    vus[cle] = nom
+    variantes.append((nom, notes, reglages))
+    print(f"  + {nom} : {len(notes)} notes")`));
+
+  cells.push(md('## Lancement'));
+  const run = [];
+  run.push("t_debut = time.time()", "");
+  if (a('rmvpe')) run.push(`# ---------- RMVPE : la courbe est calculee une seule fois ----------
+if "rmvpe" in DETECTEURS:
+    print("RMVPE...")
+    try:
+        from rmvpe_onnx import RMVPE
+        rmvpe_modele = RMVPE()
+        audio_r, sr_r = librosa.load(VOIX_WAV, sr=None, mono=True)
+        temps_r, freq_r, conf_r, _ = rmvpe_modele.predict(audio=audio_r, sr=sr_r)
+        for conf in RMVPE_CONFIANCE:
+            for dmin, tol in itertools.product(SEG_DUREE_MIN, SEG_TOLERANCE):
+                notes = notes_depuis_pitch(temps_r, freq_r, conf_r, conf, dmin, tol)
+                ajouter(f"rmvpe_conf{conf:g}_min{dmin:g}_tol{tol:g}", notes,
+                        {"detecteur": "rmvpe", "confiance": conf, "duree_min_s": dmin, "tolerance_demitons": tol})
+    except Exception as e:
+        print(f"  [!] RMVPE impossible ({type(e).__name__}: {e})")
+`);
+  if (a('fcpe')) run.push(`# ---------- FCPE : une inference par (tessiture, seuil, decodeur) ----------
+if "fcpe" in DETECTEURS:
+    print("FCPE...")
+    try:
+        import torch
+        from torchfcpe import spawn_bundled_infer_model
+        appareil = "cuda" if torch.cuda.is_available() else "cpu"
+        modele_fcpe = spawn_bundled_infer_model(device=appareil)
+        audio_16, _ = librosa.load(VOIX_WAV, sr=16000, mono=True)
+        x16 = torch.from_numpy(audio_16).float()[None, :, None].to(appareil)
+        for tess, seuil, dec in itertools.product(TESSITURE, FCPE_SEUIL, FCPE_DECODEUR):
+            fmin, fmax = TESSITURES[tess]
+            try:
+                f0 = modele_fcpe.infer(x16, sr=16000, decoder_mode=dec, threshold=seuil, f0_min=fmin, f0_max=fmax)
+            except TypeError:
+                print("    [FCPE] cette version n'accepte pas tous les reglages : reglages par defaut utilises")
+                f0 = modele_fcpe.infer(x16, sr=16000)
+            f0 = f0.reshape(-1).detach().cpu().numpy()
+            temps_f = np.linspace(0.0, len(audio_16) / 16000.0, len(f0))
+            conf_f = (f0 > 0).astype(float)
+            for dmin, tol in itertools.product(SEG_DUREE_MIN, SEG_TOLERANCE):
+                notes = notes_depuis_pitch(temps_f, f0, conf_f, 0.5, dmin, tol)
+                ajouter(f"fcpe_{tess}_seuil{seuil:g}_{dec}_min{dmin:g}_tol{tol:g}", notes,
+                        {"detecteur": "fcpe", "tessiture": tess, "seuil": seuil, "decodeur": dec, "duree_min_s": dmin, "tolerance_demitons": tol})
+    except Exception as e:
+        print(f"  [!] FCPE impossible ({type(e).__name__}: {e})")
+`);
+  if (a('basicpitch')) run.push(`# ---------- Basic Pitch : une inference par (tessiture, attaque, note, duree, melodia) ----------
+if "basicpitch" in DETECTEURS:
+    print("Basic Pitch...")
+    try:
+        from basic_pitch.inference import predict
+        for tess, att, nt, dms, mel in itertools.product(TESSITURE, BP_ATTAQUE, BP_NOTE, BP_DUREE_MS, BP_MELODIA):
+            fmin, fmax = TESSITURES[tess]
+            reglages = dict(onset_threshold=att, frame_threshold=nt, minimum_note_length=dms,
+                            minimum_frequency=fmin, maximum_frequency=fmax, melodia_trick=mel)
+            try:
+                _, _, evenements = predict(VOIX_WAV, **reglages)
+            except TypeError:
+                print("    [Basic Pitch] cette version n'accepte pas tous les reglages : reglages par defaut utilises")
+                _, _, evenements = predict(VOIX_WAV)
+            brut = notes_monophoniques([(float(e[0]), float(e[1]), int(e[2]), float(e[3])) for e in evenements])
+            for trou, octv in itertools.product(BP_TROU_MS, BP_OCTAVES):
+                notes = nettoyer_notes_bp(brut, trou, octv)
+                ajouter(f"bp_{tess}_att{att:g}_note{nt:g}_len{dms:g}_mel{int(mel)}_trou{trou:g}_oct{int(octv)}", notes,
+                        {"detecteur": "basicpitch", "tessiture": tess, "seuil_attaque": att, "seuil_note": nt, "duree_min_ms": dms,
+                         "melodia_trick": mel, "fusion_trou_ms": trou, "corriger_octaves": octv})
+    except Exception as e:
+        print(f"  [!] Basic Pitch impossible ({type(e).__name__}: {e})")
+`);
+  run.push(`print()
+print(f"{len(variantes)} variante(s) gardee(s), {len(doublons)} doublon(s) ecarte(s), {len(videes)} vide(s), {time.time() - t_debut:.0f} s")
+if len(variantes) >= MAX_VARIANTES:
+    print(f"[!] limite de {MAX_VARIANTES} variantes atteinte : reduis les listes de reglages pour tout tester.")`);
+  cells.push(code(run.join('\n')));
+
+  cells.push(md('## Export'));
+  cells.push(code(`dossier = f"/content/banc_{NOM}"
+os.makedirs(dossier, exist_ok=True)
+index = []
+for nom, notes, reglages in variantes:
+    ecrire_midi(notes, f"{dossier}/{nom}.mid", nom)
+    index.append({"fichier": nom + ".mid", "notes": len(notes), "reglages": reglages})
+with open(f"{dossier}/reglages.json", "w", encoding="utf-8") as fh:
+    json.dump({"voix": NOM, "duree_s": round(DUREE, 2), "variantes": index, "doublons": [{"ecartee": a, "identique_a": b} for a, b in doublons]},
+              fh, ensure_ascii=False, indent=1)
+chemin_zip = f"/content/banc_{NOM}.zip"
+with zipfile.ZipFile(chemin_zip, "w", zipfile.ZIP_STORED) as z:
+    for fichier in sorted(os.listdir(dossier)):
+        z.write(f"{dossier}/{fichier}", fichier)
+print(f"{len(variantes)} fichier(s) MIDI dans {chemin_zip}")
+if SOURCE == "drive":
+    import shutil
+    destination = os.path.join(os.path.dirname(DRIVE_CHEMIN), os.path.basename(chemin_zip))
+    shutil.copy(chemin_zip, destination)
+    print("Copie aussi dans Drive :", destination)
+from google.colab import files as _files
+_files.download(chemin_zip)`));
+
+  return {
+    cells,
+    metadata: { colab: { provenance: [], name: 'banc_melodie.ipynb' }, kernelspec: { name: 'python3', display_name: 'Python 3' }, accelerator: 'GPU' },
+    nbformat: 4,
+    nbformat_minor: 0,
+  };
+}
+
+$('btn-go').addEventListener('click', () => {
+  const f = lireFormulaire();
+  const statut = $('statut');
+  if (f.erreurs.length){
+    statut.textContent = f.erreurs.includes('aucun') ? 'Coche au moins un détecteur.' :
+      'Certains champs sont vides ou invalides (en rouge). Écris des nombres séparés par des virgules ; tessiture : grave, medium, aigue ou large.';
+    return;
+  }
+  const source = document.querySelector('input[name=source]:checked').value;
+  const nb = construireNotebook(f, source, $('drive-chemin').value.trim());
+  const blob = new Blob([JSON.stringify(nb, null, 1)], { type: 'application/x-ipynb+json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `banc_melodie_${new Date().toISOString().slice(0, 10)}.ipynb`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  statut.textContent = `Notebook téléchargé (jusqu'à ${f.total} variantes). Ouvre-le dans Google Colab, puis charge le zip obtenu dans « Comparer des relevés ».`;
+});
+majTotal();
+
+// --- PWA : version + mise à jour ---
+(function(){
+  const V = document.querySelector('meta[name="app-version"]').content;
+  const afficher = () => { const el = $('app-version'); if (el) el.textContent = 'Bandes v' + V; };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', afficher); else window.addEventListener('load', afficher);
+  async function verifier(){
+    try {
+      const r = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+      const j = await r.json();
+      if (j.version && j.version !== V){
+        const b = $('maj-bandeau'); if (!b) return;
+        b.querySelector('span').textContent = 'Nouvelle version disponible (v' + j.version + ').';
+        b.style.display = 'flex';
+        b.querySelector('button').textContent = 'Recharger';
+        b.querySelector('button').onclick = () => location.reload();
+      }
+    } catch (e) {}
+  }
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { reg.update().catch(() => {}); }).catch(() => {}); });
+  }
+  window.addEventListener('load', () => { verifier(); setInterval(verifier, 10 * 60 * 1000); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) verifier(); });
+})();
+</script>
+<div class="app-version" id="app-version"></div>
+<div id="maj-bandeau"><span>Nouvelle version disponible.</span><button type="button">Mettre à jour</button></div>
+</body>
+</html>

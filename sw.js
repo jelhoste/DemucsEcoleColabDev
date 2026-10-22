@@ -1,8 +1,8 @@
 // Service worker de Bandes — la version vient de version.json / APP_VERSION.
 // À CHAQUE LIVRAISON : changer APP_VERSION ici, dans version.json et dans les deux pages (voir CHANGELOG.md).
-const APP_VERSION = '1.17.0';
+const APP_VERSION = '1.18.0';
 const CACHE = 'bandes-' + APP_VERSION;
-const COQUILLE = ['./', './index.html', './editeur.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './version.json'];
+const COQUILLE = ['./', './index.html', './editeur.html', './banc.html', './comparateur.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './version.json'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // la nouvelle version prend la main tout de suite (la page, elle, propose de recharger)

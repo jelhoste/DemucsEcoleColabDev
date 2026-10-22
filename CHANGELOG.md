@@ -5,6 +5,11 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
 la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.18.0 — 2026-10-21
+- Nouvelle page « Banc d'essai mélodie » (banc.html) : génère un notebook Colab qui prend un seul fichier voix et teste toutes les combinaisons de réglages de FCPE, RMVPE et Basic Pitch (listes de valeurs séparées par des virgules). Un fichier MIDI par variante (1 ms par tick, temps exacts), doublons écartés, export en zip avec reglages.json.
+- Nouvelle page « Comparer des relevés » (comparateur.html) : charge un audio et des MIDI (ou le zip du banc d'essai), forme d'onde au-dessus et un relevé par piste ; synthé par relevé (timbre, octave, volume), panoramique G/C/D, muet, solo, zone de boucle (glisser sur la règle, ou boutons A/B), zoom, hauteurs réglables.
+- Onglets de navigation ajoutés dans les quatre pages.
+
 ## 1.17.0 — 2026-10-21
 - Générateur : la mélodie se choisit par cases à cocher (FCPE, RMVPE, Basic Pitch, SwiftF0, CREPE, Melodia, pYIN), autant que voulu ; ★ sur FCPE, RMVPE et Basic Pitch. Le premier détecteur réussi (dans l'ordre de la liste) devient la version active ; comparaison dans l'éditeur dès 2 résultats.
 - Notebook : bloc de réglages Basic Pitch en haut, commentés (seuils d'attaque et de note, durée minimale, tessiture, melodia trick, fusion des trous, correction des octaves isolées). Repli automatique si la version installée n'accepte pas tous les réglages.

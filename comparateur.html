@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bandes — comparer des relevés</title>
+<meta name="description" content="Charge un audio et des fichiers MIDI, les affiche sous la forme d'onde et les joue avec un synthé par relevé (panoramique, solo, muet) pour comparer à l'oreille.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#1C1712">
+<meta name="app-version" content="1.18.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#1C1712; --panel:#241E17; --raised:#2A231C; --border:#3D342A; --brass:#C0996A; --brass-dim:#8C7350; --rust:#C1502E; --text:#EDE4D3; --muted:#A79885; --radius:6px;
+         --hw:90px; --hl:122px; --col:272px; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{ background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; line-height:1.4; -webkit-font-smoothing:antialiased; padding:0 16px 40px; }
+  .top-nav{ display:flex; flex-wrap:wrap; gap:4px; padding-top:16px; }
+  .nav-tab{ font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--muted); text-decoration:none; padding:8px 14px; border:1px solid var(--border); border-radius:4px 4px 0 0; border-bottom:none; }
+  .nav-tab.active{ color:var(--brass); border-color:var(--brass-dim); background:var(--panel); }
+  h1{ font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; margin:16px 0 4px; }
+  .sous{ color:var(--muted); font-size:0.88rem; margin:0 0 12px; max-width:860px; }
+  code{ font-family:'IBM Plex Mono',monospace; background:var(--raised); padding:1px 5px; border-radius:3px; font-size:0.85em; }
+  button, select{ font-family:inherit; }
+  .btn{ background:var(--raised); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:6px 12px; font-size:0.85rem; cursor:pointer; white-space:nowrap; }
+  .btn:hover{ border-color:var(--brass-dim); color:var(--brass); }
+  .btn.on{ background:var(--brass); color:#1C1712; border-color:var(--brass); }
+  .btn.petit{ padding:2px 7px; font-size:0.75rem; min-width:24px; }
+  .barre{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:8px 12px; margin:0 0 8px; }
+  .barre label.reg{ display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--muted); }
+  .barre input[type=range]{ width:96px; accent-color:var(--brass); }
+  #temps{ font-family:'IBM Plex Mono',monospace; font-size:0.9rem; min-width:150px; }
+  #msg{ font-size:0.82rem; color:var(--muted); min-height:1.3em; margin:0 0 8px; }
+  #msg.err{ color:var(--rust); }
+  #zone{ position:relative; display:flex; border:1px solid var(--border); border-radius:var(--radius); background:var(--panel); overflow:hidden; }
+  #zone.drop{ outline:2px dashed var(--brass); }
+  #colG{ width:var(--col); flex:none; border-right:1px solid var(--border); background:var(--panel); z-index:2; }
+  #scroller{ flex:1; overflow-x:auto; overflow-y:hidden; position:relative; min-width:0; }
+  #spacer{ position:relative; }
+  #cv{ position:sticky; left:0; display:block; }
+  #tete{ position:absolute; top:0; bottom:0; width:0; border-left:2px solid var(--rust); pointer-events:none; z-index:3; }
+  .rang{ border-bottom:1px solid var(--border); padding:4px 8px; display:flex; flex-direction:column; justify-content:center; gap:3px; overflow:hidden; }
+  .rang.regle{ height:20px; padding:0; border-bottom:1px solid var(--border); }
+  .rang.audio{ height:var(--hw); }
+  .rang.lane{ height:var(--hl); }
+  .ligne{ display:flex; align-items:center; gap:5px; min-height:20px; }
+  .nom{ flex:1; min-width:0; font-size:0.72rem; line-height:1.15; overflow:hidden; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; font-weight:600; }
+  .pastille{ width:10px; height:10px; border-radius:50%; flex:none; }
+  .rang input[type=range]{ flex:1; min-width:0; height:14px; accent-color:var(--brass); margin:0; }
+  .rang .lbl{ font-family:'IBM Plex Mono',monospace; font-size:0.66rem; color:var(--muted); width:26px; flex:none; }
+  .rang select{ background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:3px; font-size:0.72rem; padding:1px 2px; max-width:84px; }
+  .btn.m.on{ background:var(--rust); border-color:var(--rust); color:#fff; }
+  .btn.s.on{ background:#D6B23E; border-color:#D6B23E; color:#1C1712; }
+  #vide{ padding:28px 18px; color:var(--muted); font-size:0.9rem; text-align:center; border:1px dashed var(--border); border-radius:var(--radius); margin-top:8px; }
+  #maj-bandeau{ position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:12px; background:#2A231B; color:#EFE6D8; border:1px solid #C9A06A; border-radius:6px; padding:10px 14px; font:0.85rem 'IBM Plex Sans',sans-serif; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #maj-bandeau button{ background:#C9A06A; color:#1C1712; border:0; border-radius:4px; padding:6px 12px; font-weight:600; cursor:pointer; }
+  .app-version{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:#8a7f70; text-align:center; padding:8px 0 20px; }
+  input[type=file]{ display:none; }
+  @media (max-width:700px){ :root{ --col:230px; } }
+</style>
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="./index.html" class="nav-tab">Préparer</a>
+    <a href="./editeur.html" class="nav-tab">Éditer les métadonnées</a>
+    <a href="./banc.html" class="nav-tab">Banc d'essai mélodie</a>
+    <a href="./comparateur.html" class="nav-tab active">Comparer des relevés</a>
+  </nav>
+  <h1>Comparer des relevés</h1>
+  <p class="sous">Charge un audio (la voix, par exemple) et des fichiers <code>.mid</code> — ou directement le <code>.zip</code> produit par le banc d'essai. Chaque relevé a son propre synthé : mets un relevé à gauche, un autre à droite, et écoute-les ensemble avec l'audio ou l'un après l'autre.</p>
+
+  <div class="barre">
+    <button class="btn" id="b-audio">♪ Audio…</button>
+    <button class="btn" id="b-midi">＋ MIDI / zip…</button>
+    <button class="btn" id="b-vider">Vider les relevés</button>
+    <input type="file" id="f-audio" accept="audio/*,.opus,.ogg,.flac,.wav,.mp3,.m4a">
+    <input type="file" id="f-midi" accept=".mid,.midi,.zip,audio/*,.opus,.flac,.wav" multiple>
+  </div>
+
+  <div class="barre" id="transport">
+    <button class="btn" id="b-play" style="min-width:76px">▶ Lecture</button>
+    <button class="btn" id="b-debut" title="Retour au début (ou au début de la boucle)">⏮</button>
+    <span id="temps">0:00.00 / 0:00.00</span>
+    <label class="reg">Général <input type="range" id="r-master" min="0" max="1" step="0.01" value="0.8"></label>
+    <label class="reg">Zoom <input type="range" id="r-zoom" min="0" max="100" step="1" value="40"></label>
+    <button class="btn" id="b-fit">Tout voir</button>
+    <label class="reg">↕ onde <input type="range" id="r-hw" min="60" max="220" step="2" value="90"></label>
+    <label class="reg">↕ relevés <input type="range" id="r-hl" min="112" max="340" step="2" value="122"></label>
+    <button class="btn" id="b-boucle" title="Glisse sur la règle (en haut de la zone) pour choisir une zone à répéter">⟲ Boucle</button>
+    <button class="btn petit" id="b-boucle-a" title="Début de la boucle = position actuelle">A</button>
+    <button class="btn petit" id="b-boucle-b" title="Fin de la boucle = position actuelle">B</button>
+    <button class="btn petit" id="b-boucle-x" title="Effacer la zone de boucle">✕</button>
+  </div>
+  <div id="msg"></div>
+
+  <div id="vide">Glisse ici un fichier audio, des fichiers <code>.mid</code> ou un <code>.zip</code> du banc d'essai — ou utilise les boutons ci-dessus.</div>
+
+  <div id="zone" style="display:none">
+    <div id="colG"></div>
+    <div id="scroller"><div id="spacer"><canvas id="cv"></canvas><div id="tete"></div></div></div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const COULEURS = ['#E0A458', '#6FB3D2', '#D77A8A', '#8FC47A', '#B692E0', '#E0D45E', '#5FC9B8', '#E58A5A', '#9AA7E8', '#C9C9C9'];
+const H_REGLE = 20;
+const NOMS_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// ============================================================
+// Etat
+// ============================================================
+const E = {
+  ctx: null, master: null,
+  audio: { buf: null, nom: '', vol: 1, pan: 0, mute: false, solo: false, gain: null, pann: null, src: null, pics: null, pasPics: 0.002 },
+  lanes: [], nextId: 1,
+  dur: 0, ech: 60,
+  lecture: false, posDebut: 0, ctxDebut: 0,
+  boucle: { a: null, b: null, actif: false },
+  pmin: 48, pmax: 84,
+};
+
+function ctx(){
+  if (!E.ctx){
+    E.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    E.master = E.ctx.createGain(); E.master.gain.value = parseFloat($('r-master').value); E.master.connect(E.ctx.destination);
+    E.audio.gain = E.ctx.createGain(); E.audio.pann = E.ctx.createStereoPanner();
+    E.audio.gain.connect(E.audio.pann); E.audio.pann.connect(E.master);
+    majGains();
+  }
+  if (E.ctx.state === 'suspended') E.ctx.resume();
+  return E.ctx;
+}
+function msg(t, err){ const m = $('msg'); m.textContent = t || ''; m.classList.toggle('err', !!err); }
+function fmt(t){ t = Math.max(0, t); const m = Math.floor(t / 60); return m + ':' + (t - m * 60).toFixed(2).padStart(5, '0'); }
+
+// ============================================================
+// Lecture des fichiers MIDI (SMF 0/1, tempo variable)
+// ============================================================
+function lireMidi(u8){
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const tag = (p) => String.fromCharCode(u8[p], u8[p + 1], u8[p + 2], u8[p + 3]);
+  if (u8.length < 14 || tag(0) !== 'MThd') throw new Error('pas un fichier MIDI');
+  const entLen = dv.getUint32(4), nPistes = dv.getUint16(10), div = dv.getUint16(12);
+  if (div & 0x8000) throw new Error('division SMPTE non gérée');
+  let p = 8 + entLen;
+  const tempos = [{ tick: 0, us: 500000 }];
+  const evts = [];
+  let tickMax = 0;
+  for (let t = 0; t < nPistes && p + 8 <= u8.length; t++){
+    if (tag(p) !== 'MTrk'){ p += 8 + dv.getUint32(p + 4); continue; }
+    const fin = p + 8 + dv.getUint32(p + 4);
+    p += 8;
+    let tick = 0, statut = 0;
+    const vlq = () => { let v = 0, b; do { b = u8[p++]; v = (v << 7) | (b & 0x7F); } while (b & 0x80 && p < fin); return v; };
+    while (p < fin){
+      tick += vlq();
+      let s = u8[p];
+      if (s & 0x80){ statut = s; p++; } else s = statut;
+      if (s === 0xFF){
+        const type = u8[p++], len = vlq();
+        if (type === 0x51 && len === 3) tempos.push({ tick, us: (u8[p] << 16) | (u8[p + 1] << 8) | u8[p + 2] });
+        p += len; statut = 0;
+      } else if (s === 0xF0 || s === 0xF7){
+        p += vlq(); statut = 0;
+      } else {
+        const hi = s & 0xF0, ch = s & 0x0F;
+        if (hi === 0xC0 || hi === 0xD0){ p += 1; }
+        else {
+          const a = u8[p], b = u8[p + 1]; p += 2;
+          if (hi === 0x90 && b > 0) evts.push({ tick, on: true, ch, n: a, v: b });
+          else if (hi === 0x80 || hi === 0x90) evts.push({ tick, on: false, ch, n: a, v: 0 });
+        }
+      }
+      if (tick > tickMax) tickMax = tick;
+    }
+    p = fin;
+  }
+  tempos.sort((x, y) => x.tick - y.tick);
+  const versSec = (tick) => {
+    let sec = 0, dernier = 0, us = 500000;
+    for (const tp of tempos){
+      if (tp.tick >= tick) break;
+      sec += (tp.tick - dernier) * us / 1e6 / div; dernier = tp.tick; us = tp.us;
+    }
+    return sec + (tick - dernier) * us / 1e6 / div;
+  };
+  evts.sort((x, y) => x.tick - y.tick || (x.on ? 1 : 0) - (y.on ? 1 : 0));
+  const ouvertes = new Map(), notes = [];
+  for (const e of evts){
+    const k = e.ch * 128 + e.n;
+    if (e.on){ if (!ouvertes.has(k)) ouvertes.set(k, []); ouvertes.get(k).push(e); }
+    else {
+      const pile = ouvertes.get(k);
+      if (pile && pile.length){ const d = pile.shift(); notes.push({ start: versSec(d.tick), end: versSec(e.tick), midi: d.n, vel: d.v }); }
+    }
+  }
+  for (const pile of ouvertes.values()) for (const d of pile) notes.push({ start: versSec(d.tick), end: versSec(tickMax), midi: d.n, vel: d.v });
+  notes.sort((x, y) => x.start - y.start || x.midi - y.midi);
+  return notes.filter(n => n.end > n.start);
+}
+
+// ============================================================
+// Lecteur ZIP minimal (deflate via DecompressionStream)
+// ============================================================
+async function lireZip(arrayBuffer){
+  const bytes = new Uint8Array(arrayBuffer), dv = new DataView(arrayBuffer);
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65557); i--){ if (dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; } }
+  if (eocd === -1) throw new Error('zip invalide');
+  const n = dv.getUint16(eocd + 10, true); let off = dv.getUint32(eocd + 16, true);
+  const out = {};
+  for (let i = 0; i < n; i++){
+    if (dv.getUint32(off, true) !== 0x02014b50) throw new Error('zip invalide');
+    const meth = dv.getUint16(off + 10, true), cs = dv.getUint32(off + 20, true), nl = dv.getUint16(off + 28, true), el = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true), lh = dv.getUint32(off + 42, true);
+    const nom = new TextDecoder().decode(bytes.subarray(off + 46, off + 46 + nl));
+    off += 46 + nl + el + cl;
+    if (nom.endsWith('/')) continue;
+    const ds = lh + 30 + dv.getUint16(lh + 26, true) + dv.getUint16(lh + 28, true);
+    const brut = bytes.slice(ds, ds + cs);
+    if (meth === 0) out[nom] = brut;
+    else if (meth === 8){
+      const d = new DecompressionStream('deflate-raw'); const w = d.writable.getWriter(); w.write(brut); w.close();
+      out[nom] = new Uint8Array(await new Response(d.readable).arrayBuffer());
+    } else throw new Error('compression non gérée dans ' + nom);
+  }
+  return out;
+}
+
+// ============================================================
+// Chargement
+// ============================================================
+const EXT_AUDIO = /\.(opus|ogg|oga|flac|wav|mp3|m4a|aac|webm)$/i;
+async function chargerFichiers(liste){
+  const fichiers = [...liste];
+  let nMidi = 0, erreurs = [];
+  const traiter = async (nom, u8) => {
+    const court = nom.split('/').pop();
+    if (/\.midi?$/i.test(court)){
+      try { ajouterLane(court.replace(/\.midi?$/i, ''), lireMidi(u8)); nMidi++; } catch (e) { erreurs.push(court + ' : ' + e.message); }
+    } else if (EXT_AUDIO.test(court)){
+      await chargerAudio(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength), court);
+    }
+  };
+  for (const f of fichiers){
+    try {
+      if (/\.zip$/i.test(f.name)){
+        const z = await lireZip(await f.arrayBuffer());
+        for (const nom of Object.keys(z).sort()) await traiter(nom, z[nom]);
+      } else await traiter(f.name, new Uint8Array(await f.arrayBuffer()));
+    } catch (e) { erreurs.push(f.name + ' : ' + e.message); }
+  }
+  recalculer();
+  msg((nMidi ? nMidi + ' relevé(s) chargé(s). ' : '') + (erreurs.length ? 'Problème : ' + erreurs.join(' ; ') : ''), erreurs.length > 0);
+}
+
+async function chargerAudio(ab, nom){
+  const c = ctx();
+  try {
+    const buf = await c.decodeAudioData(ab);
+    arreter();
+    E.audio.buf = buf; E.audio.nom = nom;
+    calculerPics(buf);
+    msg('Audio chargé : ' + nom);
+  } catch (e) {
+    msg('Ce navigateur ne sait pas lire ce format audio (' + nom + '). Essaie un .wav, .flac ou .mp3.', true);
+  }
+}
+function calculerPics(buf){
+  const pas = E.audio.pasPics, n = Math.ceil(buf.duration / pas), sr = buf.sampleRate, nc = buf.numberOfChannels;
+  const mn = new Float32Array(n), mx = new Float32Array(n);
+  const cx = []; for (let c = 0; c < nc; c++) cx.push(buf.getChannelData(c));
+  const spb = Math.max(1, Math.floor(pas * sr));
+  for (let i = 0; i < n; i++){
+    let lo = 1, hi = -1;
+    const a = i * spb, b = Math.min(buf.length, a + spb);
+    for (let s = a; s < b; s++){ let v = 0; for (let c = 0; c < nc; c++) v += cx[c][s]; v /= nc; if (v < lo) lo = v; if (v > hi) hi = v; }
+    mn[i] = lo > hi ? 0 : lo; mx[i] = hi < lo ? 0 : hi;
+  }
+  E.audio.pics = { mn, mx };
+}
+
+function ajouterLane(nom, notes){
+  const lane = { id: E.nextId++, nom, notes, couleur: COULEURS[(E.lanes.length) % COULEURS.length], mute: false, solo: false, pan: 0, vol: 0.7, oct: 0, timbre: 'triangle', gain: null, pann: null, actifs: [], idx: 0 };
+  E.lanes.push(lane);
+}
+
+function recalculer(){
+  let dur = E.audio.buf ? E.audio.buf.duration : 0;
+  let pmin = 127, pmax = 0, n = 0;
+  for (const l of E.lanes) for (const x of l.notes){ if (x.end > dur && !E.audio.buf) dur = Math.max(dur, x.end); if (x.midi < pmin) pmin = x.midi; if (x.midi > pmax) pmax = x.midi; n++; }
+  E.dur = Math.max(dur, 1);
+  if (n){ E.pmin = Math.max(0, pmin - 1); E.pmax = Math.min(127, pmax + 1); if (E.pmax - E.pmin < 12){ const c = (E.pmin + E.pmax) / 2; E.pmin = Math.max(0, Math.round(c - 6)); E.pmax = E.pmin + 12; } }
+  const present = E.audio.buf || E.lanes.length;
+  $('vide').style.display = present ? 'none' : '';
+  $('zone').style.display = present ? 'flex' : 'none';
+  construireControles();
+  ajusterZoom(); // redessine
+  majGains();
+}
+
+// ============================================================
+// Colonne de contrôles
+// ============================================================
+function construireControles(){
+  const g = $('colG'); g.innerHTML = '';
+  const regle = document.createElement('div'); regle.className = 'rang regle'; g.appendChild(regle);
+  const a = document.createElement('div'); a.className = 'rang audio';
+  a.innerHTML = `<div class="ligne"><span class="pastille" style="background:#ddd"></span><span class="nom" title="${esc(E.audio.nom)}">${E.audio.buf ? 'Audio — ' + esc(E.audio.nom) : 'Audio (aucun)'}</span>
+      <button class="btn petit m ${E.audio.mute ? 'on' : ''}" data-a="mute" title="Muet">M</button><button class="btn petit s ${E.audio.solo ? 'on' : ''}" data-a="solo" title="Solo">S</button></div>
+    <div class="ligne"><span class="lbl">Pan</span><button class="btn petit" data-a="pan" data-v="-1">G</button><button class="btn petit" data-a="pan" data-v="0">C</button><button class="btn petit" data-a="pan" data-v="1">D</button>
+      <input type="range" min="-1" max="1" step="0.05" value="${E.audio.pan}" data-a="panr"></div>
+    <div class="ligne"><span class="lbl">Vol</span><input type="range" min="0" max="1.5" step="0.01" value="${E.audio.vol}" data-a="vol"></div>`;
+  a.addEventListener('click', (e) => actionAudio(e)); a.addEventListener('input', (e) => actionAudio(e));
+  g.appendChild(a);
+  E.lanes.forEach((l, i) => {
+    const d = document.createElement('div'); d.className = 'rang lane'; d.dataset.id = l.id;
+    d.innerHTML = `<div class="ligne"><span class="pastille" style="background:${l.couleur}"></span><span class="nom" title="${esc(l.nom)} — ${l.notes.length} notes">${esc(l.nom)}</span>
+        <button class="btn petit" data-a="haut" title="Monter">↑</button><button class="btn petit" data-a="bas" title="Descendre">↓</button><button class="btn petit" data-a="suppr" title="Retirer">✕</button></div>
+      <div class="ligne"><button class="btn petit m ${l.mute ? 'on' : ''}" data-a="mute" title="Muet">M</button><button class="btn petit s ${l.solo ? 'on' : ''}" data-a="solo" title="Solo">S</button>
+        <select data-a="timbre" title="Timbre">${['triangle', 'sine', 'sawtooth', 'square'].map(t => `<option value="${t}" ${l.timbre === t ? 'selected' : ''}>${{ triangle: 'triangle', sine: 'sinus', sawtooth: 'dent de scie', square: 'carré' }[t]}</option>`).join('')}</select>
+        <select data-a="oct" title="Octave du synthé">${[-1, 0, 1].map(o => `<option value="${o}" ${l.oct === o ? 'selected' : ''}>oct ${o > 0 ? '+' : ''}${o}</option>`).join('')}</select></div>
+      <div class="ligne"><span class="lbl">Pan</span><button class="btn petit" data-a="pan" data-v="-1">G</button><button class="btn petit" data-a="pan" data-v="0">C</button><button class="btn petit" data-a="pan" data-v="1">D</button>
+        <input type="range" min="-1" max="1" step="0.05" value="${l.pan}" data-a="panr"></div>
+      <div class="ligne"><span class="lbl">Vol</span><input type="range" min="0" max="1" step="0.01" value="${l.vol}" data-a="vol"></div>`;
+    d.addEventListener('click', (e) => actionLane(e, l)); d.addEventListener('input', (e) => actionLane(e, l));
+    g.appendChild(d);
+  });
+}
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function actionAudio(e){
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const a = el.dataset.a, A = E.audio;
+  if (e.type === 'click'){
+    if (a === 'mute'){ A.mute = !A.mute; el.classList.toggle('on', A.mute); }
+    else if (a === 'solo'){ A.solo = !A.solo; el.classList.toggle('on', A.solo); }
+    else if (a === 'pan'){ A.pan = parseFloat(el.dataset.v); el.parentNode.querySelector('[data-a=panr]').value = A.pan; }
+    else return;
+  } else if (e.type === 'input'){
+    if (a === 'vol') A.vol = parseFloat(el.value); else if (a === 'panr') A.pan = parseFloat(el.value); else return;
+  } else return;
+  majGains(); redessiner();
+}
+function actionLane(e, l){
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const a = el.dataset.a;
+  if (e.type === 'click'){
+    if (a === 'mute'){ l.mute = !l.mute; el.classList.toggle('on', l.mute); }
+    else if (a === 'solo'){ l.solo = !l.solo; el.classList.toggle('on', l.solo); }
+    else if (a === 'pan'){ l.pan = parseFloat(el.dataset.v); el.parentNode.querySelector('[data-a=panr]').value = l.pan; }
+    else if (a === 'suppr'){ arreterLane(l); E.lanes = E.lanes.filter(x => x !== l); recalculer(); return; }
+    else if (a === 'haut' || a === 'bas'){
+      const i = E.lanes.indexOf(l), j = a === 'haut' ? i - 1 : i + 1;
+      if (j >= 0 && j < E.lanes.length){ E.lanes.splice(i, 1); E.lanes.splice(j, 0, l); construireControles(); redessiner(); }
+      return;
+    } else return;
+  } else if (e.type === 'input'){
+    if (a === 'vol') l.vol = parseFloat(el.value);
+    else if (a === 'panr') l.pan = parseFloat(el.value);
+    else if (a === 'timbre') l.timbre = el.value;
+    else if (a === 'oct') l.oct = parseInt(el.value, 10);
+    else return;
+  } else return;
+  majGains(); redessiner();
+}
+
+// ============================================================
+// Graphe audio : gains / pan / solo
+// ============================================================
+function majGains(){
+  if (!E.ctx) return;
+  const soloActif = E.audio.solo || E.lanes.some(l => l.solo);
+  const audible = (m, s) => !m && (!soloActif || s);
+  const t = E.ctx.currentTime;
+  E.audio.gain.gain.setTargetAtTime(audible(E.audio.mute, E.audio.solo) ? E.audio.vol : 0, t, 0.01);
+  E.audio.pann.pan.setTargetAtTime(E.audio.pan, t, 0.01);
+  for (const l of E.lanes){
+    noeudsLane(l);
+    l.gain.gain.setTargetAtTime(audible(l.mute, l.solo) ? l.vol : 0, t, 0.01);
+    l.pann.pan.setTargetAtTime(l.pan, t, 0.01);
+  }
+}
+function noeudsLane(l){
+  if (l.gain) return;
+  l.gain = E.ctx.createGain(); l.pann = E.ctx.createStereoPanner();
+  l.gain.connect(l.pann); l.pann.connect(E.master);
+}
+function estAudible(l){ const s = E.audio.solo || E.lanes.some(x => x.solo); return !l.mute && (!s || l.solo); }
+
+// ============================================================
+// Lecture
+// ============================================================
+const pos = () => E.lecture ? Math.min(E.dur, E.posDebut + (E.ctx.currentTime - E.ctxDebut)) : E.posDebut;
+
+function jouerNote(l, n, quand, duree){
+  const c = E.ctx, osc = c.createOscillator(), g = c.createGain();
+  osc.type = l.timbre;
+  osc.frequency.value = 440 * Math.pow(2, (n.midi + 12 * l.oct - 69) / 12);
+  const niv = 0.35 * (0.6 + 0.4 * ((n.vel || 100) / 127));
+  g.gain.setValueAtTime(0, quand);
+  g.gain.linearRampToValueAtTime(niv, quand + 0.01);
+  g.gain.setValueAtTime(niv, quand + Math.max(0.011, duree));
+  g.gain.linearRampToValueAtTime(0, quand + Math.max(0.011, duree) + 0.05);
+  osc.connect(g); g.connect(l.gain);
+  osc.start(quand); osc.stop(quand + Math.max(0.011, duree) + 0.06);
+  const rec = { osc, g };
+  l.actifs.push(rec);
+  osc.onended = () => { const i = l.actifs.indexOf(rec); if (i >= 0) l.actifs.splice(i, 1); try { g.disconnect(); } catch (e) {} };
+}
+function arreterLane(l){
+  for (const r of l.actifs.splice(0)){ try { r.g.gain.cancelScheduledValues(0); r.g.gain.value = 0; r.osc.stop(); } catch (e) {} }
+}
+
+function demarrer(depuis){
+  const c = ctx();
+  majGains();
+  arreter(true);
+  E.posDebut = Math.max(0, Math.min(depuis, E.dur));
+  E.ctxDebut = c.currentTime + 0.05;
+  E.lecture = true;
+  if (E.audio.buf && E.posDebut < E.audio.buf.duration){
+    const src = c.createBufferSource(); src.buffer = E.audio.buf; src.connect(E.audio.gain);
+    src.start(E.ctxDebut, E.posDebut);
+    E.audio.src = src;
+  }
+  for (const l of E.lanes){
+    let i = 0; while (i < l.notes.length && l.notes[i].end <= E.posDebut) i++;
+    l.idx = i;
+  }
+  $('b-play').textContent = '⏸ Pause'; $('b-play').classList.add('on');
+  planifier();
+  boucleRAF();
+}
+function arreter(garderPos){
+  if (E.lecture && !garderPos) E.posDebut = pos();
+  E.lecture = false;
+  if (E.audio.src){ try { E.audio.src.stop(); } catch (e) {} try { E.audio.src.disconnect(); } catch (e) {} E.audio.src = null; }
+  for (const l of E.lanes) arreterLane(l);
+  $('b-play').textContent = '▶ Lecture'; $('b-play').classList.remove('on');
+}
+const HORIZON = 0.35;
+function planifier(){
+  if (!E.lecture) return;
+  const c = E.ctx, tNow = pos();
+  if (E.boucle.actif && E.boucle.a != null && E.boucle.b != null && tNow >= E.boucle.b - 0.01){ demarrer(E.boucle.a); return; }
+  if (tNow >= E.dur){ arreter(); E.posDebut = 0; redessiner(); majTemps(); return; }
+  const limite = tNow + HORIZON;
+  for (const l of E.lanes){
+    while (l.idx < l.notes.length && l.notes[l.idx].start < limite){
+      const n = l.notes[l.idx++];
+      let quand = E.ctxDebut + (n.start - E.posDebut), duree = n.end - n.start;
+      if (quand < c.currentTime){ duree -= (c.currentTime - quand); quand = c.currentTime; }
+      if (duree > 0.02) jouerNote(l, n, quand, duree);
+    }
+  }
+}
+setInterval(planifier, 30);
+
+function boucleRAF(){
+  if (!E.lecture) return;
+  const t = pos();
+  suivre(t); redessiner(); majTemps();
+  requestAnimationFrame(boucleRAF);
+}
+function suivre(t){
+  const sc = $('scroller'), x = t * E.ech - sc.scrollLeft, w = sc.clientWidth;
+  if (x > w * 0.88 || x < 0) sc.scrollLeft = Math.max(0, t * E.ech - w * 0.12);
+}
+function majTemps(){ $('temps').textContent = fmt(pos()) + ' / ' + fmt(E.dur); }
+
+$('b-play').onclick = () => { if (E.lecture) { arreter(); redessiner(); majTemps(); } else demarrer(E.posDebut >= E.dur - 0.05 ? 0 : E.posDebut); };
+$('b-debut').onclick = () => { const t = (E.boucle.actif && E.boucle.a != null) ? E.boucle.a : 0; if (E.lecture) demarrer(t); else { E.posDebut = t; redessiner(); majTemps(); } $('scroller').scrollLeft = Math.max(0, t * E.ech - 40); };
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)){ e.preventDefault(); $('b-play').click(); }
+});
+$('r-master').oninput = (e) => { if (E.master) E.master.gain.value = parseFloat(e.target.value); };
+
+// ============================================================
+// Dessin
+// ============================================================
+function hauteurTotale(){ return H_REGLE + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')) + E.lanes.length * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl')); }
+let dessinPlanifie = false;
+function redessiner(){ if (dessinPlanifie) return; dessinPlanifie = true; requestAnimationFrame(() => { dessinPlanifie = false; dessiner(); }); }
+
+function nomNote(m){ return NOMS_NOTES[m % 12] + (Math.floor(m / 12) - 1); }
+
+function dessiner(){
+  const sc = $('scroller'), cv = $('cv');
+  const W = Math.max(50, sc.clientWidth), hw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hw')), hl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hl'));
+  const H = H_REGLE + hw + E.lanes.length * hl;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
+  $('spacer').style.width = Math.ceil(E.dur * E.ech + W * 0.3) + 'px'; $('spacer').style.height = H + 'px';
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  const t0 = sc.scrollLeft / E.ech, ech = E.ech, t1 = t0 + W / ech;
+  const X = (t) => (t - t0) * ech;
+  g.fillStyle = '#241E17'; g.fillRect(0, 0, W, H);
+
+  // règle
+  g.fillStyle = '#2A231C'; g.fillRect(0, 0, W, H_REGLE);
+  const pasS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60].find(s => s * ech >= 70) || 60;
+  g.font = '10px IBM Plex Mono, monospace'; g.textBaseline = 'middle';
+  for (let t = Math.ceil(t0 / pasS) * pasS; t <= t1; t += pasS){
+    const x = Math.round(X(t)) + 0.5;
+    g.strokeStyle = '#5a4d3d'; g.beginPath(); g.moveTo(x, H_REGLE - 6); g.lineTo(x, H_REGLE); g.stroke();
+    g.fillStyle = '#A79885'; g.fillText(fmt(t).replace(/\.00$/, ''), x + 3, H_REGLE / 2);
+    g.strokeStyle = 'rgba(255,255,255,0.04)'; g.beginPath(); g.moveTo(x, H_REGLE); g.lineTo(x, H); g.stroke();
+  }
+
+  // zone de boucle
+  const bo = E.boucle;
+  if (bo.a != null && bo.b != null){
+    g.fillStyle = bo.actif ? 'rgba(192,153,106,0.22)' : 'rgba(192,153,106,0.08)';
+    g.fillRect(X(bo.a), 0, (bo.b - bo.a) * ech, H);
+    g.fillStyle = '#C0996A'; g.fillRect(X(bo.a), 0, 2, H_REGLE); g.fillRect(X(bo.b) - 2, 0, 2, H_REGLE);
+  }
+
+  // forme d'onde
+  let y = H_REGLE;
+  g.fillStyle = '#1C1712'; g.fillRect(0, y, W, hw);
+  const A = E.audio;
+  if (A.pics){
+    const mid = y + hw / 2, amp = hw / 2 - 3, pas = A.pasPics, n = A.pics.mn.length;
+    g.fillStyle = A.mute ? '#6a5f52' : '#C9B79C';
+    for (let px = 0; px < W; px++){
+      const ta = t0 + px / ech, tb = ta + 1 / ech;
+      let i0 = Math.floor(ta / pas), i1 = Math.max(i0 + 1, Math.ceil(tb / pas));
+      if (i0 >= n) break; if (i1 > n) i1 = n;
+      let lo = 1, hi = -1;
+      for (let i = Math.max(0, i0); i < i1; i++){ if (A.pics.mn[i] < lo) lo = A.pics.mn[i]; if (A.pics.mx[i] > hi) hi = A.pics.mx[i]; }
+      if (hi < lo) continue;
+      g.fillRect(px, mid - hi * amp, 1, Math.max(1, (hi - lo) * amp));
+    }
+  } else { g.fillStyle = '#6a5f52'; g.font = '12px IBM Plex Sans, sans-serif'; g.fillText('Aucun audio chargé', 12, y + hw / 2); }
+  g.strokeStyle = '#3D342A'; g.beginPath(); g.moveTo(0, y + hw + 0.5); g.lineTo(W, y + hw + 0.5); g.stroke();
+  y += hw;
+
+  // relevés (échelle de hauteur commune)
+  const nb = E.pmax - E.pmin + 1;
+  const ligneH = (hl - 6) / nb;
+  E.lanes.forEach((l, k) => {
+    const top = y + 3;
+    g.fillStyle = k % 2 ? '#201A14' : '#1C1712'; g.fillRect(0, y, W, hl);
+    // lignes de do
+    for (let m = E.pmin; m <= E.pmax; m++){
+      const yy = top + (E.pmax - m) * ligneH;
+      if (m % 12 === 0){
+        g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(0, yy, W, Math.max(1, ligneH));
+        if (ligneH >= 5){ g.fillStyle = '#7d705f'; g.font = '9px IBM Plex Mono, monospace'; g.textBaseline = 'top'; g.fillText(nomNote(m), 3, yy); g.textBaseline = 'middle'; }
+      } else if (ligneH >= 8 && [1, 3, 6, 8, 10].includes(m % 12)){ g.fillStyle = 'rgba(255,255,255,0.025)'; g.fillRect(0, yy, W, ligneH); }
+    }
+    const audible = estAudible(l);
+    g.globalAlpha = audible ? 1 : 0.28;
+    g.fillStyle = l.couleur;
+    for (const nt of l.notes){
+      if (nt.end < t0) continue; if (nt.start > t1) break;
+      const x = X(nt.start), w = Math.max(2, (nt.end - nt.start) * ech - 1);
+      const yy = top + (E.pmax - nt.midi) * ligneH;
+      g.fillRect(x, yy, w, Math.max(3, ligneH - 1));
+    }
+    g.globalAlpha = 1;
+    g.strokeStyle = '#3D342A'; g.beginPath(); g.moveTo(0, y + hl + 0.5); g.lineTo(W, y + hl + 0.5); g.stroke();
+    y += hl;
+  });
+
+  // tête de lecture
+  const x = X(pos());
+  const tete = $('tete'); tete.style.left = (sc.scrollLeft + x) + 'px';
+  tete.style.display = (x >= -2 && x <= W + 2) ? '' : 'none';
+}
+
+// ============================================================
+// Zoom, défilement, interactions
+// ============================================================
+function zoomDepuisCurseur(v){ return 4 * Math.pow(150, v / 100); }   // 4 → 600 px/s
+function ajusterZoom(centreT){
+  const sc = $('scroller');
+  const av = E.ech;
+  E.ech = zoomDepuisCurseur(parseFloat($('r-zoom').value));
+  if (centreT != null){ sc.scrollLeft = centreT * E.ech - sc.clientWidth / 2; }
+  document.getElementById('spacer').style.width = Math.ceil(E.dur * E.ech + sc.clientWidth * 0.3) + 'px';
+  redessiner(); majTemps();
+}
+$('r-zoom').oninput = () => { const sc = $('scroller'); const c = E.lecture ? pos() : (sc.scrollLeft + sc.clientWidth / 2) / E.ech; ajusterZoom(c); };
+$('b-fit').onclick = () => {
+  const sc = $('scroller'); const e = Math.max(4, Math.min(600, sc.clientWidth / E.dur));
+  $('r-zoom').value = Math.round(100 * Math.log(e / 4) / Math.log(150));
+  E.ech = e; sc.scrollLeft = 0; $('spacer').style.width = Math.ceil(E.dur * E.ech) + 'px'; redessiner();
+};
+$('scroller').addEventListener('scroll', redessiner);
+$('scroller').addEventListener('wheel', (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  e.preventDefault();
+  const sc = $('scroller'), r = sc.getBoundingClientRect(), tCur = (sc.scrollLeft + e.clientX - r.left) / E.ech;
+  const v = Math.max(0, Math.min(100, parseFloat($('r-zoom').value) - e.deltaY * 0.15));
+  $('r-zoom').value = v; E.ech = zoomDepuisCurseur(v);
+  $('spacer').style.width = Math.ceil(E.dur * E.ech + sc.clientWidth * 0.3) + 'px';
+  sc.scrollLeft = tCur * E.ech - (e.clientX - r.left); redessiner();
+}, { passive: false });
+window.addEventListener('resize', redessiner);
+
+function tempsDepuisEvt(e){ const sc = $('scroller'), r = sc.getBoundingClientRect(); return Math.max(0, Math.min(E.dur, (sc.scrollLeft + e.clientX - r.left) / E.ech)); }
+(function(){
+  const sc = $('scroller'); let drag = null;
+  sc.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const r = sc.getBoundingClientRect(), y = e.clientY - r.top;
+    if (y > parseFloat($('cv').style.height || 0)) return;   // barre de défilement
+    const t = tempsDepuisEvt(e);
+    drag = { regle: y < H_REGLE, t0: t, bouge: false };
+    sc.setPointerCapture(e.pointerId);
+  });
+  sc.addEventListener('pointermove', (e) => {
+    if (!drag || !drag.regle) return;
+    const t = tempsDepuisEvt(e);
+    if (Math.abs(t - drag.t0) * E.ech > 4){ drag.bouge = true; E.boucle.a = Math.min(drag.t0, t); E.boucle.b = Math.max(drag.t0, t); redessiner(); }
+  });
+  sc.addEventListener('pointerup', (e) => {
+    if (!drag) return;
+    const t = tempsDepuisEvt(e);
+    if (drag.regle && drag.bouge){ E.boucle.actif = true; $('b-boucle').classList.add('on'); }
+    else { if (E.lecture) demarrer(t); else { E.posDebut = t; } majTemps(); }
+    drag = null; redessiner();
+  });
+})();
+$('b-boucle').onclick = () => {
+  if (E.boucle.a == null){ msg('Glisse sur la règle (bandeau du haut de la zone) pour choisir la zone à répéter.'); return; }
+  E.boucle.actif = !E.boucle.actif; $('b-boucle').classList.toggle('on', E.boucle.actif); redessiner();
+};
+function poserBorne(quoi){
+  const t = pos();
+  if (quoi === 'a') E.boucle.a = t; else E.boucle.b = t;
+  if (E.boucle.a == null) E.boucle.a = 0;
+  if (E.boucle.b == null) E.boucle.b = E.dur;
+  if (E.boucle.a > E.boucle.b) [E.boucle.a, E.boucle.b] = [E.boucle.b, E.boucle.a];
+  E.boucle.actif = true; $('b-boucle').classList.add('on'); redessiner();
+}
+$('b-boucle-a').onclick = () => poserBorne('a'); $('b-boucle-b').onclick = () => poserBorne('b');
+$('b-boucle-x').onclick = () => { E.boucle = { a: null, b: null, actif: false }; $('b-boucle').classList.remove('on'); redessiner(); };
+
+// hauteurs
+function appliquerHauteurs(){
+  document.documentElement.style.setProperty('--hw', $('r-hw').value + 'px');
+  document.documentElement.style.setProperty('--hl', $('r-hl').value + 'px');
+  redessiner();
+}
+$('r-hw').oninput = appliquerHauteurs; $('r-hl').oninput = appliquerHauteurs;
+
+// ============================================================
+// Entrées de fichiers
+// ============================================================
+$('b-audio').onclick = () => $('f-audio').click();
+$('b-midi').onclick = () => $('f-midi').click();
+$('f-audio').onchange = async (e) => { if (e.target.files.length){ await chargerFichiers(e.target.files); } e.target.value = ''; };
+$('f-midi').onchange = async (e) => { if (e.target.files.length){ await chargerFichiers(e.target.files); } e.target.value = ''; };
+$('b-vider').onclick = () => { for (const l of E.lanes) arreterLane(l); E.lanes = []; recalculer(); msg('Relevés retirés.'); };
+['dragover', 'dragenter'].forEach(ev => document.addEventListener(ev, (e) => { e.preventDefault(); $('zone').classList.add('drop'); }));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, (e) => { if (ev === 'dragleave' && e.relatedTarget) return; $('zone').classList.remove('drop'); }));
+document.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) chargerFichiers(e.dataTransfer.files); });
+
+appliquerHauteurs();
+ajusterZoom();
+
+// --- PWA : version + mise à jour ---
+(function(){
+  const V = document.querySelector('meta[name="app-version"]').content;
+  const afficher = () => { const el = $('app-version'); if (el) el.textContent = 'Bandes v' + V; };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', afficher); else window.addEventListener('load', afficher);
+  async function verifier(){
+    try {
+      const r = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+      const j = await r.json();
+      if (j.version && j.version !== V){
+        const b = $('maj-bandeau'); if (!b) return;
+        b.querySelector('span').textContent = 'Nouvelle version disponible (v' + j.version + ').';
+        b.style.display = 'flex';
+        b.querySelector('button').textContent = 'Recharger';
+        b.querySelector('button').onclick = () => location.reload();
+      }
+    } catch (e) {}
+  }
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { reg.update().catch(() => {}); }).catch(() => {}); });
+  }
+  window.addEventListener('load', () => { verifier(); setInterval(verifier, 10 * 60 * 1000); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) verifier(); });
+})();
+</script>
+<div class="app-version" id="app-version"></div>
+<div id="maj-bandeau"><span>Nouvelle version disponible.</span><button type="button">Mettre à jour</button></div>
+</body>
+</html>
