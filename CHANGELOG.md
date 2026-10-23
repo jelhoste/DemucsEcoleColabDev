@@ -2,8 +2,19 @@
 
 Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraison (zip `vN`).
 À chaque livraison, mettre la même version dans : `sw.js` (APP_VERSION), `version.json`, et la balise
-`<meta name="app-version">` de `index.html` et `editeur.html`. Le changement de `sw.js` déclenche
-la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
+`<meta name="app-version">` des quatre pages (`index.html`, `editeur.html`, `banc.html`, `comparateur.html`).
+Le changement de `sw.js` déclenche la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
+
+## 1.21.0 — 2026-10-23
+Éditeur de métadonnées (`editeur.html`) uniquement.
+- Suppression fiable des cartes. En piste Paroles, « Supprimer » visait un mot (celui sous le curseur de lecture) et ne faisait rien si le curseur n'était sur aucun mot : il supprime maintenant la **phrase** choisie ; un bouton distinct « Supprimer le mot » s'occupe d'un mot. Plus d'exception JavaScript à la suppression d'une section ou d'un accord. Suppression possible aussi depuis le 🗑 de l'éditeur flottant (même en piste « Toutes »), les ✕ des listes (sections, accords, phrases, notes, mots) et la touche Suppr (carte choisie seulement).
+- Au lieu d'une boîte de dialogue : un bandeau « Annuler » (≈ 7 s) après chaque suppression, et Ctrl/Cmd + Z (historique de 40 actions). Annuler ne remet que ce qui a été supprimé : les retouches faites entre-temps restent.
+- Validation explicite des textes : sections, accords, phrases et mots s'éditent dans un éditeur flottant avec ✓ (ou Entrée) pour valider, ✕ (ou Échap) pour annuler, rien n'étant modifié avant. Toucher ailleurs ne valide plus silencieusement ; le texte tapé reste en attente (le clavier tactile qui se replie ne le perd pas). Phrase : ✓ ✕ à côté du champ du panneau de détail. Dans les listes, Échap restaure la valeur d'avant.
+- Molette de la souris : la molette seule zoome autour du curseur ; Maj + molette fait défiler horizontalement ; Alt + molette fait défiler la page ; Ctrl + molette et pincement tactile inchangés. Quand tout le morceau tient déjà dans la largeur, la molette vers le bas laisse la page défiler (on n'est jamais coincé sur la piste). Bouton « Molette = zoom » (panneau) pour revenir à Ctrl + molette seul.
+- Largeur des cartes : le panneau « ↕ Hauteurs et largeur » reçoit un curseur « Largeur des cartes (zoom) » (échelle logarithmique, 100 % = tout le morceau) et un bouton « Ajuster », en plus des trois hauteurs. Le zoom ne descend plus sous « tout le morceau dans la largeur ».
+- Quantification : menu « Quantifier sur » (Aucun / Les temps / Les mesures) désormais aussi pour les Paroles (phrases et mots) et la Mélodie, en plus de Structure, Accords et Marqueurs. Aimantation au glisser (bords de cartes, bords de mots, début/fin des notes du piano roll), à la création au curseur et à la scission d'une carte, à l'ajout d'un mot au curseur.
+- « Quantifier tout » (ex « Caler toutes les cartes ») : calcule d'abord le résultat sur une copie et annonce ce qui va bouger (nombre, écart moyen) ; il n'applique qu'après ✓ Confirmer, puis le bandeau permet d'annuler. Paroles : cible au choix (phrases / mots / les deux), aucune phrase ni aucun mot supprimé, une phrase ne rétrécit jamais sous ses mots.
+- Version indiquée dans les quatre pages (la liste ci-dessus n'en citait que deux).
 
 ## 1.20.0 — 2026-10-22
 - Correctif banc d'essai : quand le fichier voix et la table des temps (.json/.zip) étaient envoyés ensemble dans Colab, le notebook prenait le .json pour l'audio (erreur « Error opening ..._metadonnees.json »). Le fichier voix est maintenant le fichier audio parmi ceux envoyés, et la table des temps envoyée en même temps est reconnue (plus de seconde demande).

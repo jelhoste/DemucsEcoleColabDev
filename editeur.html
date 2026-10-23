@@ -9,7 +9,7 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.20.0">
+<meta name="app-version" content="1.21.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -212,18 +212,6 @@
     flex: 1;
     cursor: text;
   }
-  .seg-edit-input{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.68rem;
-    color: var(--text);
-    background: var(--panel-raised);
-    border: 1px solid var(--brass);
-    border-radius: 2px;
-    padding: 0 6px;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-  }
   .seg-handle{
     width: 9px;
     align-self: stretch;
@@ -394,6 +382,38 @@
   .quant-bar select{ background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:4px 8px; }
   .quant-go{ background: transparent; color: var(--brass); border:1px solid var(--brass-dim); border-radius:6px; padding:4px 12px; cursor:pointer; font:inherit; }
   .quant-msg{ color: var(--brass); }
+  .quant-confirm{ display:inline-flex; flex-wrap:wrap; gap:8px; align-items:center; padding:6px 10px; border:1px solid var(--brass); border-radius:6px; background: var(--panel-raised); color: var(--text); }
+  .quant-confirm[hidden]{ display:none; }
+  .quant-confirm button{ min-height:36px; min-width:36px; border-radius:6px; border:1px solid var(--border); background: transparent; color: var(--text); cursor:pointer; font:inherit; padding:0 12px; touch-action:manipulation; }
+  .quant-confirm .quant-ok{ border-color: var(--brass); color: var(--brass); font-weight:600; }
+
+  /* --- Bandeau « Annuler » (suppressions, quantification) : non bloquant, dans #stage pour rester visible en plein écran --- */
+  #toast-zone{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:9000; display:flex; flex-direction:column; align-items:center; gap:8px; width:min(560px, calc(100vw - 24px)); pointer-events:none; }
+  .toast{ pointer-events:auto; position:relative; overflow:hidden; display:flex; align-items:center; gap:12px; width:100%; background:#2A231B; color:#EFE6D8; border:1px solid var(--brass); border-radius:8px; padding:8px 8px 8px 14px; font:0.88rem 'IBM Plex Sans',sans-serif; box-shadow:0 4px 18px rgba(0,0,0,.55); }
+  .toast .toast-txt{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .toast button{ min-height:40px; min-width:40px; padding:0 14px; border-radius:6px; border:1px solid var(--brass); background: var(--brass); color:#1C1712; font:600 0.9rem 'IBM Plex Sans',sans-serif; cursor:pointer; touch-action:manipulation; }
+  .toast button.toast-x{ background:transparent; color: var(--text-muted); border-color: var(--border); padding:0 10px; font-weight:400; }
+  .toast .toast-barre{ position:absolute; left:0; bottom:0; height:3px; background: var(--brass); width:100%; transform-origin:left; animation: toast-fuite var(--toast-ms, 7000ms) linear forwards; }
+  .toast.sans-barre .toast-barre{ display:none; }
+  @keyframes toast-fuite{ from{ transform:scaleX(1); } to{ transform:scaleX(0); } }
+
+  /* --- Éditeur flottant : champ + ✓ (valider) + ✕ (annuler) [+ 🗑] --- */
+  .ed-flot{ position:fixed; z-index:8000; display:flex; align-items:stretch; gap:6px; padding:6px; background: var(--panel-raised); border:2px solid var(--brass); border-radius:8px; box-shadow:0 6px 22px rgba(0,0,0,.6); }
+  .ed-flot input{ flex:1; min-width:0; height:40px; background: var(--bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:0 10px; font:600 1rem 'IBM Plex Sans',sans-serif; }
+  .ed-flot button{ width:44px; height:40px; border-radius:6px; border:1px solid var(--border); background: transparent; color: var(--text); font-size:1.15rem; line-height:1; cursor:pointer; touch-action:manipulation; flex:none; }
+  .ed-flot button.ed-ok{ background: var(--accord); border-color: var(--accord); color:#1C1712; font-weight:700; }
+  .ed-flot button.ed-ko:hover, .ed-flot button.ed-sup:hover{ border-color: var(--rust); color:#fff; background: var(--rust); }
+  .ed-flot button.ed-sup{ margin-left:6px; }
+  .pd-ok, .pd-ko{ min-width:40px; height:34px; border-radius:6px; border:1px solid var(--border); background:transparent; color: var(--text); font-size:1.05rem; cursor:pointer; touch-action:manipulation; }
+  .pd-ok{ background: var(--accord); border-color: var(--accord); color:#1C1712; font-weight:700; }
+  .pd-ok[hidden], .pd-ko[hidden]{ display:none; }
+  .pd-texte.brouillon{ border-color: var(--brass); box-shadow:0 0 0 1px var(--brass); }
+  .hauteurs .zoom-ligne{ flex-basis:100%; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-bottom:10px; margin-bottom:2px; border-bottom:1px solid var(--border); }
+  .hauteurs .zoom-ligne input[type=range]{ width:min(360px, 55vw); }
+  .hauteurs .zoom-ligne .val{ width:auto; min-width:3.8em; white-space:nowrap; }
+  .hauteurs .zoom-ligne button{ width:auto; min-height:34px; padding:4px 12px; border:1px solid var(--border); border-radius:4px; background:transparent; color: var(--text-muted); cursor:pointer; font-size:0.78rem; touch-action:manipulation; }
+  .hauteurs .zoom-ligne button:hover{ border-color: var(--brass); color: var(--brass); }
+  .hauteurs .zoom-ligne button.actif{ background: var(--brass); border-color: var(--brass); color:#1C1712; font-weight:600; }
   #pr-canvas{ width:100%; display:block; background: var(--panel); border:1px solid var(--border); border-radius:8px; margin-bottom:12px; cursor:crosshair; }
   .transport #btn-plein{ white-space: nowrap; width:auto; padding:0 12px; font-size:0.85rem; }
   .vol-global{ display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; color: var(--text-muted); }
@@ -590,8 +610,7 @@
   #timeline-scroll[data-focus="structure"] #lane-structure, #timeline-scroll[data-focus="accords"] #lane-accords, #timeline-scroll[data-focus="paroles"] #lane-paroles{ height: calc(var(--ech) * 64px); }
   #timeline-scroll[data-focus="structure"] .seg-block, #timeline-scroll[data-focus="accords"] .seg-block, #timeline-scroll[data-focus="paroles"] .seg-block{ top:6px; bottom:6px; }
   #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label, #timeline-scroll[data-focus="paroles"] .seg-label{ padding:0 6px; }
-  #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label, #timeline-scroll[data-focus="paroles"] .seg-label,
-  #timeline-scroll[data-focus="structure"] .seg-edit-input, #timeline-scroll[data-focus="accords"] .seg-edit-input, #timeline-scroll[data-focus="paroles"] .seg-edit-input{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size: calc(var(--ech) * 0.8rem + 0.2rem); }
+  #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label, #timeline-scroll[data-focus="paroles"] .seg-label{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size: calc(var(--ech) * 0.8rem + 0.2rem); }
   .seg-block.choisi{ outline:2px solid #fff; outline-offset:-1px; }
   .mw-phrase{ position:absolute; top:22px; height:16px; background: color-mix(in srgb, var(--lane-color) 18%, var(--panel)); border-left:1px solid var(--lane-color); font-size:0.64rem; color: var(--text-muted); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding:0 4px; line-height:16px; pointer-events:none; }
   .mw{ position:absolute; background: color-mix(in srgb, var(--lane-color) 38%, var(--panel)); border:1px solid var(--lane-color); border-radius:4px; cursor:grab; touch-action:none; user-select:none; min-width:14px; box-sizing:border-box; }
@@ -604,7 +623,6 @@
   .mw .hl{ position:absolute; left:0; top:0; bottom:0; width:14px; cursor:ew-resize; background: var(--lane-color); border-radius:3px 0 0 3px; z-index:3;
            background-image: repeating-linear-gradient(90deg, transparent 0 3px, rgba(0,0,0,.35) 3px 4px); background-size:100% 40%; background-repeat:no-repeat; background-position:center; }
   .mw .hr{ position:absolute; right:0; top:0; bottom:0; width:6px; cursor:ew-resize; background: var(--lane-color); opacity:0.7; border-radius:0 3px 3px 0; z-index:3; }
-  .mw-edit{ position:absolute; z-index:20; font-family:'IBM Plex Sans',sans-serif; font-weight:600; color: var(--text); background: var(--panel-raised); border:2px solid var(--brass); border-radius:4px; padding:0 8px; box-sizing:border-box; }
   .mw-aide{ position:absolute; left:8px; bottom:3px; font-size:0.7rem; color: var(--text-muted); pointer-events:none; z-index:12; }
   .phrase-detail{ display:none; background: var(--panel); border:1px solid var(--border); border-radius:6px; margin-top:8px; padding:8px 10px 10px; }
   .pd-tete{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
@@ -710,15 +728,21 @@
         <button type="button" data-focus="marqueurs">Marqueurs</button>
         <span class="sep"></span>
         <button type="button" id="btn-melo-avec" style="display:none" title="Afficher aussi le piano roll de la mélodie avec la piste choisie">♫ + Mélodie</button>
-        <button type="button" id="btn-hauteurs" title="Régler la hauteur d'affichage de chaque strate">↕ Hauteurs</button>
+        <button type="button" id="btn-hauteurs" title="Régler la largeur (zoom) et la hauteur d'affichage de chaque strate">↕ Hauteurs et largeur</button>
         <span class="focus-actions" id="focus-actions">
           <button type="button" data-fa="ajout" title="Ajouter une carte (en Paroles : un mot) à la position de lecture">＋ Carte au curseur</button>
           <button type="button" data-fa="scinder" title="Scinder la carte choisie en deux (au curseur de lecture, ou à la position du curseur de texte si vous êtes en train d'écrire)">✂ Scinder</button>
-          <button type="button" data-fa="suppr" title="Supprimer la carte choisie">🗑 Supprimer</button>
+          <button type="button" data-fa="suppr" id="fa-suppr" title="Supprimer la carte choisie (un bandeau « Annuler » reste affiché quelques secondes)">🗑 Supprimer</button>
+          <button type="button" data-fa="suppr-mot" id="fa-suppr-mot" title="Supprimer le mot choisi (ou celui sous le curseur de lecture) — annulable" style="display:none">🗑 Supprimer le mot</button>
           <label title="Taille du texte et hauteur des cartes">Taille <input type="range" id="focus-taille" min="1" max="2.5" step="0.1" value="1.5"></label>
         </span>
       </div>
       <div class="hauteurs" id="hauteurs">
+        <div class="zoom-ligne">
+          <label title="Largeur des cartes = échelle horizontale du temps. Glissez vers la droite pour agrandir (zoom autour du centre de la vue).">Largeur des cartes (zoom) <input type="range" id="h-zoom" min="0" max="100" step="1" value="0"><span class="val" id="h-zoom-v">100 %</span></label>
+          <button type="button" id="h-zoom-fit" title="Tout le morceau tient dans la largeur">⤢ Ajuster</button>
+          <button type="button" id="btn-molette" title="Molette de la souris : zoomer autour du curseur (Maj + molette : défiler ; Alt + molette : faire défiler la page). Désactivé : retour à Ctrl + molette pour zoomer.">Molette = zoom</button>
+        </div>
         <label>Forme d'onde <input type="range" id="h-wave" min="60" max="320" step="10" value="140"><span class="val" id="h-wave-v">140</span></label>
         <label>Mélodie (piano roll) <input type="range" id="h-melodie" min="100" max="700" step="10" value="180"><span class="val" id="h-melodie-v">180</span></label>
         <label>Cartes (toutes pistes) <input type="range" id="h-cartes" min="28" max="120" step="2" value="34"><span class="val" id="h-cartes-v">34</span></label>
@@ -750,7 +774,9 @@
           <button type="button" data-pd="prev" title="Phrase précédente">◀</button>
           <span class="pd-info" id="pd-info"></span>
           <button type="button" data-pd="next" title="Phrase suivante">▶</button>
-          <input type="text" class="pd-texte" id="pd-texte" placeholder="Texte de la phrase">
+          <input type="text" class="pd-texte" id="pd-texte" placeholder="Texte de la phrase" enterkeyhint="done" autocomplete="off" spellcheck="false">
+          <button type="button" class="pd-ok" id="pd-ok" hidden title="Valider le texte (Entrée)" aria-label="Valider">✓</button>
+          <button type="button" class="pd-ko" id="pd-ko" hidden title="Annuler la modification (Échap)" aria-label="Annuler">✕</button>
           <button type="button" data-pd="suivre" id="pd-suivre" title="La phrase affichée suit la lecture ; cliquer sur une phrase de la piste l'épingle">● Suit la lecture</button>
         </div>
         <div class="pd-zone" id="pd-zone"></div>
@@ -762,7 +788,7 @@
         <button type="button" data-split="paroles">Paroles</button>
         <span class="split-msg" id="split-msg"></span>
       </div>
-      <div class="hint">Trait marqué : premier temps de la mesure (downbeat). Trait fin : autres temps. Molette + Ctrl (ou pincement tactile) pour zoomer. Entre deux cartes qui se touchent, la poignée centrale déplace la coupure des deux cartes ensemble. Cliquez sur la forme d'onde pour placer le curseur, puis ✂ pour scinder.</div>
+      <div class="hint">Trait marqué : premier temps de la mesure (downbeat). Trait fin : autres temps. Molette pour zoomer autour du curseur de la souris (Maj + molette ou barre de défilement pour se déplacer, Alt + molette pour faire défiler la page ; pincement tactile sur tablette) — réglable dans « ↕ Hauteurs et largeur ». Supprimer une carte affiche un bandeau « Annuler » (ou Ctrl + Z). Entre deux cartes qui se touchent, la poignée centrale déplace la coupure des deux cartes ensemble. Cliquez sur la forme d'onde pour placer le curseur, puis ✂ pour scinder.</div>
     </section>
 
     <section>
@@ -770,9 +796,10 @@
       <details open>
         <summary>Sections du morceau (<span id="count-structure">0</span>)</summary>
         <div class="details-body">
-          <div class="quant-bar" data-cle="structure"><span>Caler sur :</span>
+          <div class="quant-bar" data-cle="structure"><span title="Aimante les bords des cartes au glisser, à la création et à la scission.">Quantifier sur :</span>
             <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
-            <button type="button" class="quant-go">Caler toutes les cartes</button>
+            <button type="button" class="quant-go">Quantifier tout</button>
+            <span class="quant-confirm" hidden><span class="quant-resume"></span><button type="button" class="quant-ok">✓ Confirmer</button><button type="button" class="quant-ko">✕ Annuler</button></span>
             <span class="quant-msg"></span></div>
           <div class="cards-view cards-structure" id="cards-structure" style="--lane-color: var(--brass);"></div>
           <div class="row-list" id="list-structure"></div>
@@ -786,9 +813,10 @@
       <details open>
         <summary>Timeline d'accords (<span id="count-accords">0</span>)</summary>
         <div class="details-body">
-          <div class="quant-bar" data-cle="accords"><span>Caler sur :</span>
+          <div class="quant-bar" data-cle="accords"><span title="Aimante les bords des cartes au glisser, à la création et à la scission.">Quantifier sur :</span>
             <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
-            <button type="button" class="quant-go">Caler toutes les cartes</button>
+            <button type="button" class="quant-go">Quantifier tout</button>
+            <span class="quant-confirm" hidden><span class="quant-resume"></span><button type="button" class="quant-ok">✓ Confirmer</button><button type="button" class="quant-ko">✕ Annuler</button></span>
             <span class="quant-msg"></span></div>
           <div class="cards-view cards-accords" id="cards-accords" style="--lane-color: var(--accord);"></div>
           <div class="row-list" id="list-accords"></div>
@@ -802,6 +830,11 @@
       <details>
         <summary>Piano roll et notes détectées (<span id="count-melodie">0</span>)</summary>
         <div class="details-body">
+          <div class="quant-bar" data-cle="melodie"><span title="Aimante le début et la fin des notes quand on les déplace ou les redimensionne dans le piano roll.">Quantifier sur :</span>
+            <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
+            <button type="button" class="quant-go">Quantifier tout</button>
+            <span class="quant-confirm" hidden><span class="quant-resume"></span><button type="button" class="quant-ok">✓ Confirmer</button><button type="button" class="quant-ko">✕ Annuler</button></span>
+            <span class="quant-msg"></span></div>
           <div class="cmp-row"><label for="pr-fen">Fenêtre</label>
             <select id="pr-fen"><option value="4">4 s</option><option value="8" selected>8 s</option><option value="16">16 s</option><option value="0">Tout le morceau</option></select>
             <span class="hint">Cliquez dans le piano roll pour déplacer la lecture. Édition des notes : liste ci-dessous ou bande sous la forme d'onde.</span></div>
@@ -817,6 +850,12 @@
       <details open>
         <summary>Segments transcrits (<span id="count-paroles">0</span>)</summary>
         <div class="details-body">
+          <div class="quant-bar" data-cle="paroles"><span title="Aimante les bords des phrases et des mots au glisser, à la création et à la scission.">Quantifier sur :</span>
+            <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
+            <select class="quant-cible" title="Ce que « Quantifier tout » déplace"><option value="phrases">les phrases</option><option value="mots">les mots</option><option value="deux" selected>phrases et mots</option></select>
+            <button type="button" class="quant-go">Quantifier tout</button>
+            <span class="quant-confirm" hidden><span class="quant-resume"></span><button type="button" class="quant-ok">✓ Confirmer</button><button type="button" class="quant-ko">✕ Annuler</button></span>
+            <span class="quant-msg"></span></div>
           <div class="cards-view cards-paroles" id="cards-paroles"></div>
           <div class="row-list" id="list-paroles"></div>
           <button class="add-row-btn" id="add-parole">+ Ajouter un segment</button>
@@ -835,9 +874,10 @@
             <button class="add-row-btn" id="add-type-marqueur" style="margin-top:0;">+ Nouveau type de marqueur</button>
             <button class="add-row-btn" id="import-releves" style="margin-top:0; display:none;">⤓ Importer les relevés de la préparation</button>
           </div>
-          <div class="quant-bar" data-cle="marqueurs" style="margin-top:12px;"><span>Caler sur :</span>
+          <div class="quant-bar" data-cle="marqueurs" style="margin-top:12px;"><span title="Aimante les marqueurs au glisser et à la création.">Quantifier sur :</span>
             <select class="quant-mode"><option value="aucun">Aucun (libre)</option><option value="temps">Les temps</option><option value="mesures">Les mesures</option></select>
-            <button type="button" class="quant-go">Caler tous les marqueurs</button>
+            <button type="button" class="quant-go">Quantifier tout</button>
+            <span class="quant-confirm" hidden><span class="quant-resume"></span><button type="button" class="quant-ok">✓ Confirmer</button><button type="button" class="quant-ko">✕ Annuler</button></span>
             <span class="quant-msg"></span></div>
           <div class="row-list" id="list-marqueurs"></div>
         </div>
@@ -898,6 +938,7 @@
       </div>
       <div id="cmpm-liste" class="cmp-liste"></div>
     </section>
+    <div id="toast-zone" aria-live="polite"></div>
   </div><!-- /#stage -->
 
     <section id="section-partition">
@@ -1170,6 +1211,7 @@ function trouverFichierPourPiste(nomPiste, nomsAudio){
 
 async function chargerZip(file){
   try{
+    pileAnnuler.length = 0; masquerToast(); edFlot.fermer();   // un nouveau morceau : l'historique d'annulation de l'ancien n'a plus de sens
     loadStatus.className = 'status';
     loadStatus.textContent = 'Lecture du zip...';
     nomFichierZip = file.name;
@@ -1256,7 +1298,7 @@ async function chargerZip(file){
     appliquerLargeurTimeline();
     dessinerWaveform();
     dessinerGrilleRythmique();
-    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none'; document.getElementById('btn-melo-avec').style.display = (f === 'toutes' || f === 'melodie') ? 'none' : ''; } } catch (_) {}
+    try { const f = localStorage.getItem('bandes.focus'); if (f && document.querySelector('#focus-bar button[data-focus="' + f + '"]')){ focusPiste = f; document.getElementById('timeline-scroll').dataset.focus = f; document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f)); majBarreActions(f); document.getElementById('btn-melo-avec').style.display = (f === 'toutes' || f === 'melodie') ? 'none' : ''; } } catch (_) {}
     rendreTout();
     requestAnimationFrame(bouclePlayhead);
   } catch(err){
@@ -1384,28 +1426,82 @@ function calculerZoomAjuste(){
   const w = document.getElementById('timeline-scroll').clientWidth;
   return duration > 0 ? Math.max(10, w/duration) : 100;
 }
+const ZOOM_MAX = 4000;   // pixels par seconde
 function appliquerLargeurTimeline(){
   const w = Math.max(document.getElementById('timeline-scroll').clientWidth, duration*pixelsPerSecond);
   document.getElementById('timeline-wrap').style.width = w+'px';
   document.getElementById('zoom-label').textContent = Math.round((pixelsPerSecond/calculerZoomAjuste())*100)+'%';
+  majCurseurZoom();
+}
+// Curseur « Largeur des cartes (zoom) » du panneau : échelle logarithmique de « tout le morceau » (100 %) à ZOOM_MAX px/s
+function majCurseurZoom(){
+  const s = document.getElementById('h-zoom'); if (!s) return;
+  const fit = calculerZoomAjuste();
+  document.getElementById('h-zoom-v').textContent = Math.round(100 * pixelsPerSecond / fit) + ' %';
+  if (document.activeElement === s) return;   // on ne le déplace pas sous le doigt
+  s.value = ZOOM_MAX > fit ? Math.max(0, Math.min(100, 100 * Math.log(pixelsPerSecond / fit) / Math.log(ZOOM_MAX / fit))) : 0;
 }
 function setZoom(nouveauPxParSec){
-  pixelsPerSecond = Math.max(10, Math.min(4000, nouveauPxParSec));
+  // jamais en dessous de « tout le morceau dans la largeur » : au-delà, la forme d'onde ne rétrécirait plus
+  pixelsPerSecond = Math.max(Math.min(calculerZoomAjuste(), ZOOM_MAX), Math.min(ZOOM_MAX, nouveauPxParSec));
   appliquerLargeurTimeline();
   dessinerWaveform();
   dessinerGrilleRythmique();
   rendreTout();
 }
+// Zoome en gardant fixe l'instant situé sous la position `xRel` (pixels depuis le bord gauche de la zone visible)
+function zoomAutour(nouveauPxParSec, xRel){
+  const ts = document.getElementById('timeline-scroll');
+  const t = (ts.scrollLeft + xRel) / pixelsPerSecond, avant = pixelsPerSecond;
+  setZoom(nouveauPxParSec);
+  if (pixelsPerSecond !== avant) ts.scrollLeft = t * pixelsPerSecond - xRel;
+}
 
 document.getElementById('zoom-in').addEventListener('click', () => setZoom(pixelsPerSecond*1.4));
 document.getElementById('zoom-out').addEventListener('click', () => setZoom(pixelsPerSecond/1.4));
 document.getElementById('zoom-fit').addEventListener('click', () => setZoom(calculerZoomAjuste()));
+document.getElementById('h-zoom').addEventListener('input', (ev) => {
+  const fit = calculerZoomAjuste(); if (!duration || ZOOM_MAX <= fit) return;
+  zoomAutour(fit * Math.pow(ZOOM_MAX / fit, Number(ev.target.value) / 100), document.getElementById('timeline-scroll').clientWidth / 2);
+});
+document.getElementById('h-zoom-fit').addEventListener('click', () => { if (!duration) return; setZoom(calculerZoomAjuste()); document.getElementById('timeline-scroll').scrollLeft = 0; });
 
 const timelineScroll = document.getElementById('timeline-scroll');
+// Molette (PC) :  molette seule = zoom autour du curseur de la souris ; Maj + molette = défilement horizontal ;
+// Alt + molette = défilement de la page ; geste horizontal du pavé tactile = défilement natif.
+// Conflit avec le défilement vertical de la page : tant qu'on peut encore zoomer, la molette sur la forme d'onde ne fait plus
+// défiler la page. Mais quand tout le morceau tient déjà dans la largeur (zoom minimal) et qu'on tourne vers le bas, on ne
+// bloque pas l'événement : la page défile, donc on n'est jamais coincé sur la piste. Le bouton « 🖱 Molette = zoom » revient à Ctrl + molette.
+let moletteZoom = true;
+try { moletteZoom = localStorage.getItem('bandes.molette') !== '0'; } catch (_) {}
+function majBoutonMolette(){ const b = document.getElementById('btn-molette'); if (b){ b.classList.toggle('actif', moletteZoom); b.setAttribute('aria-pressed', moletteZoom ? 'true' : 'false'); } }
+majBoutonMolette();
+document.getElementById('btn-molette').addEventListener('click', () => {
+  moletteZoom = !moletteZoom; majBoutonMolette();
+  try { localStorage.setItem('bandes.molette', moletteZoom ? '1' : '0'); } catch (_) {}
+});
 timelineScroll.addEventListener('wheel', (e) => {
-  if (!e.ctrlKey || !duration) return;
+  if (!duration) return;
+  const unite = e.deltaMode === 1 ? 33 : (e.deltaMode === 2 ? 400 : 1);   // lignes / pages -> pixels
+  if (e.shiftKey){                                   // Maj + molette : défiler horizontalement
+    e.preventDefault();
+    timelineScroll.scrollLeft += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * unite;
+    return;
+  }
+  if (e.altKey){                                     // Alt + molette : faire défiler la page quand même
+    e.preventDefault();
+    const stage = document.getElementById('stage');
+    (stage.classList.contains('en-plein') ? stage : window).scrollBy(0, e.deltaY * unite);
+    return;
+  }
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;   // balayage horizontal : défilement natif de la piste
+  if (!e.ctrlKey && !moletteZoom) return;                // molette = zoom désactivée : seul Ctrl + molette zoome
+  const fit = calculerZoomAjuste();
+  if (!e.ctrlKey && e.deltaY > 0 && pixelsPerSecond <= fit * 1.0001) return;   // déjà dézoomé au maximum : la page défile
   e.preventDefault();
-  setZoom(pixelsPerSecond*Math.exp(-e.deltaY*0.01));
+  const dy = Math.max(-240, Math.min(240, e.deltaY * unite));
+  const facteur = Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.004));   // ≈ ×1,5 par cran de molette ; pincement (Ctrl) plus fin
+  zoomAutour(pixelsPerSecond * facteur, e.clientX - timelineScroll.getBoundingClientRect().left);
 }, { passive: false });
 
 let pinchStartDist = null, pinchStartPxPerSec = null;
@@ -1610,6 +1706,151 @@ function dessinerPlayhead(){
 }
 
 // ============================================================
+// Annulation (bandeau « Annuler » + Ctrl+Z) et éditeur flottant ✓ / ✕
+// ============================================================
+// Chaque action annulable range une petite fonction « défaire » qui ne remet QUE ce qu'elle a changé
+// (la carte supprimée, les temps d'avant la quantification, le texte d'avant) : annuler une suppression
+// n'efface donc jamais des retouches faites entre-temps ailleurs.
+const pileAnnuler = [];          // { libelle, defaire }
+const PILE_MAX = 40, TOAST_MS = 7000;
+function empiler(libelle, defaire){
+  const e = { libelle, defaire };
+  pileAnnuler.push(e);
+  if (pileAnnuler.length > PILE_MAX) pileAnnuler.shift();
+  return e;
+}
+function texteCourt(s, n){ s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); n = n || 28; return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+let toastTimer = null;
+function masquerToast(){
+  clearTimeout(toastTimer); toastTimer = null;
+  const z = document.getElementById('toast-zone'); if (z) z.innerHTML = '';
+}
+// opts.entree : entrée d'annulation à proposer (bouton « Annuler » + barre de temps) ; opts.ms : durée
+function afficherToast(texte, opts){
+  opts = opts || {};
+  const zone = document.getElementById('toast-zone'); if (!zone) return;
+  masquerToast();
+  const ms = opts.ms || (opts.entree ? TOAST_MS : 3000);
+  const el = document.createElement('div');
+  el.className = 'toast' + (opts.entree ? '' : ' sans-barre');
+  el.style.setProperty('--toast-ms', ms + 'ms');
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="toast-txt"></span>' + (opts.entree ? '<button type="button" class="toast-undo">Annuler</button>' : '') +
+    '<button type="button" class="toast-x" aria-label="Fermer">✕</button>' + (opts.entree ? '<div class="toast-barre"></div>' : '');
+  el.querySelector('.toast-txt').textContent = texte;
+  el.querySelector('.toast-x').addEventListener('click', masquerToast);
+  if (opts.entree) el.querySelector('.toast-undo').addEventListener('click', () => defaireEntree(opts.entree));
+  zone.appendChild(el);
+  toastTimer = setTimeout(masquerToast, ms);
+}
+function defaireEntree(e){
+  const i = pileAnnuler.indexOf(e); if (i >= 0) pileAnnuler.splice(i, 1);
+  edFlot.fermer();
+  try { e.defaire(); } catch (err) { console.error(err); }
+  rendreTout();
+  afficherToast('Annulé : ' + e.libelle, { ms: 3200 });
+}
+function annulerDerniere(){
+  const e = pileAnnuler[pileAnnuler.length - 1];
+  if (!e){ afficherToast('Rien à annuler.', { ms: 2000 }); return false; }
+  defaireEntree(e); return true;
+}
+
+// Éditeur flottant : un champ + ✓ (valider) + ✕ (annuler) [+ 🗑]. Il vit dans #stage (visible en plein écran),
+// ne modifie rien tant qu'on n'a pas validé (✓ ou Entrée), et ne se ferme pas tout seul quand on touche ailleurs :
+// pas de texte perdu quand le clavier de la tablette se replie.
+const edFlot = (function(){
+  let box = null, st = null;
+  function placer(){
+    if (!box || !st) return;
+    const a = st.ancre && st.ancre();
+    if (!a || !a.isConnected) return;
+    const r = a.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    const w = Math.min(460, vw - 16);
+    box.style.width = w + 'px';
+    const h = box.offsetHeight || 56;
+    const left = Math.max(8, Math.min(r.left, vw - w - 8));
+    let top = r.bottom + 6;
+    if (top + h > vh - 8) top = Math.max(8, r.top - h - 6);
+    box.style.left = left + 'px'; box.style.top = top + 'px';
+  }
+  // Échap marche même si on a touché ailleurs entre-temps (le champ n'a plus le focus) ; il ne ferme pas le plein écran au passage
+  function echap(ev){ if (ev.key === 'Escape' && box){ ev.preventDefault(); ev.stopPropagation(); annuler(); } }
+  function fermerBrut(){
+    if (!box) return null;
+    const s = st;
+    window.removeEventListener('resize', placer); window.removeEventListener('scroll', placer, true);
+    document.removeEventListener('keydown', echap, true);
+    box.remove(); box = null; st = null;
+    return s;
+  }
+  // Fermeture « de l'extérieur » (autre carte, suppression, annulation…) = abandon : rien n'est validé, et onCancel prévient l'appelant
+  function fermer(){ const s = fermerBrut(); if (s && s.onCancel) s.onCancel(); return s; }
+  function valider(){ if (!box) return; const s = st, v = st.inp.value; fermerBrut(); if (s.onOk) s.onOk(v); }
+  function annuler(){ if (!box) return; const s = st; fermerBrut(); if (s.onCancel) s.onCancel(); }
+  function supprimer(){ if (!box) return; const s = st; fermerBrut(); if (s.onSupprimer) s.onSupprimer(); }
+  function ouvrir(o){
+    fermer();
+    box = document.createElement('div');
+    box.className = 'ed-flot'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', o.titre || 'Modifier le texte');
+    box.innerHTML = '<input type="text" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false">' +
+      '<button type="button" class="ed-ok" title="Valider (Entrée)" aria-label="Valider">✓</button>' +
+      '<button type="button" class="ed-ko" title="Annuler la modification (Échap)" aria-label="Annuler">✕</button>' +
+      (o.onSupprimer ? '<button type="button" class="ed-sup" title="Supprimer cette carte (un bandeau « Annuler » reste affiché)" aria-label="Supprimer la carte">🗑</button>' : '');
+    (document.getElementById('stage') || document.body).appendChild(box);
+    const inp = box.querySelector('input'); inp.value = o.valeur == null ? '' : o.valeur;
+    st = { ancre: o.ancre, onOk: o.onOk, onCancel: o.onCancel, onSupprimer: o.onSupprimer, inp };
+    // les boutons ne volent pas le focus (le clavier tactile reste ouvert) et le geste ne traverse pas vers la piste
+    box.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) e.preventDefault(); e.stopPropagation(); });
+    box.querySelector('.ed-ok').addEventListener('click', valider);
+    box.querySelector('.ed-ko').addEventListener('click', annuler);
+    const bs = box.querySelector('.ed-sup'); if (bs) bs.addEventListener('click', supprimer);
+    inp.addEventListener('keydown', (ev) => {
+      ev.stopPropagation();
+      if (ev.key === 'Enter'){ ev.preventDefault(); valider(); }
+      else if (ev.key === 'Escape'){ ev.preventDefault(); annuler(); }
+    });
+    window.addEventListener('resize', placer); window.addEventListener('scroll', placer, true);   // true : suit aussi le défilement de la piste
+    document.addEventListener('keydown', echap, true);
+    placer(); inp.focus(); inp.select();
+    return st;
+  }
+  return { ouvrir, fermer, placer, valider, annuler, ouvert: () => !!box, etat: () => st };
+})();
+
+// Modifier le texte d'une carte (section, accord, phrase) — annulable
+function appliquerTexteCarte(seg, v){
+  const avantValue = seg.value, avantMots = Array.isArray(seg.mots) ? seg.mots.map(m => ({ ...m })) : seg.mots, aMots = 'mots' in seg;
+  if (aMots) reconcilierMots(seg, v); else seg.value = v;
+  empiler('modification du texte', () => { seg.value = avantValue; if (aMots) seg.mots = avantMots; });
+}
+
+// Supprimer une carte (ou une note) du tableau `arr`, avec bandeau « Annuler » — un seul chemin pour la piste, la liste et le clavier
+function supprimerDansTableau(arr, seg, libelle, rendre, feminin){
+  const i = arr.indexOf(seg); if (i < 0) return false;
+  arr.splice(i, 1);
+  const e = empiler(libelle, () => { if (!arr.includes(seg)){ arr.push(seg); trierSegments(arr); } });
+  if (rendre) rendre();
+  afficherToast(libelle + (feminin ? ' — supprimée.' : ' — supprimé.'), { entree: e });
+  return true;
+}
+const NOMS_CARTE = { structure: 'Section', accords: 'Accord', paroles: 'Phrase' };
+const CARTE_FEMININ = { structure: true, accords: false, paroles: true };
+function supprimerCarteDe(cle, seg){
+  const cfg = LANES_CFG[cle]; if (!cfg) return false;
+  edFlot.fermer();
+  if (cle === 'paroles'){
+    if (phraseEpinglee === seg) phraseEpinglee = null;
+    if (phraseSurvol === seg) phraseSurvol = null;
+    if (motChoisi && motChoisi.seg === seg) motChoisi = null;
+  }
+  const txt = cle === 'accords' ? accordAffichage(seg.value) : seg.value;
+  return supprimerDansTableau(cfg.get(), seg, NOMS_CARTE[cle] + ' « ' + texteCourt(txt) + ' »', cfg.rendre, CARTE_FEMININ[cle]);
+}
+
+// ============================================================
 // Lane editable generique (structure, accords, paroles)
 // ============================================================
 
@@ -1618,6 +1859,7 @@ function trierSegments(segments){ segments.sort((a,b) => a.start-b.start); }
 const JOINT_EPS = 0.02; // deux cartes dont l'ecart est inferieur sont considerees comme "jointes"
 const MIN_GAP = 0.05;   // duree minimale d'une carte
 
+let derniereCarteChoisie = null;   // 'structure' | 'accords' | 'paroles' : sert à la touche Suppr quand toutes les pistes sont affichées
 function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif, fmtAffichage){
   let actifId = null, actifEl = null, selId = null;
 
@@ -1665,6 +1907,7 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif, fmtAfficha
         laneEl.appendChild(joint);
       }
     });
+    edFlot.placer();   // l'éditeur flottant suit sa carte après un zoom / un nouveau rendu
   }
 
   // Surbrillance de la carte en cours de lecture + progression
@@ -1737,38 +1980,29 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif, fmtAfficha
     document.addEventListener('pointercancel', onUp);
   });
 
+  // Clic sur une carte : on la choisit et on ouvre l'éditeur flottant (✓ / ✕ / 🗑). Rien n'est modifié avant ✓ ou Entrée.
   laneEl.addEventListener('click', (e) => {
     if (e.target.closest('.seg-handle, .seg-joint')) return;
     const block = e.target.closest('.seg-block');
-    if (!block || block.querySelector('input')) return;
+    if (!block) return;
     const segments = getSegments();
     const seg = segments.find(sg => sg.id === Number(block.dataset.id));
     if (!seg) return;
 
     selId = seg.id;
+    derniereCarteChoisie = cleQuantif;
     laneEl.querySelectorAll('.seg-block').forEach(b => b.classList.toggle('choisi', Number(b.dataset.id) === selId));
-    const labelEl = block.querySelector('.seg-label');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'seg-edit-input';
-    input.value = seg.value;
-    labelEl.replaceWith(input);
-    input.focus();
-    input.select();
-
-    const valider = () => {
-      if (input.value !== seg.value){
-        if ('mots' in seg) reconcilierMots(seg, input.value); // garde le minutage des mots inchanges / remplaces
-        else seg.value = input.value;
-      }
-      onChange(true);
-    };
-    input.addEventListener('blur', valider);
-    input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
-      if (ev.key === 'Escape'){ input.value = seg.value; input.blur(); }
+    edFlot.ouvrir({
+      titre: 'Modifier : ' + texteCourt(seg.value),
+      ancre: () => laneEl.querySelector('.seg-block[data-id="' + seg.id + '"]'),
+      valeur: seg.value,
+      onOk: (v) => {
+        if (!getSegments().includes(seg) || v === seg.value) return;
+        appliquerTexteCarte(seg, v);   // garde le minutage des mots inchangés / remplacés
+        onChange(true);
+      },
+      onSupprimer: cleQuantif ? () => supprimerCarteDe(cleQuantif, seg) : null,
     });
-    input.addEventListener('pointerdown', (ev) => ev.stopPropagation());
   });
 
   return { render, maj, getSel: () => selId, setSel: (id) => { selId = id; laneEl.querySelectorAll('.seg-block').forEach(b => b.classList.toggle('choisi', Number(b.dataset.id) === selId)); } };
@@ -1776,14 +2010,18 @@ function creerLaneEditable(laneEl, getSegments, onChange, cleQuantif, fmtAfficha
 
 const laneStructure = creerLaneEditable(document.getElementById('lane-structure'), () => structureSegments, (f) => { if (f) trierSegments(structureSegments); rendreListeStructure(); }, 'structure');
 const laneAccords = creerLaneEditable(document.getElementById('lane-accords'), () => accordSegments, (f) => { if (f) trierSegments(accordSegments); rendreListeAccords(); }, 'accords', (v) => accordAffichage(v));
-const laneParoles = creerLaneEditable(document.getElementById('lane-paroles'), () => parolesSegments, (f) => { if (f) trierSegments(parolesSegments); rendreListeParoles(); });
+const laneParoles = creerLaneEditable(document.getElementById('lane-paroles'), () => parolesSegments, (f) => { if (f) trierSegments(parolesSegments); rendreListeParoles(); }, 'paroles');
 
 // ============================================================
 // Scission d'une carte
 // ============================================================
 
 // Coupe `seg` en deux au temps t ; renvoie la nouvelle carte (partie droite) ou null si t est trop pres d'un bord.
-function scinderSegment(segments, seg, t){
+function scinderSegment(segments, seg, t, cleQ){
+  if (cleQ){   // aimantation de la coupure sur la grille choisie, si elle reste dans la carte
+    const s = aimanter(cleQ, t);
+    if (s - seg.start >= MIN_GAP && seg.end - s >= MIN_GAP) t = s;
+  }
   if (t - seg.start < MIN_GAP || seg.end - t < MIN_GAP) return null;
   const nouveau = { id: nextId++, start: t, end: seg.end, value: seg.value };
   if ('mots' in seg){
@@ -1827,7 +2065,7 @@ function scinderALaPosition(cle){
   const t = getTempsActuel();
   const seg = cfg.get().find(sg => t > sg.start && t < sg.end);
   if (!seg){ messageScission(`Aucune carte « ${cfg.nom} » sous le curseur.`); return; }
-  if (!scinderSegment(cfg.get(), seg, t)){ messageScission('Curseur trop près du bord de la carte.'); return; }
+  if (!scinderSegment(cfg.get(), seg, t, cle)){ messageScission('Curseur trop près du bord de la carte.'); return; }
   messageScission('');
   cfg.rendre();
 }
@@ -2328,7 +2566,7 @@ function majComparaisonAccords(t){
 // ============================================================
 // Quantification sur les temps / les mesures (structure et accords)
 // ============================================================
-const quantif = { structure: 'aucun', accords: 'aucun', marqueurs: 'aucun' };
+const quantif = { structure: 'aucun', accords: 'aucun', paroles: 'aucun', melodie: 'aucun', marqueurs: 'aucun' };
 function grilleTemps(mode){
   const sb = (donnees && donnees.structure) || {};
   const a = mode === 'mesures' ? sb.downbeats : sb.beats;
@@ -2345,21 +2583,25 @@ function aimanter(cle, t){
   const g = grilleTemps(mode);
   return g.length ? g[indexProche(g, t)] : t;
 }
-function calerCartes(cle){
-  if (cle === 'marqueurs') return calerMarqueurs();
-  const mode = quantif[cle], g = grilleTemps(mode);
-  const msg = document.querySelector(`.quant-bar[data-cle="${cle}"] .quant-msg`);
-  if (mode === 'aucun'){ msg.textContent = 'Choisissez d\'abord « Les temps » ou « Les mesures ».'; return; }
-  if (!g.length){ msg.textContent = 'Pas de grille de ' + (mode === 'mesures' ? 'mesures' : 'temps') + ' dans ce fichier.'; return; }
-  const segs = LANES_CFG[cle].get();
-  if (!segs.length) return;
+// --- Ce que fait la quantification, par partie -------------------------------------------------------------
+//  • AIMANTATION (menu « Quantifier sur », via aimanter()) : structure, accords, paroles (bords des phrases ET des mots),
+//    mélodie (début/fin des notes) et marqueurs sont aimantés quand on les glisse ; la création et la scission d'une
+//    carte, et l'ajout d'un mot ou d'un marqueur au curseur, sont aimantés aussi (si le résultat reste dans la carte).
+//  • « Quantifier tout » : recale ce qui existe déjà. Le bouton calcule d'abord le résultat sur une COPIE, affiche
+//    combien d'éléments bougeraient, et n'applique qu'après ✓ Confirmer ; le bandeau « Annuler » permet ensuite de revenir.
+const EPS_MOT = 0.03;                                    // écart en dessous duquel deux mots sont « jointifs »
+function caler(t, g){ return g[indexProche(g, t)]; }
+function prochaineGrille(g, t){ const k = g.findIndex(x => x > t); return k >= 0 ? g[k] : null; }
+
+// Structure / accords : les cartes se suivent ; le tout premier début et la toute dernière fin ne bougent pas.
+// Une carte devenue plus courte que MIN_GAP est allongée jusqu'au temps suivant, ou supprimée s'il n'y a pas de place.
+function calerCartesListe(segs, g){
   trierSegments(segs);
   const n = segs.length;
-  segs.forEach((sg, i) => {   // le tout premier debut et la toute derniere fin ne bougent pas
-    if (i > 0) sg.start = g[indexProche(g, sg.start)];
-    if (i < n - 1) sg.end = g[indexProche(g, sg.end)];
+  segs.forEach((sg, i) => {
+    if (i > 0) sg.start = caler(sg.start, g);
+    if (i < n - 1) sg.end = caler(sg.end, g);
   });
-  let supprimees = 0;
   for (let i = 0; i < segs.length; i++){
     const sg = segs[i];
     if (sg.end - sg.start >= MIN_GAP) continue;
@@ -2368,15 +2610,146 @@ function calerCartes(cle){
     if (suivante && k >= 0 && g[k] < suivante.end - MIN_GAP){
       if (Math.abs(suivante.start - sg.end) <= JOINT_EPS) suivante.start = g[k];
       sg.end = g[k];
-    } else { segs.splice(i, 1); i--; supprimees++; }
+    } else { segs.splice(i, 1); i--; }
   }
-  LANES_CFG[cle].rendre();
-  msg.textContent = 'Calé sur ' + (mode === 'mesures' ? 'les mesures' : 'les temps') + (supprimees ? ` (${supprimees} carte(s) trop courte(s) supprimée(s))` : '') + '.';
+}
+// Mots d'une phrase : chaque début va sur le temps le plus proche (jamais deux mots sur le même temps : le suivant
+// passe au temps d'après) ; la fin d'un mot collé au suivant devient le début du suivant, sinon elle est calée à son tour,
+// et un mot trop court garde sa durée d'origine à partir de son nouveau début. Aucun mot n'est supprimé.
+function calerMotsListe(mots, g){
+  mots.sort((a, b) => a.start - b.start);
+  const n = mots.length, S = new Array(n);
+  for (let i = 0; i < n; i++){
+    let s = caler(mots[i].start, g);
+    if (i > 0 && s <= S[i-1]) s = prochaineGrille(g, S[i-1]);
+    if (s === null) s = Math.max(mots[i].start, i > 0 ? S[i-1] + EPS_MOT : 0);
+    S[i] = s;
+  }
+  for (let i = 0; i < n; i++){
+    const m = mots[i], joint = i < n - 1 && Math.abs(mots[i+1].start - m.end) <= EPS_MOT;
+    const limite = i < n - 1 ? S[i+1] : duration;
+    let e = joint ? S[i+1] : caler(m.end, g);
+    if (e > limite) e = limite;
+    if (e - S[i] < EPS_MOT) e = Math.min(limite, S[i] + Math.max(EPS_MOT, m.end - m.start));
+    if (e - S[i] < 0.01) e = S[i] + 0.01;
+    m.start = S[i]; m.end = e;
+  }
+}
+// Paroles : `cible` = 'phrases' | 'mots' | 'deux'. Les mots d'abord ; puis les bords des phrases, sans jamais couper un mot
+// (une phrase ne rétrécit pas en deçà de ses mots) ; deux phrases collées restent collées ; aucune phrase n'est supprimée.
+function calerParolesListe(phrases, g, opt){
+  const cible = (opt && opt.cible) || 'deux';
+  trierSegments(phrases);
+  if (cible !== 'phrases') phrases.forEach(seg => {
+    if (!Array.isArray(seg.mots) || !seg.mots.length) return;
+    calerMotsListe(seg.mots, g); ajusterBornesMots(seg);
+  });
+  if (cible !== 'mots'){
+    let finPrec = null, finPrecOrig = null;
+    phrases.forEach(seg => {
+      const sO = seg.start, eO = seg.end;
+      let s = caler(sO, g), e = caler(eO, g);
+      if (finPrec !== null && Math.abs(finPrecOrig - sO) <= JOINT_EPS) s = finPrec;
+      if (Array.isArray(seg.mots) && seg.mots.length){ s = Math.min(s, seg.mots[0].start); e = Math.max(e, seg.mots[seg.mots.length-1].end); }
+      if (e - s < MIN_GAP) e = Math.min(duration, s + Math.max(MIN_GAP, eO - sO));
+      seg.start = s; seg.end = e; finPrec = e; finPrecOrig = eO;
+    });
+  }
+}
+// Mélodie : début et fin de chaque note sur le temps le plus proche ; une note qui deviendrait trop courte garde sa durée.
+function calerNotesListe(notes, g){
+  notes.forEach(nt => {
+    const dur = nt.end - nt.start, s = caler(nt.start, g);
+    let e = caler(nt.end, g);
+    if (e - s < MIN_GAP) e = Math.min(duration, s + Math.max(MIN_GAP, dur));
+    nt.start = s; nt.end = e;
+  });
+  trierSegments(notes);
+}
+function calerMarqueursListe(liste, g){
+  liste.forEach(m => {
+    const t = typeMarq(m.type), dur = m.end - m.start;
+    m.start = g[indexProche(g, m.start)];
+    if (t && t.mode === 'duree'){
+      let e = g[indexProche(g, m.start + dur)];
+      if (e <= m.start + MIN_GAP){ const k = g.findIndex(x => x > m.start + MIN_GAP); e = k >= 0 ? g[k] : Math.min(duration, m.start + dur); }
+      m.end = e;
+    } else m.end = m.start;
+  });
+}
+const QUANT_CFG = {
+  structure: { get: () => structureSegments, nom: 'carte(s)',    caler: calerCartesListe,    rendre: () => rendreListeStructure() },
+  accords:   { get: () => accordSegments,    nom: 'carte(s)',    caler: calerCartesListe,    rendre: () => rendreListeAccords() },
+  paroles:   { get: () => parolesSegments,   nom: 'phrase(s)',   caler: calerParolesListe,   rendre: () => rendreListeParoles() },
+  melodie:   { get: () => melodieNotes,      nom: 'note(s)',     caler: calerNotesListe,     rendre: () => rendreListeMelodie() },
+  marqueurs: { get: () => marqueurs,         nom: 'marqueur(s)', caler: calerMarqueursListe, rendre: () => rendreMarqueurs() },
+};
+// Simulation sur une copie : combien d'éléments (et de mots) bougent, de combien en moyenne, combien disparaîtraient.
+function simulerQuantification(cle, opt){
+  const cfg = QUANT_CFG[cle], reel = cfg.get();
+  const copie = JSON.parse(JSON.stringify(reel));
+  cfg.caler(copie, grilleTemps(quantif[cle]), opt);
+  const apres = new Map(copie.map(o => [o.id, o]));
+  let n = 0, nMots = 0, somme = 0, cnt = 0, supprimees = 0;
+  const cmp = (a, b) => { const d = Math.abs(a - b); if (d > 0.0005){ somme += d; cnt++; return true; } return false; };
+  reel.forEach(o => {
+    const p = apres.get(o.id); if (!p){ supprimees++; return; }
+    let bouge = cmp(o.start, p.start); bouge = cmp(o.end, p.end) || bouge;
+    if (Array.isArray(o.mots) && Array.isArray(p.mots)){
+      const ordre = o.mots.slice().sort((a, b) => a.start - b.start);
+      ordre.forEach((m, i) => { const q = p.mots[i]; if (!q) return; let mb = cmp(m.start, q.start); mb = cmp(m.end, q.end) || mb; if (mb) nMots++; });
+    }
+    if (bouge) n++;
+  });
+  return { n, nMots, supprimees, moyMs: cnt ? Math.round(1000 * somme / cnt) : 0 };
+}
+function appliquerQuantification(cle, opt){
+  const cfg = QUANT_CFG[cle], arr = cfg.get(), g = grilleTemps(quantif[cle]);
+  // mémoire des valeurs d'origine, objet par objet : l'annulation ne remet que cela
+  const memo = arr.map(o => ({ o, start: o.start, end: o.end, mots: Array.isArray(o.mots) ? o.mots.map(m => ({ m, start: m.start, end: m.end })) : null, ordreMots: Array.isArray(o.mots) ? o.mots.slice() : null }));
+  cfg.caler(arr, g, opt);
+  const restants = new Set(arr), supprimes = memo.filter(x => !restants.has(x.o));
+  const mode = quantif[cle] === 'mesures' ? 'les mesures' : 'les temps';
+  const e = empiler('quantification sur ' + mode, () => {
+    const cur = cfg.get();
+    memo.forEach(x => {
+      x.o.start = x.start; x.o.end = x.end;
+      if (x.mots){ x.mots.forEach(mm => { mm.m.start = mm.start; mm.m.end = mm.end; }); if (x.ordreMots) x.o.mots = x.ordreMots; }
+    });
+    supprimes.forEach(x => { if (!cur.includes(x.o)) cur.push(x.o); });
+    if (cle !== 'marqueurs') trierSegments(cur);
+  });
+  cfg.rendre();
+  afficherToast('Quantifié sur ' + mode + '.', { entree: e });
 }
 document.querySelectorAll('.quant-bar').forEach(bar => {
-  const cle = bar.dataset.cle;
-  bar.querySelector('.quant-mode').addEventListener('change', (e) => { quantif[cle] = e.target.value; bar.querySelector('.quant-msg').textContent = ''; });
-  bar.querySelector('.quant-go').addEventListener('click', () => calerCartes(cle));
+  const cle = bar.dataset.cle, cfg = QUANT_CFG[cle];
+  const msg = bar.querySelector('.quant-msg'), conf = bar.querySelector('.quant-confirm'), resume = bar.querySelector('.quant-resume');
+  const cibleSel = bar.querySelector('.quant-cible');
+  const options = () => ({ cible: cibleSel ? cibleSel.value : 'deux' });
+  const masquer = () => { conf.hidden = true; };
+  bar.querySelector('.quant-mode').addEventListener('change', (e) => { quantif[cle] = e.target.value; msg.textContent = ''; masquer(); });
+  if (cibleSel) cibleSel.addEventListener('change', () => { msg.textContent = ''; masquer(); });
+  bar.querySelector('.quant-go').addEventListener('click', () => {
+    msg.textContent = ''; masquer();
+    const mode = quantif[cle], g = grilleTemps(mode);
+    if (mode === 'aucun'){ msg.textContent = 'Choisissez d\'abord « Les temps » ou « Les mesures ».'; return; }
+    if (!g.length){ msg.textContent = 'Pas de grille de ' + (mode === 'mesures' ? 'mesures' : 'temps') + ' dans ce fichier.'; return; }
+    if (!cfg.get().length){ msg.textContent = 'Rien à quantifier.'; return; }
+    const b = simulerQuantification(cle, options());
+    if (!b.n && !b.nMots && !b.supprimees){ msg.textContent = 'Tout est déjà calé sur ' + (mode === 'mesures' ? 'les mesures' : 'les temps') + '.'; return; }
+    let t = b.n + ' ' + cfg.nom + (b.nMots ? ' et ' + b.nMots + ' mot(s)' : '') + ' ' + (b.n + b.nMots > 1 ? 'seront déplacé(e)s' : 'sera déplacé(e)') + ' (écart moyen ' + b.moyMs + ' ms)';
+    if (b.supprimees) t += ' ; ' + b.supprimees + ' trop courte(s) ' + (b.supprimees > 1 ? 'seront supprimées' : 'sera supprimée');
+    resume.textContent = t + '. Confirmer ?';
+    conf.hidden = false;
+  });
+  conf.querySelector('.quant-ko').addEventListener('click', () => { masquer(); msg.textContent = 'Abandonné : rien n\'a été modifié.'; });
+  conf.querySelector('.quant-ok').addEventListener('click', () => {
+    masquer();
+    if (!grilleTemps(quantif[cle]).length) return;
+    appliquerQuantification(cle, options());
+    msg.textContent = '';
+  });
 });
 
 // ============================================================
@@ -3326,24 +3699,6 @@ document.getElementById('list-marqueurs').addEventListener('click', (e) => {
   });
 })();
 
-function calerMarqueurs(){
-  const mode = quantif.marqueurs, g = grilleTemps(mode);
-  const msg = document.querySelector('.quant-bar[data-cle="marqueurs"] .quant-msg');
-  if (mode === 'aucun'){ msg.textContent = 'Choisissez d\'abord « Les temps » ou « Les mesures ».'; return; }
-  if (!g.length){ msg.textContent = 'Pas de grille de ' + (mode === 'mesures' ? 'mesures' : 'temps') + ' dans ce fichier.'; return; }
-  marqueurs.forEach(m => {
-    const t = typeMarq(m.type), dur = m.end - m.start;
-    m.start = g[indexProche(g, m.start)];
-    if (t && t.mode === 'duree'){
-      let e = g[indexProche(g, m.start + dur)];
-      if (e <= m.start + MIN_GAP){ const k = g.findIndex(x => x > m.start + MIN_GAP); e = k >= 0 ? g[k] : Math.min(duration, m.start + dur); }
-      m.end = e;
-    } else m.end = m.start;
-  });
-  rendreMarqueurs();
-  msg.textContent = 'Calé sur ' + (mode === 'mesures' ? 'les mesures' : 'les temps') + '.';
-}
-
 function majVues(t){
   laneStructure.maj(t); laneAccords.maj(t); laneParoles.maj(t); majMotsLane(t);
   vueStructure.maj(t); vueAccords.maj(t); vueParoles.maj(t); majComparaison(t); majComparaisonAccords(t); majComparaisonMelodie(t); majPianoRollPanneau(t);
@@ -3466,13 +3821,14 @@ pianoCanvas.addEventListener('pointermove', (e) => {
   const n = dragMelodie.note;
   const dt = ((x - dragMelodie.startX)/geo.W) * duration;
 
+  // aimantation sur la grille choisie dans « Quantifier sur » (Mélodie) : début ou fin de la note, selon la poignée
   if (dragMelodie.mode === 'resize-start'){
-    n.start = Math.max(0, Math.min(dragMelodie.origStart + dt, n.end - MIN_DUREE));
+    n.start = Math.max(0, Math.min(aimanter('melodie', dragMelodie.origStart + dt), n.end - MIN_DUREE));
   } else if (dragMelodie.mode === 'resize-end'){
-    n.end = Math.min(duration, Math.max(dragMelodie.origEnd + dt, n.start + MIN_DUREE));
+    n.end = Math.min(duration, Math.max(aimanter('melodie', dragMelodie.origEnd + dt), n.start + MIN_DUREE));
   } else {
     const dureeOrig = dragMelodie.origEnd - dragMelodie.origStart;
-    const nouveauStart = Math.max(0, Math.min(dragMelodie.origStart + dt, duration - dureeOrig));
+    const nouveauStart = Math.max(0, Math.min(aimanter('melodie', dragMelodie.origStart + dt), duration - dureeOrig));
     n.start = nouveauStart;
     n.end = nouveauStart + dureeOrig;
     const dyLignes = Math.round((y - dragMelodie.startY) / geo.hLigne);
@@ -3567,7 +3923,8 @@ function segAffiche(){
   const ok = (s) => s && parolesSegments.includes(s) ? s : null;
   return ok(phraseSurvol) || ok(phraseEpinglee) || phraseCourante(getTempsActuel());
 }
-function detailVerrouille(){ return !!edition || !!glissement || document.activeElement === document.getElementById('pd-texte'); }
+let pdBrouillonSeg = null;     // phrase dont le texte est en cours de modification dans le champ du détail (pas encore validé)
+function detailVerrouille(){ return !!edition || !!glissement || !!pdBrouillonSeg || document.activeElement === document.getElementById('pd-texte'); }
 function xDetail(t, W){ return (t - detailT0) / (detailT1 - detailT0) * W; }
 function dessinerOndeFenetre(canvas, W, H){
   const dpr = window.devicePixelRatio || 1;
@@ -3610,7 +3967,10 @@ function rendreDetail(){
   if (detailT1 - detailT0 < 0.3) detailT1 = Math.min(duration, detailT0 + 0.3);
   // en-tete
   document.getElementById('pd-info').textContent = (parolesSegments.indexOf(seg) + 1) + '/' + parolesSegments.length + '  ' + formatTemps(seg.start) + ' – ' + formatTemps(seg.end);
-  const tx = document.getElementById('pd-texte'); if (document.activeElement !== tx) tx.value = seg.value;
+  const tx = document.getElementById('pd-texte');
+  if (pdBrouillonSeg && pdBrouillonSeg !== seg) pdBrouillonSeg = null;   // on a changé de phrase : le brouillon non validé est abandonné
+  if (!pdBrouillonSeg && (document.activeElement !== tx || tx.value !== seg.value)) tx.value = seg.value;
+  pdMajBoutons();
   const bs = document.getElementById('pd-suivre'); bs.textContent = phraseEpinglee ? '⟲ Suivre la lecture' : '● Suit la lecture'; bs.classList.toggle('epingle', !!phraseEpinglee);
   // mots
   zone.querySelectorAll('.mw, .mw-aide, .pd-ph, canvas').forEach(x => x.remove());
@@ -3659,25 +4019,30 @@ function majMotsLane(t){
     el.classList.toggle('actif', !!p && t >= p.m.start && t < p.m.end);
   });
 }
+// Édition d'un mot : éditeur flottant avec ✓ (ou Entrée) pour valider, ✕ (ou Échap) pour annuler. Rien n'est modifié avant.
+// Toucher un autre mot ou le fond de la zone abandonne la modification en cours (elle n'a pas été validée).
 function editerMot(seg, m, el){
-  const zone = document.getElementById('pd-zone');
-  if (edition) edition.fin(true);
-  const ech = echelleFocus(), fz = Math.round(11 * ech) + 2, rowH = Math.round(24 * ech) + 6;
-  const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'mw-edit'; inp.value = m.texte;
-  inp.style.left = el.style.left; inp.style.top = el.style.top; inp.style.height = rowH + 'px'; inp.style.fontSize = fz + 'px';
-  inp.style.width = Math.max(el.offsetWidth, largeurTexte(m.texte, fz) + 60, 110) + 'px';
-  zone.appendChild(inp); inp.focus(); inp.select();
+  if (edition) edition.fin(false);
   let fini = false;
-  const fin = (ok) => {
+  const fin = (ok, valeur) => {
     if (fini) return; fini = true; edition = null;
-    const v = inp.value.trim();
-    if (ok && v && v !== m.texte){ m.texte = v; valeurDepuisMots(seg); }
+    edFlot.fermer();
+    const v = String(valeur == null ? '' : valeur).trim();
+    if (ok && v && v !== m.texte && Array.isArray(seg.mots) && seg.mots.includes(m)){
+      const avantTexte = m.texte, avantValue = seg.value;
+      m.texte = v; valeurDepuisMots(seg);
+      empiler('modification du mot « ' + texteCourt(avantTexte, 20) + ' »', () => { m.texte = avantTexte; seg.value = avantValue; });
+    }
     rendreListeParoles();
   };
-  edition = { inp, seg, m, fin };
-  inp.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter'){ ev.preventDefault(); fin(true); } else if (ev.key === 'Escape'){ fin(false); } });
-  inp.addEventListener('pointerdown', ev => ev.stopPropagation());
-  inp.addEventListener('blur', () => fin(true));
+  const st = edFlot.ouvrir({
+    titre: 'Modifier le mot',
+    ancre: () => { const k = motsLaneCache ? motsLaneCache.findIndex(p => p.m === m) : -1; return k < 0 ? null : document.querySelector('#pd-zone .mw[data-i="' + k + '"]'); },
+    valeur: m.texte,
+    onOk: (v) => fin(true, v),
+    onCancel: () => fin(false),
+  });
+  edition = { inp: st.inp, seg, m, fin };
 }
 (function(){
   const zone = document.getElementById('pd-zone');
@@ -3687,9 +4052,9 @@ function editerMot(seg, m, el){
   zone.addEventListener('pointerdown', (e) => {
     if (focusPiste !== 'paroles') return;
     const el = e.target.closest('.mw');
-    if (!el){ if (!e.target.closest('input')){ if (edition) edition.fin(true); seekTo(temps(e)); } return; }
+    if (!el){ if (!e.target.closest('input')){ if (edition) edition.fin(false); seekTo(temps(e)); } return; }
     const plats = motsPlats(); const p = plats[Number(el.dataset.i)]; if (!p) return;
-    if (edition) edition.fin(true);
+    if (edition) edition.fin(false);   // modification non validée : abandonnée
     let seg = p.seg, reel = p.m;
     if (p.virtuel){
       const k = plats.filter(x => x.seg === seg).indexOf(p);
@@ -3713,20 +4078,21 @@ function editerMot(seg, m, el){
     const t = temps(e); const d = t - glissement.t0;
     if (Math.abs(d) * zone.clientWidth / (detailT1 - detailT0) > 3) glissement.bouge = true;
     if (!glissement.bouge) return;
+    // aimantation sur la grille choisie dans « Quantifier sur » (Paroles) : début, fin ou début du mot déplacé
     if (mode === 'start'){
       const joint = prev && Math.abs(prev.end - glissement.s0) <= EPS;
       const mini = joint ? prev.start + EPS : (prev ? Math.min(prev.end, glissement.s0) : 0);
-      m.start = Math.max(mini, Math.min(m.end - EPS, t));
+      m.start = Math.max(mini, Math.min(m.end - EPS, aimanter('paroles', t)));
       if (joint) prev.end = m.start;
     } else if (mode === 'end'){
       const joint = next && Math.abs(next.start - glissement.e0) <= EPS;
       const maxi = joint ? next.end - EPS : (next ? Math.max(next.start, glissement.e0) : duration);
-      m.end = Math.min(maxi, Math.max(m.start + EPS, t));
+      m.end = Math.min(maxi, Math.max(m.start + EPS, aimanter('paroles', t)));
       if (joint) next.start = m.end;
     } else {
       const dur = glissement.e0 - glissement.s0;
       const mini = prev ? Math.min(prev.end, glissement.s0) : 0, maxi = next ? Math.max(next.start, glissement.e0) : duration;
-      const s = Math.max(mini, Math.min(maxi - dur, glissement.s0 + d));
+      const s = Math.max(mini, Math.min(maxi - dur, aimanter('paroles', glissement.s0 + d)));
       m.start = s; m.end = s + dur;
     }
     const W = zone.clientWidth;
@@ -3752,21 +4118,47 @@ function editerMot(seg, m, el){
     if (e.target.closest('.seg-handle, .seg-joint')) return;
     const s = segSous(e); if (!s) return;
     e.stopImmediatePropagation();
-    phraseEpinglee = s; laneParoles.setSel(s.id); rendreDetail();
+    edFlot.fermer();
+    phraseEpinglee = s; laneParoles.setSel(s.id); derniereCarteChoisie = 'paroles'; rendreDetail();
   }, true);
   document.getElementById('phrase-detail').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-pd]'); if (!b) return;
     const i = parolesSegments.indexOf(detailSeg);
+    pdBrouillonSeg = null;   // changer de phrase abandonne un texte non validé
     if (b.dataset.pd === 'suivre'){ phraseEpinglee = null; phraseSurvol = null; }
     else if (b.dataset.pd === 'prev' && i > 0){ phraseEpinglee = parolesSegments[i-1]; seekTo(phraseEpinglee.start); }
     else if (b.dataset.pd === 'next' && i < parolesSegments.length - 1){ phraseEpinglee = parolesSegments[i+1]; seekTo(phraseEpinglee.start); }
     rendreDetail();
   });
+  // Texte de la phrase : on tape (rien n'est modifié), puis ✓ / Entrée valide, ✕ / Échap annule. Perdre le focus (clavier tactile
+  // qui se replie…) ne valide ni n'annule : le brouillon reste, avec ses boutons, et la phrase affichée ne change plus d'elle-même.
   const tx = document.getElementById('pd-texte');
-  tx.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter'){ ev.preventDefault(); tx.blur(); } else if (ev.key === 'Escape'){ tx.value = detailSeg ? detailSeg.value : ''; tx.blur(); } });
-  tx.addEventListener('change', () => { if (!detailSeg) return; reconcilierMots(detailSeg, tx.value); rendreListeParoles(); });
+  tx.addEventListener('input', () => { pdBrouillonSeg = (detailSeg && tx.value !== detailSeg.value) ? detailSeg : null; pdMajBoutons(); });
+  tx.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter'){ ev.preventDefault(); pdValider(); tx.blur(); } else if (ev.key === 'Escape'){ ev.preventDefault(); pdAnnuler(); } });
   tx.addEventListener('blur', () => { if (!detailVerrouille()) rendreDetail(); });
+  document.getElementById('pd-ok').addEventListener('pointerdown', (e) => e.preventDefault());
+  document.getElementById('pd-ko').addEventListener('pointerdown', (e) => e.preventDefault());
+  document.getElementById('pd-ok').addEventListener('click', () => { pdValider(); tx.blur(); });
+  document.getElementById('pd-ko').addEventListener('click', pdAnnuler);
 })();
+function pdMajBoutons(){
+  const tx = document.getElementById('pd-texte'), sale = !!pdBrouillonSeg;
+  document.getElementById('pd-ok').hidden = !sale; document.getElementById('pd-ko').hidden = !sale;
+  tx.classList.toggle('brouillon', sale);
+}
+function pdValider(){
+  const tx = document.getElementById('pd-texte');
+  const seg = pdBrouillonSeg || detailSeg;
+  pdBrouillonSeg = null;
+  if (seg && parolesSegments.includes(seg) && tx.value !== seg.value) appliquerTexteCarte(seg, tx.value);
+  rendreListeParoles(); pdMajBoutons();
+}
+function pdAnnuler(){
+  const tx = document.getElementById('pd-texte');
+  pdBrouillonSeg = null; tx.value = detailSeg ? detailSeg.value : '';
+  pdMajBoutons(); tx.blur(); rendreDetail();
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pdBrouillonSeg && !edFlot.ouvert()){ e.preventDefault(); pdAnnuler(); } });   // Échap même si le champ n'a plus le focus
 function motCible(){
   if (motChoisi && parolesSegments.includes(motChoisi.seg) && Array.isArray(motChoisi.seg.mots) && motChoisi.seg.mots.includes(motChoisi.m)) return motChoisi;
   const t = getTempsActuel();
@@ -3783,7 +4175,8 @@ function actionMots(a){
       parolesSegments.push(seg); trierSegments(parolesSegments);
     }
     if (!Array.isArray(seg.mots) || !seg.mots.length) seg.mots = seg.value.trim() ? motsDe(seg).map(m => ({ start: m.start, end: m.end, texte: m.texte })) : [];
-    let deb = t;
+    let deb = aimanter('paroles', t);                       // aimanté sur la grille choisie, tant que ça reste dans la phrase
+    if (deb < seg.start || deb > seg.end) deb = t;
     const dedans = seg.mots.find(m => deb >= m.start && deb < m.end); if (dedans) deb = dedans.end;
     const suiv = seg.mots.find(m => m.start >= deb);
     const fin = Math.min(suiv ? suiv.start : seg.end, deb + 0.5, duration);
@@ -3799,9 +4192,17 @@ function actionMots(a){
   const c = motCible(); if (!c) return;
   const { seg, m } = c;
   if (a === 'suppr'){
-    seg.mots.splice(seg.mots.indexOf(m), 1);
-    if (!seg.mots.length) parolesSegments.splice(parolesSegments.indexOf(seg), 1); else valeurDepuisMots(seg);
+    // supprime UN MOT (la phrase entière : bouton « Supprimer » / touche Suppr sur la phrase choisie) — annulable
+    edFlot.fermer();
+    const k = seg.mots.indexOf(m), valeurAvant = seg.value, derniere = seg.mots.length === 1;
+    seg.mots.splice(k, 1);
+    if (derniere) parolesSegments.splice(parolesSegments.indexOf(seg), 1); else valeurDepuisMots(seg);
+    const e = empiler('mot « ' + texteCourt(m.texte, 20) + ' »', () => {
+      if (derniere && !parolesSegments.includes(seg)){ parolesSegments.push(seg); trierSegments(parolesSegments); }
+      seg.mots.splice(Math.min(k, seg.mots.length), 0, m); seg.value = valeurAvant;
+    });
     motChoisi = null; rendreListeParoles();
+    afficherToast('Mot « ' + texteCourt(m.texte, 20) + ' » — supprimé.', { entree: e });
   } else if (a === 'scinder'){
     let coupe = null, txt = m.texte;
     if (edition && edition.m === m){ coupe = edition.inp.selectionStart; txt = edition.inp.value; edition.fin(false); }
@@ -3818,6 +4219,16 @@ function actionMots(a){
   }
 }
 // ---- Structure / accords : memes actions sur les cartes
+// Suppression de la PHRASE choisie en piste Paroles (le bouton « Supprimer le mot » s'occupe d'un mot).
+// Cible : la carte choisie sur la piste (contour blanc), sinon la phrase épinglée / affichée dans le détail, sinon celle sous le curseur.
+function actionPhrase(){
+  const sel = parolesSegments.find(s => s.id === laneParoles.getSel())
+    || (parolesSegments.includes(phraseEpinglee) ? phraseEpinglee : null)
+    || (parolesSegments.includes(detailSeg) ? detailSeg : null)
+    || phraseCourante(getTempsActuel());
+  if (!sel){ afficherToast('Aucune phrase à supprimer : touchez d\'abord une carte de la piste Paroles.', { ms: 3500 }); return; }
+  supprimerCarteDe('paroles', sel);
+}
 function actionCartes(cle, a){
   const cfg = cle === 'structure'
     ? { get: () => structureSegments, lane: laneStructure, rendre: rendreListeStructure, defaut: 'nouvelle_section' }
@@ -3827,20 +4238,22 @@ function actionCartes(cle, a){
   const sel = segs.find(s => s.id === cfg.lane.getSel()) || sous;
   let cible = null;
   if (a === 'ajout'){
-    if (sous){ cible = scinderSegment(segs, sous, (t > sous.start + MIN_GAP && t < sous.end - MIN_GAP) ? t : (sous.start + sous.end) / 2); }
+    if (sous){ cible = scinderSegment(segs, sous, (t > sous.start + MIN_GAP && t < sous.end - MIN_GAP) ? t : (sous.start + sous.end) / 2, cle); }
     else {
-      const suiv = segs.find(s => s.start > t);
-      const fin = Math.min(suiv ? suiv.start : duration, t + 2);
-      if (fin - t < 0.1) return;
-      cible = { id: nextId++, start: t, end: fin, value: cfg.defaut }; segs.push(cible); trierSegments(segs);
+      let deb = aimanter(cle, t);                            // début aimanté sur la grille choisie, s'il tombe hors de toute carte
+      if (segs.some(s => deb >= s.start && deb < s.end)) deb = t;
+      const suiv = segs.find(s => s.start > deb);
+      const fin = Math.min(suiv ? suiv.start : duration, deb + 2);
+      if (fin - deb < 0.1) return;
+      cible = { id: nextId++, start: deb, end: fin, value: cfg.defaut }; segs.push(cible); trierSegments(segs);
     }
   } else if (a === 'scinder'){
     if (!sel) return;
     const tc = (t > sel.start + MIN_GAP && t < sel.end - MIN_GAP) ? t : (sel.start + sel.end) / 2;
-    scinderSegment(segs, sel, tc); cible = sel;
+    scinderSegment(segs, sel, tc, cle); cible = sel;
   } else if (a === 'suppr'){
-    if (!sel) return;
-    segs.splice(segs.indexOf(sel), 1); cfg.rendre(); return;
+    if (!sel){ afficherToast('Aucune carte à supprimer : touchez d\'abord une carte.', { ms: 3500 }); return; }
+    supprimerCarteDe(cle, sel); return;
   }
   cfg.rendre();
   if (cible){
@@ -3851,8 +4264,32 @@ function actionCartes(cle, a){
 document.getElementById('focus-actions').addEventListener('mousedown', (ev) => { if (ev.target.closest('button')) ev.preventDefault(); });  // garde le curseur de texte
 document.getElementById('focus-actions').addEventListener('click', (ev) => {
   const b = ev.target.closest('button[data-fa]'); if (!b || !duration) return;
-  if (focusPiste === 'paroles') actionMots(b.dataset.fa);
+  if (focusPiste === 'paroles'){
+    if (b.dataset.fa === 'suppr') actionPhrase();                 // la phrase-carte
+    else if (b.dataset.fa === 'suppr-mot') actionMots('suppr');   // un mot
+    else actionMots(b.dataset.fa);
+  }
   else if (focusPiste === 'structure' || focusPiste === 'accords') actionCartes(focusPiste, b.dataset.fa);
+});
+// Touche Suppr (hors saisie de texte) : supprime la carte choisie ; Ctrl/Cmd + Z : annule la dernière action annulable.
+document.addEventListener('keydown', (e) => {
+  if (!duration) return;
+  const t = e.target, tag = t && t.tagName;
+  const saisie = tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable) ||
+    (tag === 'INPUT' && !/^(range|checkbox|radio|button|color|file)$/.test(t.type));
+  if (saisie) return;
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'z' || e.key === 'Z')){
+    if (!pileAnnuler.length) return;
+    e.preventDefault(); annulerDerniere(); return;
+  }
+  if (e.key === 'Delete' && !e.ctrlKey && !e.metaKey && !e.altKey){
+    const cle = (focusPiste === 'structure' || focusPiste === 'accords' || focusPiste === 'paroles') ? focusPiste : derniereCarteChoisie;
+    if (!cle || !LANES_CFG[cle]) return;
+    const lane = cle === 'structure' ? laneStructure : (cle === 'accords' ? laneAccords : laneParoles);
+    const seg = LANES_CFG[cle].get().find(s => s.id === lane.getSel());
+    if (!seg) return;   // la touche Suppr ne vise jamais une carte qu'on n'a pas choisie
+    e.preventDefault(); supprimerCarteDe(cle, seg);
+  }
 });
 document.getElementById('focus-taille').addEventListener('input', (ev) => {
   document.getElementById('timeline-scroll').style.setProperty('--ech', ev.target.value);
@@ -3950,11 +4387,22 @@ function definirMelodieAvec(on, sauver){
 document.getElementById('btn-melo-avec').addEventListener('click', () => definirMelodieAvec(document.getElementById('timeline-scroll').dataset.melo !== 'on'));
 try { if (localStorage.getItem('bandes.melo') === '1'){ document.getElementById('timeline-scroll').dataset.melo = 'on'; document.getElementById('btn-melo-avec').classList.add('actif'); } } catch (_) {}
 
+// Barre d'actions de la piste : en Paroles, « Supprimer » vise la phrase et un second bouton vise le mot
+function majBarreActions(f){
+  document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none';
+  const sm = document.getElementById('fa-suppr-mot'), s = document.getElementById('fa-suppr');
+  if (sm) sm.style.display = f === 'paroles' ? '' : 'none';
+  if (s){
+    s.textContent = f === 'paroles' ? '🗑 Supprimer la phrase' : '🗑 Supprimer';
+    s.title = f === 'paroles' ? 'Supprimer la phrase (carte) choisie sur la piste — un bandeau « Annuler » reste affiché' : 'Supprimer la carte choisie (un bandeau « Annuler » reste affiché quelques secondes)';
+  }
+}
 function definirFocus(f, sauver){
   focusPiste = f;
+  edFlot.fermer(); pdBrouillonSeg = null; pdMajBoutons();
   document.getElementById('timeline-scroll').dataset.focus = f;
   document.querySelectorAll('#focus-bar button[data-focus]').forEach(b => b.classList.toggle('actif', b.dataset.focus === f));
-  document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none';
+  majBarreActions(f);
   document.getElementById('btn-melo-avec').style.display = (f === 'toutes' || f === 'melodie') ? 'none' : '';
   if (sauver !== false){ try { localStorage.setItem('bandes.focus', f); } catch (_) {} }
   phraseSurvol = null;
@@ -4008,8 +4456,14 @@ document.getElementById('list-paroles').addEventListener('click', (e) => {
       seg.mots.splice(k + 1, 0, { start: deb, end: Math.max(fin, deb + 0.05), texte: '…' });
       valeurDepuisMots(seg); ajusterBornesMots(seg);
     } else if (a === 'suppr'){
+      const valeurAvant = seg.value, motsAvant = seg.mots, derniere = seg.mots.length === 1;
       seg.mots.splice(k, 1);
       if (!seg.mots.length) seg.mots = null; else valeurDepuisMots(seg);
+      const e = empiler('mot « ' + texteCourt(m.texte, 20) + ' »', () => {
+        seg.mots = motsAvant; if (derniere) seg.mots.splice(0, seg.mots.length);
+        seg.mots.splice(Math.min(k, seg.mots.length), 0, m); seg.value = valeurAvant;
+      });
+      afficherToast('Mot « ' + texteCourt(m.texte, 20) + ' » — supprimé.', { entree: e });
     }
   }
   rendreListeParoles();
@@ -4080,8 +4534,13 @@ function nomVersMidi(str, fallback){
   return base + sharp + (octave+1)*12;
 }
 
-function attacherListeEditable(listId, getSegments, apresChange, lier){
+function attacherListeEditable(listId, getSegments, apresChange, lier, cleQ){
   const list = document.getElementById(listId);
+  // Échap dans un champ de la liste : on remet la valeur d'avant, sans rien modifier (Entrée ou quitter le champ valide, comme avant)
+  list.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !e.target.matches('input')) return;
+    e.target.value = e.target.defaultValue; e.target.blur();
+  });
   list.addEventListener('change', (e) => {
     const input = e.target.closest('input'); if (!input) return;
     const segments = getSegments();
@@ -4103,10 +4562,7 @@ function attacherListeEditable(listId, getSegments, apresChange, lier){
       if (lie) next.start = seg.end;
     }
     else if (input.dataset.field === 'midi') seg.midi = nomVersMidi(input.value, seg.midi);
-    else {
-      if ('mots' in seg) reconcilierMots(seg, input.value);
-      else seg.value = input.value;
-    }
+    else if (input.value !== seg.value) appliquerTexteCarte(seg, input.value);   // annulable ; garde le minutage des mots
     trierSegments(segments);
     apresChange();
   });
@@ -4118,20 +4574,21 @@ function attacherListeEditable(listId, getSegments, apresChange, lier){
       if (!seg) return;
       const t = getTempsActuel();
       const tc = (t > seg.start + MIN_GAP && t < seg.end - MIN_GAP) ? t : (seg.start + seg.end) / 2;
-      scinderSegment(segments, seg, tc);
+      scinderSegment(segments, seg, tc, cleQ);
       apresChange();
       return;
     }
     const btn = e.target.closest('.del-btn'); if (!btn) return;
-    const idx = segments.findIndex(sg => sg.id === Number(btn.dataset.id));
-    if (idx>-1) segments.splice(idx,1);
-    apresChange();
+    const seg = segments.find(sg => sg.id === Number(btn.dataset.id)); if (!seg) return;
+    if (cleQ) { supprimerCarteDe(cleQ, seg); return; }   // structure / accords / paroles : même suppression annulable que sur la piste
+    // mélodie : une note
+    supprimerDansTableau(segments, seg, 'Note ' + midiToName(seg.midi), apresChange, true);
   });
 }
 // Les tableaux sont reassignes au chargement d'un zip : on passe donc des getters, pas les tableaux.
-attacherListeEditable('list-structure', () => structureSegments, rendreListeStructure, true);
-attacherListeEditable('list-accords', () => accordSegments, rendreListeAccords, true);
-attacherListeEditable('list-paroles', () => parolesSegments, rendreListeParoles, false);
+attacherListeEditable('list-structure', () => structureSegments, rendreListeStructure, true, 'structure');
+attacherListeEditable('list-accords', () => accordSegments, rendreListeAccords, true, 'accords');
+attacherListeEditable('list-paroles', () => parolesSegments, rendreListeParoles, false, 'paroles');
 attacherListeEditable('list-melodie', () => melodieNotes, rendreListeMelodie, false);
 
 document.getElementById('add-structure').addEventListener('click', () => {
