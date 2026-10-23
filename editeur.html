@@ -9,12 +9,13 @@
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#1C1712">
-<meta name="app-version" content="1.21.0">
+<meta name="app-version" content="1.22.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
+    --acc: 1;
     --bg: #1C1712;
     --panel: #241E17;
     --panel-raised: #2A231C;
@@ -611,6 +612,22 @@
   #timeline-scroll[data-focus="structure"] .seg-block, #timeline-scroll[data-focus="accords"] .seg-block, #timeline-scroll[data-focus="paroles"] .seg-block{ top:6px; bottom:6px; }
   #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label, #timeline-scroll[data-focus="paroles"] .seg-label{ padding:0 6px; }
   #timeline-scroll[data-focus="structure"] .seg-label, #timeline-scroll[data-focus="accords"] .seg-label, #timeline-scroll[data-focus="paroles"] .seg-label{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size: calc(var(--ech) * 0.8rem + 0.2rem); }
+  /* Taille d'ecriture des accords (curseur « Accords » ; --acc = multiplicateur, 1 = taille d'origine) */
+  #timeline-scroll[data-focus="accords"] #lane-accords{ height: calc(var(--ech) * 64px + (var(--acc) - 1) * 44px); }
+  #timeline-scroll[data-focus="accords"] .seg-label{ font-size: calc((var(--ech) * 0.8rem + 0.2rem) * var(--acc)); line-height:1.05; }
+  .cards-accords .big-card .bc-val{ font-size: calc(1.7rem * var(--acc)); }
+  .cards-accords .big-card{ min-height: calc(88px + (var(--acc) - 1) * 40px); }
+  .acc-taille{ display:none; }
+  .big-card .bc-loop{ position:absolute; top:4px; right:4px; width:26px; height:26px; padding:0; line-height:1; font-size:0.85rem; background: rgba(0,0,0,0.25); border:1px solid var(--border); color: var(--text-muted); border-radius:4px; cursor:pointer; z-index:2; }
+  .big-card .bc-loop:hover{ color: var(--brass); border-color: var(--brass-dim); }
+  .big-card.en-boucle{ box-shadow: inset 0 0 0 2px #7FA8C9; }
+  .boucle-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 10px; font-size:0.78rem; color: var(--text-muted); }
+  .boucle-bar button{ background:transparent; border:1px solid var(--border); color: var(--text-muted); border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.78rem; }
+  .boucle-bar button:hover{ border-color: var(--brass-dim); color: var(--brass); }
+  .boucle-bar button.actif{ background:#7FA8C9; border-color:#7FA8C9; color:#1C1712; font-weight:600; }
+  .boucle-bar input[type=number]{ width:4.2em; background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:4px; padding:3px 4px; font-size:0.78rem; }
+  .boucle-bar select{ background: var(--panel-raised); color: var(--text); border:1px solid var(--border); border-radius:4px; padding:3px 6px; font-size:0.78rem; }
+  .boucle-bar .boucle-info{ font-family:'IBM Plex Mono',monospace; font-size:0.72rem; }
   .seg-block.choisi{ outline:2px solid #fff; outline-offset:-1px; }
   .mw-phrase{ position:absolute; top:22px; height:16px; background: color-mix(in srgb, var(--lane-color) 18%, var(--panel)); border-left:1px solid var(--lane-color); font-size:0.64rem; color: var(--text-muted); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding:0 4px; line-height:16px; pointer-events:none; }
   .mw{ position:absolute; background: color-mix(in srgb, var(--lane-color) 38%, var(--panel)); border:1px solid var(--lane-color); border-radius:4px; cursor:grab; touch-action:none; user-select:none; min-width:14px; box-sizing:border-box; }
@@ -717,6 +734,16 @@
         <button id="btn-plein" title="Plein écran : forme d'onde et cartes">⛶ Plein écran</button>
         <label class="epingle-label" id="epingle-label"><input type="checkbox" id="chk-epingle" checked> Épingler la forme d'onde</label>
       </div>
+      <div class="boucle-bar" id="boucle-bar">
+        <button type="button" id="boucle-toggle" title="Activer / désactiver la boucle (touche L)">🔁 Boucle</button>
+        <select id="boucle-unite" title="Unité de la boucle : mesures (traits marqués) ou temps (traits fins)"><option value="mesures">Mesures</option><option value="temps">Temps</option></select>
+        <label>de <input type="number" id="boucle-n" min="1" step="1" value="1"></label>
+        <label>à <input type="number" id="boucle-m" min="1" step="1" value="1"></label>
+        <button type="button" id="boucle-section" title="Boucler sur la carte de structure choisie (ou, à défaut, celle qui est sous le curseur de lecture), calée sur les mesures">Section de structure</button>
+        <button type="button" id="boucle-ici" title="Boucler sur la mesure (ou le temps) sous le curseur de lecture">Ici</button>
+        <button type="button" id="boucle-eff" title="Supprimer la boucle">✕</button>
+        <span class="boucle-info" id="boucle-info">Aucune boucle — 🔁 sur une carte, ou « Section de structure ». Barre d'espace : lecture / pause.</span>
+      </div>
 
       <div class="focus-bar" id="focus-bar">
         <span>Piste affichée :</span>
@@ -734,6 +761,8 @@
           <button type="button" data-fa="scinder" title="Scinder la carte choisie en deux (au curseur de lecture, ou à la position du curseur de texte si vous êtes en train d'écrire)">✂ Scinder</button>
           <button type="button" data-fa="suppr" id="fa-suppr" title="Supprimer la carte choisie (un bandeau « Annuler » reste affiché quelques secondes)">🗑 Supprimer</button>
           <button type="button" data-fa="suppr-mot" id="fa-suppr-mot" title="Supprimer le mot choisi (ou celui sous le curseur de lecture) — annulable" style="display:none">🗑 Supprimer le mot</button>
+          <button type="button" id="fa-boucle" title="Boucler la carte choisie (structure : sur les mesures ; accords : sur les temps)">🔁 Boucler la carte</button>
+          <label class="acc-taille" title="Taille d'écriture des accords (bande et grandes cartes)">Accords <input type="range" class="acc-range" min="1" max="3" step="0.1" value="1"></label>
           <label title="Taille du texte et hauteur des cartes">Taille <input type="range" id="focus-taille" min="1" max="2.5" step="0.1" value="1.5"></label>
         </span>
       </div>
@@ -743,6 +772,7 @@
           <button type="button" id="h-zoom-fit" title="Tout le morceau tient dans la largeur">⤢ Ajuster</button>
           <button type="button" id="btn-molette" title="Molette de la souris : zoomer autour du curseur (Maj + molette : défiler ; Alt + molette : faire défiler la page). Désactivé : retour à Ctrl + molette pour zoomer.">Molette = zoom</button>
         </div>
+        <label title="Taille d'écriture des accords (bande Accords et grandes cartes)">Écriture des accords <input type="range" class="acc-range" id="h-acc" min="1" max="3" step="0.1" value="1"><span class="val" id="h-acc-v">×1</span></label>
         <label>Forme d'onde <input type="range" id="h-wave" min="60" max="320" step="10" value="140"><span class="val" id="h-wave-v">140</span></label>
         <label>Mélodie (piano roll) <input type="range" id="h-melodie" min="100" max="700" step="10" value="180"><span class="val" id="h-melodie-v">180</span></label>
         <label>Cartes (toutes pistes) <input type="range" id="h-cartes" min="28" max="120" step="2" value="34"><span class="val" id="h-cartes-v">34</span></label>
@@ -1246,6 +1276,7 @@ async function chargerZip(file){
 
     const pistes = (donnees.pistes && donnees.pistes.length) ? donnees.pistes : ['fusion'];
     audioStems = [];
+    if (typeof boucleEffacer === 'function') boucleEffacer();
 
     if (nomsEntreesAudio.length === 1){
       // Mode opus_8ch : un seul fichier, toutes les pistes fusionnees dedans (2 canaux
@@ -1578,6 +1609,13 @@ function dessinerGrilleRythmique(){
   ctx.clearRect(0,0,W,H);
   if (!duration) return;
 
+  const bb = (typeof boucleBornes === 'function') ? boucleBornes() : null;
+  if (bb){
+    ctx.fillStyle = 'rgba(127,168,201,0.16)';
+    ctx.fillRect((bb.t0/duration)*W, 0, ((bb.t1-bb.t0)/duration)*W, H);
+    ctx.fillStyle = 'rgba(127,168,201,0.9)';
+    ctx.fillRect((bb.t0/duration)*W, 0, 2, H); ctx.fillRect((bb.t1/duration)*W - 2, 0, 2, H);
+  }
   const structureBase = donnees.structure || {};
   if (structureBase.beats){
     ctx.strokeStyle = 'rgba(192,153,106,0.10)';
@@ -1609,14 +1647,16 @@ document.getElementById('waveform').addEventListener('pointerdown', (e) => {
 // Lecture audio
 // ============================================================
 
-function jouer(depuis){
-  currentSources.forEach(s => { s.onended = null; s.stop(); });
+function jouer(depuis, quand){
+  // quand (optionnel) : instant AudioContext precis ou la nouvelle lecture doit demarrer (boucle sans trou) ;
+  // les anciennes sources s'arretent alors exactement a cet instant au lieu d'etre coupees tout de suite.
+  currentSources.forEach(s => { s.onended = null; try { s.stop(quand || 0); } catch (_) {} });
   currentSources = [];
 
   // Horaire commun a toutes les pistes : demarrees dans la meme boucle, avant tout
   // retour au navigateur, donc sur le meme "tick" audio -- c'est ce qui garantit
   // l'absence de derive entre pistes (contrairement a plusieurs balises <audio>).
-  const startCtxTime = audioCtx.currentTime + 0.05;
+  const startCtxTime = quand || (audioCtx.currentTime + 0.05);
   audioStems.forEach((stem, i) => {
     const source = audioCtx.createBufferSource();
     source.buffer = stem.buffer;
@@ -1665,7 +1705,16 @@ function seekTo(t){
   playOffset = t;
   if (enLecture) jouer(t); else dessinerPlayhead();
 }
-document.getElementById('btn-play').addEventListener('click', () => { if (isPlaying) pauser(); else jouer(playOffset); });
+function basculerLecture(){
+  if (!duration || !audioStems.length) return;
+  if (isPlaying){ pauser(); return; }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  let t = playOffset;
+  const b = boucleBornes();
+  if (b && (t < b.t0 - 0.02 || t >= b.t1 - 0.02)) t = b.t0;   // boucle active : on demarre dans la boucle
+  jouer(t);
+}
+document.getElementById('btn-play').addEventListener('click', basculerLecture);
 
 function bouclePlayhead(){
   if (audioStems.length){
@@ -2108,7 +2157,10 @@ function creerVueCartes(containerId, getSegments, formatValeur){
     segments.forEach(seg => {
       const el = document.createElement('div');
       el.className = 'big-card futur';
-      el.innerHTML = `<div class="bc-fill"></div><div class="bc-cursor"></div><div class="bc-val">${escapeHtml(formatValeur(seg.value))}</div><div class="bc-time">${formatTemps(seg.start)}</div>`;
+      el.innerHTML = `<div class="bc-fill"></div><div class="bc-cursor"></div><div class="bc-val">${escapeHtml(formatValeur(seg.value))}</div><div class="bc-time">${formatTemps(seg.start)}</div>` +
+        ((containerId === 'cards-structure' || containerId === 'cards-accords') ? `<button type="button" class="bc-loop" title="Boucler sur cette carte">🔁</button>` : '');
+      const bl = el.querySelector('.bc-loop');
+      if (bl) bl.addEventListener('click', (ev) => { ev.stopPropagation(); boucleDepuisCarte(containerId === 'cards-structure' ? 'mesures' : 'temps', seg); });
       el.title = `${formatTemps(seg.start)} → ${formatTemps(seg.end)} — clic : aller ici`;
       el.addEventListener('click', () => seekTo(seg.start));
       container.appendChild(el);
@@ -4360,6 +4412,154 @@ setInterval(synthPlanifier, 40);
 })();
 
 // ============================================================
+// Boucle sur les mesures (ou les temps) + barre d'espace
+// ============================================================
+// Une boucle = plage de MESURES (numerotees 1, 2, 3… d'apres les traits marques) ou de TEMPS, bornes comprises :
+// « de 5 a 8 » boucle du debut de la mesure 5 a la fin de la mesure 8. Les bornes sont toujours sur la grille.
+// Le retour au debut se fait sans trou : le nouveau depart est programme sur l'horloge audio ~0,12 s avant la fin.
+const boucle = { actif: false, unite: 'mesures', n: 1, m: 1, defini: false };
+function boucleGrille(u){ return grilleTemps(u === 'temps' ? 'temps' : 'mesures'); }
+function boucleBornes(){
+  if (!boucle.defini || !boucle.actif || !duration) return null;
+  const g = boucleGrille(boucle.unite);
+  if (!g.length) return null;
+  const n = Math.max(1, Math.min(g.length, boucle.n)), m = Math.max(n, Math.min(g.length, boucle.m));
+  const t0 = g[n-1], t1 = m < g.length ? g[m] : duration;
+  return t1 - t0 > 0.05 ? { t0, t1 } : null;
+}
+function boucleMajUI(){
+  const info = document.getElementById('boucle-info');
+  document.getElementById('boucle-toggle').classList.toggle('actif', boucle.actif && boucle.defini);
+  document.getElementById('boucle-unite').value = boucle.unite;
+  document.getElementById('boucle-n').value = boucle.n; document.getElementById('boucle-m').value = boucle.m;
+  const g = boucleGrille(boucle.unite), nom = boucle.unite === 'temps' ? 'temps' : 'mesure';
+  if (!boucle.defini) info.textContent = 'Aucune boucle — 🔁 sur une carte, ou « Section de structure ». Barre d\'espace : lecture / pause.';
+  else if (!g.length) info.textContent = 'Pas de grille de ' + (boucle.unite === 'temps' ? 'temps' : 'mesures') + ' dans ce fichier.';
+  else {
+    const n = Math.max(1, Math.min(g.length, boucle.n)), m = Math.max(n, Math.min(g.length, boucle.m));
+    const t0 = g[n-1], t1 = m < g.length ? g[m] : duration;
+    info.textContent = `${nom}${n === m ? '' : 's'} ${n === m ? n : n + ' à ' + m} · ${formatTemps(t0)} → ${formatTemps(t1)}${boucle.actif ? '' : ' (désactivée)'}`;
+  }
+  // cartes en boucle (surbrillance)
+  const b = boucleBornes();
+  ['cards-structure', 'cards-accords'].forEach(id => {
+    const arr = id === 'cards-structure' ? structureSegments : accordSegments;
+    document.querySelectorAll('#' + id + ' .big-card').forEach((el, i) => {
+      const sg = arr[i]; const rec = b && sg ? Math.min(sg.end, b.t1) - Math.max(sg.start, b.t0) : 0;
+      el.classList.toggle('en-boucle', !!(b && sg && rec > 0.5 * Math.min(sg.end - sg.start, b.t1 - b.t0)));
+    });
+  });
+  if (duration){ dessinerGrilleRythmique(); dessinerPlayhead(); }
+}
+function boucleEffacer(){ boucle.defini = false; boucle.actif = false; boucle.n = boucle.m = 1; if (duration) boucleMajUI(); }
+function boucleDepuisTemps(t0, t1, unite){
+  const g = boucleGrille(unite);
+  if (!g.length){ boucle.unite = unite; boucle.defini = true; boucle.actif = true; boucleMajUI(); return; }
+  const n = indexProche(g, t0) + 1;
+  const j = indexProche(g, t1);
+  let m = (Math.abs(duration - t1) < Math.abs(g[j] - t1)) ? g.length : j;
+  if (m < n) m = n;
+  boucle.unite = unite; boucle.n = n; boucle.m = m; boucle.defini = true; boucle.actif = true;
+  boucleMajUI();
+}
+function boucleDepuisCarte(unite, seg){
+  if (!duration || !seg) return;
+  boucleDepuisTemps(seg.start, seg.end, unite);
+  const b = boucleBornes();
+  if (b && isPlaying && (getTempsActuel() < b.t0 || getTempsActuel() >= b.t1)) seekTo(b.t0);
+  else if (b && !isPlaying) playOffset = b.t0, dessinerPlayhead();
+}
+function carteChoisie(cle){
+  const lane = cle === 'structure' ? laneStructure : laneAccords;
+  const arr = cle === 'structure' ? structureSegments : accordSegments;
+  const t = getTempsActuel();
+  return arr.find(s => s.id === lane.getSel()) || arr.find(s => t >= s.start && t < s.end) || null;
+}
+document.getElementById('boucle-toggle').addEventListener('click', () => {
+  if (!boucle.defini){ document.getElementById('boucle-section').click(); return; }
+  boucle.actif = !boucle.actif; boucleMajUI();
+});
+document.getElementById('boucle-unite').addEventListener('change', (ev) => {
+  // on garde la meme plage de temps, exprimee dans la nouvelle unite
+  const b = boucle.defini ? (() => { const a = boucle.actif; boucle.actif = true; const r = boucleBornes(); boucle.actif = a; return r; })() : null;
+  if (b) { const a = boucle.actif; boucleDepuisTemps(b.t0, b.t1, ev.target.value); boucle.actif = a; boucleMajUI(); } else { boucle.unite = ev.target.value; boucleMajUI(); }
+});
+['boucle-n', 'boucle-m'].forEach(id => document.getElementById(id).addEventListener('change', (ev) => {
+  const g = boucleGrille(boucle.unite), v = Math.max(1, Math.min(g.length || 1, Math.round(Number(ev.target.value) || 1)));
+  if (id === 'boucle-n') boucle.n = v; else boucle.m = v;
+  if (boucle.m < boucle.n){ if (id === 'boucle-n') boucle.m = boucle.n; else boucle.n = boucle.m; }
+  boucle.defini = true; boucle.actif = true; boucleMajUI();
+}));
+document.getElementById('boucle-section').addEventListener('click', () => {
+  const sg = carteChoisie('structure');
+  if (!sg){ document.getElementById('boucle-info').textContent = 'Aucune carte de structure choisie ni sous le curseur de lecture.'; return; }
+  boucleDepuisCarte('mesures', sg);
+});
+document.getElementById('boucle-ici').addEventListener('click', () => {
+  if (!duration) return;
+  const g = boucleGrille(boucle.unite); if (!g.length){ boucle.defini = true; boucleMajUI(); return; }
+  const t = getTempsActuel();
+  let i = g.findIndex(x => x > t) - 1; if (i < 0) i = (t >= g[g.length-1]) ? g.length - 1 : 0;
+  boucle.n = boucle.m = i + 1; boucle.defini = true; boucle.actif = true; boucleMajUI();
+});
+document.getElementById('boucle-eff').addEventListener('click', boucleEffacer);
+document.getElementById('fa-boucle').addEventListener('click', () => {
+  if (focusPiste !== 'structure' && focusPiste !== 'accords') return;
+  const sg = carteChoisie(focusPiste);
+  if (!sg){ afficherToast('Choisissez d\'abord une carte (ou placez le curseur de lecture dessus).'); return; }
+  boucleDepuisCarte(focusPiste === 'structure' ? 'mesures' : 'temps', sg);
+});
+// Declenchement du retour au debut, sur l'horloge audio
+let boucleProgrammee = false;
+setInterval(() => {
+  if (!isPlaying || !audioCtx) return;
+  const b = boucleBornes(); if (!b) return;
+  const t = getTempsActuel(), reste = b.t1 - t;
+  if (t >= b.t0 - 0.3 && reste <= 0.12 && reste > -0.3){
+    const quand = playStartCtxTime + b.t1;           // instant audio exact de la fin de boucle
+    if (quand > audioCtx.currentTime) jouer(b.t0, quand);
+    else jouer(b.t0);
+  }
+}, 20);
+// Barre d'espace : lecture / pause (hors saisie de texte) ; L : boucle
+document.addEventListener('keydown', (e) => {
+  if (!duration || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target, tag = t && t.tagName;
+  const saisie = tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable) ||
+    (tag === 'INPUT' && !/^(range|checkbox|radio|button|color|file)$/.test(t.type));
+  if (saisie || edFlot.ouvert() || document.querySelector('dialog[open]')) return;
+  if (e.code === 'Space' || e.key === ' '){
+    e.preventDefault();                       // ni defilement de la page, ni activation du bouton qui a le focus
+    if (!e.repeat) basculerLecture();
+  } else if ((e.key === 'l' || e.key === 'L') && !e.repeat){
+    e.preventDefault(); document.getElementById('boucle-toggle').click();
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code !== 'Space' && e.key !== ' ') return;
+  const t = e.target, tag = t && t.tagName;
+  if (tag === 'BUTTON' || (tag === 'INPUT' && /^(checkbox|radio|button)$/.test(t.type))) e.preventDefault();  // evite le « clic » au relachement
+});
+// Taille d'ecriture des accords
+(function(){
+  const ranges = document.querySelectorAll('.acc-range');
+  function appliquer(v, sauver){
+    v = Math.max(1, Math.min(3, Number(v) || 1));
+    document.documentElement.style.setProperty('--acc', v);
+    ranges.forEach(r => { r.value = v; });
+    document.getElementById('h-acc-v').textContent = '×' + (Math.round(v*10)/10);
+    if (sauver){ try { localStorage.setItem('bandes.accords.taille', String(v)); } catch (_) {} }
+    if (duration){ dessinerGrilleRythmique(); dessinerPlayhead(); }
+  }
+  ranges.forEach(r => r.addEventListener('input', (ev) => appliquer(ev.target.value, true)));
+  let v0 = 1; try { v0 = Number(localStorage.getItem('bandes.accords.taille')) || 1; } catch (_) {}
+  appliquer(v0, false);
+  document.getElementById('h-reset').addEventListener('click', () => appliquer(1, true));
+})();
+boucleMajUI();
+
+
+// ============================================================
 // Hauteur d'affichage des strates
 // ============================================================
 const HAUTEURS_DEF = { wave: 140, melodie: 180, cartes: 34 };
@@ -4392,6 +4592,8 @@ function majBarreActions(f){
   document.getElementById('focus-actions').style.display = (f === 'paroles' || f === 'structure' || f === 'accords') ? 'inline-flex' : 'none';
   const sm = document.getElementById('fa-suppr-mot'), s = document.getElementById('fa-suppr');
   if (sm) sm.style.display = f === 'paroles' ? '' : 'none';
+  const at = document.querySelector('#focus-actions .acc-taille'); if (at) at.style.display = f === 'accords' ? 'inline-flex' : 'none';
+  const fb = document.getElementById('fa-boucle'); if (fb) fb.style.display = (f === 'structure' || f === 'accords') ? '' : 'none';
   if (s){
     s.textContent = f === 'paroles' ? '🗑 Supprimer la phrase' : '🗑 Supprimer';
     s.title = f === 'paroles' ? 'Supprimer la phrase (carte) choisie sur la piste — un bandeau « Annuler » reste affiché' : 'Supprimer la carte choisie (un bandeau « Annuler » reste affiché quelques secondes)';

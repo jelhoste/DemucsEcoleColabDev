@@ -5,6 +5,12 @@ Numérotation : `MAJEUR.MINEUR.CORRECTIF`. Le MINEUR suit le numéro de livraiso
 `<meta name="app-version">` des quatre pages (`index.html`, `editeur.html`, `banc.html`, `comparateur.html`).
 Le changement de `sw.js` déclenche la bannière « Nouvelle version disponible » chez les utilisateurs déjà installés.
 
+## 1.22.0 — 2026-10-23
+Éditeur de métadonnées (`editeur.html`) uniquement.
+- Taille d'écriture des accords : curseur « Accords » dans la barre de la piste Accords (et « Écriture des accords » dans « ↕ Hauteurs et largeur »), de ×1 à ×3, mémorisé. Il agrandit le texte des accords sur la bande (qui s'agrandit en hauteur avec lui) et dans les grandes cartes. « Réinitialiser » le remet à ×1.
+- Boucle sur les mesures : nouvelle barre « 🔁 Boucle » sous le lecteur. On choisit une plage « de N à M » en **mesures** (traits marqués, numérotées 1, 2, 3…) ou en **temps** ; les bornes sont toujours sur la grille. Raccourcis : bouton « Section de structure » (carte choisie, ou sous le curseur de lecture, calée sur les mesures), « Ici » (la mesure/le temps sous le curseur), 🔁 sur chaque grande carte de structure (mesures) et d'accords (temps), « 🔁 Boucler la carte » dans la barre de piste. La zone en boucle est teintée sur la forme d'onde et les cartes concernées sont cerclées. Le retour au début est programmé sur l'horloge audio (sans trou). Touche L : activer/désactiver. La boucle n'est pas mémorisée d'un morceau à l'autre.
+- Barre d'espace : lecture / pause (hors saisie de texte et hors éditeur flottant ; la page ne défile pas et un bouton qui a le focus n'est pas déclenché en plus). Si une boucle est active et que le curseur est hors de la boucle, la lecture démarre au début de la boucle.
+
 ## 1.21.0 — 2026-10-23
 Éditeur de métadonnées (`editeur.html`) uniquement.
 - Suppression fiable des cartes. En piste Paroles, « Supprimer » visait un mot (celui sous le curseur de lecture) et ne faisait rien si le curseur n'était sur aucun mot : il supprime maintenant la **phrase** choisie ; un bouton distinct « Supprimer le mot » s'occupe d'un mot. Plus d'exception JavaScript à la suppression d'une section ou d'un accord. Suppression possible aussi depuis le 🗑 de l'éditeur flottant (même en piste « Toutes »), les ✕ des listes (sections, accords, phrases, notes, mots) et la touche Suppr (carte choisie seulement).
